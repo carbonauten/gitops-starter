@@ -1,56 +1,47 @@
-flowchart LR
-  subgraph VCS
-    gitops["gitops-starter (charts + infra)"]
-    zoho["zoho_recruiting (examples)"]
-    datapipeline["datapipeline"]
+flowchart TB
+  subgraph cloud["☁️ Cloud Infrastructure"]
+    subgraph azure["Azure (Europe)"]
+      vpn_az["VPN Gateway"]
+      k8s_az["AKS Kubernetes"]
+    end
+
+    subgraph alibaba["Alibaba Cloud (China)"]
+      vpn_ali["VPN Gateway"]
+      ecs_ali["Alibaba ECS"]
+    end
+
+    subgraph onprem["On-Premises Data Center"]
+      vpn_onprem["VPN Gateway"]
+      k8s_onprem["Kubernetes Cluster"]
+      prom_onprem["Prometheus\n(Monitoring)"]
+    end
+
+    kafka["Kafka + MirrorMaker 2\n(Message Broker)"]
+    lb["Load Balancer\n(Traffic Router)"]
   end
 
-  subgraph CI
-    gha["GitHub Actions (build & CI)"]
-    azp["Azure Pipelines (build, ACR)"]
+  vpn_az --> kafka
+  kafka --> vpn_ali
+  vpn_az --> vpn_onprem
+  vpn_ali --> vpn_onprem
+  
+  lb -->|routes| k8s_az
+  lb -->|routes| ecs_ali
+  lb -->|routes| k8s_onprem
+  
+  k8s_onprem --> prom_onprem
+
+  subgraph cicd["CI/CD & Deployment"]
+    gha["GitHub Actions"]
+    azp["Azure Pipelines"]
+    terraform["Terraform (IaC)"]
   end
 
-  subgraph Registry
-    reg["Container Registry\n(GHCR / ACR / ECR)"]
-  end
+  gha -->|build & deploy| kafka
+  azp -->|build & deploy| kafka
+  terraform -->|provisions| cloud
 
-  gitops -->|push / PR| gha
-  zoho -->|optional submodule / examples| gitops
-  datapipeline -->|optional integration| gitops
-
-  gha -->|build & push image| reg
-  azp -->|build & push image| reg
-
-  reg --> argo["ArgoCD (GitOps)\nreads gitops-starter repo"]
-  argo -->|helm sync| eks["AWS EKS Cluster\n(helm releases)"]
-
-  subgraph AWS
-    vpc["VPC\n(public/private subnets, NAT)"]
-    s3["S3 (Terraform state)"]
-    sm["Secrets Manager / KMS"]
-    prom["Prometheus / Grafana / Loki"]
-  end
-
-  eks --> vpc
-  terraform["Terraform (infra)"] -->|state in| s3
-  terraform -->|provisions| vpc
-  terraform -->|provisions| eks
-  sm --> eks
-  eks --> prom
-  argo -->|observability config| prom
-
-  subgraph Azure
-    aks["AKS Cluster (optional)"]
-  end
-  azp --> aks
-  aks -->|can host helm chart| reg
-
-  subgraph Alibaba
-    ecs["Alibaba ECS (optional)"]
-  end
-  gha --> ecs
-
-  classDef cloud fill:#f9f,stroke:#333,stroke-width:1px;
-  class AWS,Azure,Alibaba cloud;
-
-  click argo "https://argo-cd.readthedocs.io/" "ArgoCD docs"
+  classDef cloudStyle fill:#e1f5ff,stroke:#01579b,stroke-width:2px;
+  classDef onpremStyle fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+  class azure,alibaba cloudStyle;
+  class onprem onpremStyle;
