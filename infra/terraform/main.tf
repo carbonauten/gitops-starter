@@ -108,6 +108,47 @@ resource "alicloud_security_group" "alibaba_sg" {
   vpc_id      = alicloud_vpc.alibaba_vpc.id
 }
 
+// ============= Data Lake (ADLS Gen2 + Alibaba OSS) =============
+
+// Azure Data Lake Storage Gen2
+resource "azurerm_storage_account" "datalake" {
+  name                = "gitopsdatalake${var.environment}"
+  resource_group_name = azurerm_resource_group.azure_rg.name
+  location            = azurerm_resource_group.azure_rg.location
+
+  account_tier             = "Standard"
+  account_replication_type = "GRS"
+  is_hns_enabled           = true
+
+  network_rules {
+    default_action = "Deny"
+    bypass         = ["AzureServices"]
+  }
+}
+
+resource "azurerm_storage_data_lake_gen2_filesystem" "data" {
+  name               = "data"
+  storage_account_id = azurerm_storage_account.datalake.id
+}
+
+resource "azurerm_storage_data_lake_gen2_filesystem" "raw" {
+  name               = "raw"
+  storage_account_id = azurerm_storage_account.datalake.id
+}
+
+// Alibaba Cloud Object Storage Service (OSS)
+resource "alicloud_oss_bucket" "datalake" {
+  bucket = "gitops-starter-datalake-${var.environment}"
+  acl    = "private"
+  server_side_encryption_rule {
+    sse_algorithm = "AES256"
+  }
+
+  versioning {
+    status = "Enabled"
+  }
+}
+
 // ============= Kafka + MirrorMaker 2 (Bridge) =============
 
 // Note: Kafka deployment can be on either cloud or on-prem.
@@ -133,4 +174,26 @@ output "azure_vnet_id" {
 
 output "alibaba_vpc_id" {
   value = alicloud_vpc.alibaba_vpc.id
+}
+
+output "azure_datalake_storage_account_id" {
+  value = azurerm_storage_account.datalake.id
+}
+
+output "azure_datalake_primary_endpoints" {
+  value = {
+    dfs   = azurerm_storage_account.datalake.primary_dfs_endpoint
+    blob  = azurerm_storage_account.datalake.primary_blob_endpoint
+  }
+}
+
+output "alibaba_oss_bucket_name" {
+  value = alicloud_oss_bucket.datalake.id
+}
+
+output "alibaba_oss_bucket_endpoints" {
+  value = {
+    internal = alicloud_oss_bucket.datalake.intranet_endpoint
+    public   = alicloud_oss_bucket.datalake.extranet_endpoint
+  }
 }

@@ -16,6 +16,11 @@ flowchart TB
       prom_onprem["Prometheus\n(Monitoring)"]
     end
 
+    subgraph datalake["Data Lake"]
+      adls["Azure Data Lake\nGen2 (ADLS)"]
+      oss["Alibaba OSS\n(Object Storage)"]
+    end
+
     kafka["Kafka + MirrorMaker 2\n(Message Broker)"]
     lb["Load Balancer\n(Traffic Router)"]
   end
@@ -30,8 +35,13 @@ flowchart TB
   lb -->|routes| k8s_onprem
   
   k8s_onprem --> prom_onprem
-
-  subgraph cicd["CI/CD & Deployment"]
+  
+  k8s_az -->|reads/writes| adls
+  ecs_ali -->|reads/writes| oss
+  k8s_onprem -->|reads/writes| adls
+  
+  kafka -->|stream data| adls
+  kafka -->|stream data| oss
     gha["GitHub Actions"]
     azp["Azure Pipelines"]
     terraform["Terraform (IaC)"]
