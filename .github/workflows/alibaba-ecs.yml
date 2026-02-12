@@ -1,0 +1,31 @@
+name: Alibaba ECS quick test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  aliyun-ecs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install aliyun-cli
+        run: |
+          curl -sS https://aliyuncli.alicdn.com/aliyun-cli-linux-latest.tgz -o aliyun.tgz
+          tar xzf aliyun.tgz
+          sudo mv aliyun*/aliyun /usr/local/bin/aliyun
+          aliyun version
+
+      - name: Configure aliyun CLI
+        env:
+          ALIBABA_ACCESS_KEY_ID: ${{ secrets.ALIBABA_ACCESS_KEY_ID }}
+          ALIBABA_ACCESS_KEY_SECRET: ${{ secrets.ALIBABA_ACCESS_KEY_SECRET }}
+          ALIBABA_REGION: ${{ secrets.ALIBABA_REGION }}
+        run: |
+          aliyun configure set --profile default --access-key-id "$ALIBABA_ACCESS_KEY_ID" --access-key-secret "$ALIBABA_ACCESS_KEY_SECRET" --region "${ALIBABA_REGION:-eu-central-1}"
+
+      - name: List ECS instances (example)
+        run: |
+          aliyun ecs DescribeInstances --RegionId "${ALIBABA_REGION:-eu-central-1}"
+
+# Notes:
+# - Add repository secrets: ALIBABA_ACCESS_KEY_ID, ALIBABA_ACCESS_KEY_SECRET, ALIBABA_REGION
+# - This workflow is intended as a quick test/example; adapt steps for production use.
