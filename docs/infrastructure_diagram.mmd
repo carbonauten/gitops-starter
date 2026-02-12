@@ -1,0 +1,56 @@
+flowchart LR
+  subgraph VCS
+    gitops["gitops-starter (charts + infra)"]
+    zoho["zoho_recruiting (examples)"]
+    datapipeline["datapipeline"]
+  end
+
+  subgraph CI
+    gha["GitHub Actions (build & CI)"]
+    azp["Azure Pipelines (build, ACR)"]
+  end
+
+  subgraph Registry
+    reg["Container Registry\n(GHCR / ACR / ECR)"]
+  end
+
+  gitops -->|push / PR| gha
+  zoho -->|optional submodule / examples| gitops
+  datapipeline -->|optional integration| gitops
+
+  gha -->|build & push image| reg
+  azp -->|build & push image| reg
+
+  reg --> argo["ArgoCD (GitOps)\nreads gitops-starter repo"]
+  argo -->|helm sync| eks["AWS EKS Cluster\n(helm releases)"]
+
+  subgraph AWS
+    vpc["VPC\n(public/private subnets, NAT)"]
+    s3["S3 (Terraform state)"]
+    sm["Secrets Manager / KMS"]
+    prom["Prometheus / Grafana / Loki"]
+  end
+
+  eks --> vpc
+  terraform["Terraform (infra)"] -->|state in| s3
+  terraform -->|provisions| vpc
+  terraform -->|provisions| eks
+  sm --> eks
+  eks --> prom
+  argo -->|observability config| prom
+
+  subgraph Azure
+    aks["AKS Cluster (optional)"]
+  end
+  azp --> aks
+  aks -->|can host helm chart| reg
+
+  subgraph Alibaba
+    ecs["Alibaba ECS (optional)"]
+  end
+  gha --> ecs
+
+  classDef cloud fill:#f9f,stroke:#333,stroke-width:1px;
+  class AWS,Azure,Alibaba cloud;
+
+  click argo "https://argo-cd.readthedocs.io/" "ArgoCD docs"
