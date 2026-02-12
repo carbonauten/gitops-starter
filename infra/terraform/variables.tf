@@ -86,3 +86,10 @@ variable "node_max_capacity" {
   type    = number
   default = 3
 }
+
+// ===== Data Lake Variables =====
+variable "environment" {
+  description = "Environment name (dev, staging, prod)"
+  type        = string
+  default     = "dev"
+}
