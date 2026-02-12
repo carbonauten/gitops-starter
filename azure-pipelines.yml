@@ -57,6 +57,44 @@ stages:
                       echo "Updating Helm values and deploying"
                       kubectl set image deployment/example-service example-service=$(containerRegistry)/$(imageName):$(imageTag) --namespace default || true
 
+  - stage: DeployAKS
+    displayName: Deploy to AKS (Helm)
+    dependsOn: Build
+    condition: succeeded()
+    variables:
+      AKS_CLUSTER_NAME: ''
+      AKS_RESOURCE_GROUP: ''
+      AKS_SERVICE_CONNECTION: 'AzureServiceConnection'
+    jobs:
+      - job: DeployAKS
+        displayName: Deploy Helm chart to AKS
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: AzureCLI@2
+            displayName: Login to Azure and get AKS credentials
+            inputs:
+              azureSubscription: '$(AKS_SERVICE_CONNECTION)'
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: |
+                set -euo pipefail
+                echo "Getting AKS credentials for $(AKS_CLUSTER_NAME) in $(AKS_RESOURCE_GROUP)"
+                az aks get-credentials --resource-group "$(AKS_RESOURCE_GROUP)" --name "$(AKS_CLUSTER_NAME)" --overwrite-existing
+
+          - task: HelmInstaller@1
+            displayName: Install Helm
+            inputs:
+              helmVersionToInstall: 'latest'
+
+          - script: |
+              echo "Deploying Helm chart from gitops/charts/example-service"
+              helm upgrade --install example-service gitops/charts/example-service \
+                --namespace default --create-namespace \
+                --set image.repository=$(containerRegistry)/$(imageName) \
+                --set image.tag=$(imageTag)
+            displayName: Deploy Helm chart
+
 # Notes:
 # - Create an Azure DevOps service connection named 'ACRServiceConnection' that points to your ACR.
 # - Set the pipeline variable 'ACR_LOGIN_SERVER' to your registry host (e.g. myregistry.azurecr.io) or replace usage with a literal.
