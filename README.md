@@ -74,6 +74,12 @@ flowchart TB
   class onprem onpremStyle;
 ```
 
+## Architecture Overview
+
+For a more visual, component-level overview of the GitOps flow (developer → GitHub → CI → registry → Argo CD → Kubernetes → users), see:
+
+![GitOps Starter architecture](docs/assets/gitops-starter-infrastructure.png)
+
 Quick start (edit placeholders before use):
 
 1. Customize `infra/terraform` provider and backend, then `terraform init`/`apply` (creates cloud infra as needed).
