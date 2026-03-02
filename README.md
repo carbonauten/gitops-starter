@@ -90,6 +90,7 @@ Quick start (edit placeholders before use):
 Notes:
 - The Helm chart values use an `image.repository` placeholder — update to your registry (e.g. `ghcr.io/<org>/example-service`).
 - The ArgoCD `Application` has `repoURL` placeholders; update to the actual repo URL.
+- The CI workflow in `.github/workflows/ci.yml` builds the example-service image and runs its pytest suite on every push and pull request to `main`.
 
 If you want, I can:
 - Create an AWS/Terraform example to provision EKS and RDS,
