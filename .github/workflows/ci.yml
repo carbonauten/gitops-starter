@@ -39,10 +39,9 @@ jobs:
           pip install -r services/example-service/requirements.txt
 
       - name: Run tests
-        env:
-          PYTHONPATH: .
+        working-directory: services/example-service
         run: |
-          pytest -q services/example-service/tests
+          pytest -q
 
       - name: Push image (push events only)
         if: github.event_name == 'push'
