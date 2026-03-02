@@ -7,7 +7,9 @@ Structure:
 - `infra/terraform/` — Terraform scaffold (provider + backend examples)
 - `platform/argocd/` — ArgoCD `Application` manifest(s)
 - `gitops/charts/example-service/` — Helm chart for the example service
+- `gitops/charts/plc-api/` — Helm chart for the Siemens PLC connection API
 - `services/example-service/` — Example Flask service and `Dockerfile`
+ - `services/plc-api/` — Siemens PLC connection API service
 - `.github/workflows/ci.yml` — CI to build and push image to GitHub Container Registry (GHCR)
 
 ## Infrastructure Diagram
