@@ -54,4 +54,5 @@ jobs:
           docker push $IMAGE:latest
 
       - name: Create release image tag (optional)
-        run: echo "Image pushed: ghcr.io/${{ github.repository_owner }}/example-service:latest"
+        run: |
+          echo "Image pushed: ghcr.io/${{ github.repository_owner }}/example-service:latest"
