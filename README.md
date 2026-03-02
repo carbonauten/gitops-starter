@@ -5,11 +5,11 @@ This starter repo contains a minimal GitOps setup: Terraform scaffold, ArgoCD Ap
 Structure:
 
 - `infra/terraform/` — Terraform scaffold (provider + backend examples)
-- `platform/argocd/` — ArgoCD `Application` manifest(s)
+- `platform/argocd/` — ArgoCD `Application` manifest(s): example-service, plc-api, datapipeline-consumer
 - `gitops/charts/example-service/` — Helm chart for the example service
 - `gitops/charts/plc-api/` — Helm chart for the Siemens PLC connection API
+- `gitops/charts/datapipeline-consumer/` — Helm chart for the data pipeline Kafka consumer (A/B variants)
 - `services/example-service/` — Example Flask service and `Dockerfile`
- - `services/plc-api/` — Siemens PLC connection API service
 - `.github/workflows/ci.yml` — CI to build and push image to GitHub Container Registry (GHCR)
 
 ## Infrastructure Diagram
@@ -86,7 +86,7 @@ Quick start (edit placeholders before use):
 
 1. Customize `infra/terraform` provider and backend, then `terraform init`/`apply` (creates cloud infra as needed).
 2. Push this repo to GitHub (e.g. `github.com/carbonauten/gitops-starter`).
-3. Configure ArgoCD to track this repo and apply `platform/argocd/application.yaml`.
+3. Configure ArgoCD to track this repo and apply the manifests under `platform/argocd/` (e.g. `application.yaml`, `plc-api-application.yaml`, `datapipeline-consumer-application.yaml`).
 4. Configure CI secrets (GHCR or other registry) and run the workflow to build/push the image.
 
 Notes:

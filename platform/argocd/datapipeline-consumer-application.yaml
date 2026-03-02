@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: datapipeline-consumer
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: "https://github.com/carbonauten/gitops-starter"
+    path: "gitops/charts/datapipeline-consumer"
+    targetRevision: HEAD
+    helm:
+      values: |-
+        image:
+          repository: ghcr.io/carbonauten/datapipeline-consumer
+          tag: latest
+        variant: "A"
+        kafka:
+          topic: "events.v1.control"
+          brokers: "kafka:9092"
+          consumerGroup: "datapipeline-consumer"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
