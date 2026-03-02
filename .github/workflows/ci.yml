@@ -14,6 +14,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
         with:
@@ -28,11 +33,16 @@ jobs:
           IMAGE=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
           docker build -t $IMAGE:${{ github.sha }} -t $IMAGE:latest ./services/example-service
 
-      - name: Run tests
+      - name: Install test dependencies
         run: |
-          cd services/example-service
-          pip install -r requirements.txt
-          pytest -q
+          python -m pip install --upgrade pip
+          pip install -r services/example-service/requirements.txt
+
+      - name: Run tests
+        env:
+          PYTHONPATH: .
+        run: |
+          pytest -q services/example-service/tests services/datapipeline/tests
 
       - name: Push image (push events only)
         if: github.event_name == 'push'
