@@ -12,7 +12,7 @@ spec:
     helm:
       values: |-
         image:
-          repository: ghcr.io/carbonauten/siemens-plc-connection
+          repository: ghcr.io/carbonauten/siemens-plc-api
           tag: latest
   destination:
     server: https://kubernetes.default.svc
