@@ -10,6 +10,70 @@ Structure:
 - `services/example-service/` — Example Flask service and `Dockerfile`
 - `.github/workflows/ci.yml` — CI to build and push image to GitHub Container Registry (GHCR)
 
+## Infrastructure Diagram
+
+The high-level multi-cloud infrastructure for this starter looks like this:
+
+```mermaid
+flowchart TB
+  subgraph cloud["☁️ Cloud Infrastructure"]
+    subgraph azure["Azure (Europe)"]
+      vpn_az["VPN Gateway"]
+      k8s_az["AKS Kubernetes"]
+    end
+
+    subgraph alibaba["Alibaba Cloud (China)"]
+      vpn_ali["VPN Gateway"]
+      ecs_ali["Alibaba ECS"]
+    end
+
+    subgraph onprem["On-Premises Data Center"]
+      vpn_onprem["VPN Gateway"]
+      k8s_onprem["Kubernetes Cluster"]
+      prom_onprem["Prometheus\n(Monitoring)"]
+    end
+
+    subgraph datalake["Data Lake"]
+      adls["Azure Data Lake\nGen2 (ADLS)"]
+      oss["Alibaba OSS\n(Object Storage)"]
+    end
+
+    kafka["Kafka + MirrorMaker 2\n(Message Broker)"]
+    lb["Load Balancer\n(Traffic Router)"]
+  end
+
+  vpn_az --> kafka
+  kafka --> vpn_ali
+  vpn_az --> vpn_onprem
+  vpn_ali --> vpn_onprem
+  
+  lb -->|routes| k8s_az
+  lb -->|routes| ecs_ali
+  lb -->|routes| k8s_onprem
+  
+  k8s_onprem --> prom_onprem
+  
+  k8s_az -->|reads/writes| adls
+  ecs_ali -->|reads/writes| oss
+  k8s_onprem -->|reads/writes| adls
+  
+  kafka -->|stream data| adls
+  kafka -->|stream data| oss
+    gha["GitHub Actions"]
+    azp["Azure Pipelines"]
+    terraform["Terraform (IaC)"]
+  end
+
+  gha -->|build & deploy| kafka
+  azp -->|build & deploy| kafka
+  terraform -->|provisions| cloud
+
+  classDef cloudStyle fill:#e1f5ff,stroke:#01579b,stroke-width:2px;
+  classDef onpremStyle fill:#fff3e0,stroke:#e65100,stroke-width:2px;
+  class azure,alibaba cloudStyle;
+  class onprem onpremStyle;
+```
+
 Quick start (edit placeholders before use):
 
 1. Customize `infra/terraform` provider and backend, then `terraform init`/`apply` (creates cloud infra as needed).
