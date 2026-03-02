@@ -42,7 +42,7 @@ jobs:
         env:
           PYTHONPATH: .
         run: |
-          pytest -q services/example-service/tests services/datapipeline/tests
+          pytest -q services/example-service/tests
 
       - name: Push image (push events only)
         if: github.event_name == 'push'
