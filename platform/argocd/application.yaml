@@ -6,13 +6,13 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: "https://github.com/<org>/gitops-starter"
+    repoURL: "https://github.com/carbonauten/gitops-starter"
     path: "gitops/charts/example-service"
     targetRevision: HEAD
     helm:
       values: |-
         image:
-          repository: ghcr.io/<org>/example-service
+          repository: ghcr.io/carbonauten/example-service
           tag: latest
   destination:
     server: https://kubernetes.default.svc

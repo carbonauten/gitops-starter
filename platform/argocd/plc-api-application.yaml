@@ -6,13 +6,13 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: "https://github.com/<org>/gitops-starter"
+    repoURL: "https://github.com/carbonauten/gitops-starter"
     path: "gitops/charts/plc-api"
     targetRevision: HEAD
     helm:
       values: |-
         image:
-          repository: ghcr.io/<org>/siemens-plc-connection
+          repository: ghcr.io/carbonauten/siemens-plc-connection
           tag: latest
   destination:
     server: https://kubernetes.default.svc
