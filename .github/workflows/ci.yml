@@ -41,7 +41,7 @@ jobs:
       - name: Run tests
         working-directory: services/example-service
         run: |
-          pytest -q
+          python -m pytest -q
 
       - name: Push image (push events only)
         if: github.event_name == 'push'
