@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Chart.Name }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: datapipeline-consumer
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: PIPELINE_VARIANT
+              value: {{ .Values.variant | quote }}
+            - name: KAFKA_TOPIC
+              value: {{ .Values.kafka.topic | quote }}
+            - name: KAFKA_BROKERS
+              value: {{ .Values.kafka.brokers | quote }}
+            - name: KAFKA_CONSUMER_GROUP
+              value: {{ .Values.kafka.consumerGroup | quote }}
+          resources: {{ toYaml .Values.resources | nindent 12 }}
+

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: datapipeline-consumer
+description: "Datapipeline consumer with A/B variants (control vs experiment)"
+version: 0.1.0
+appVersion: "1.0.0"
+

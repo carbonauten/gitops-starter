@@ -23,6 +23,10 @@ spec:
             - containerPort: 8081
           env:
             - name: PLC_HOST
-              value: "127.0.0.1"
+              value: {{ .Values.plc.host | quote }}
+            - name: PLC_RACK
+              value: {{ .Values.plc.rack | default "" | quote }}
+            - name: PLC_SLOT
+              value: {{ .Values.plc.slot | default "" | quote }}
           resources: {{ toYaml .Values.resources | nindent 12 }}
 

@@ -1,6 +1,7 @@
 # Python
 __pycache__/
 *.pyc
+.venv/
 
 # Terraform
 *.tfstate
@@ -9,3 +10,6 @@ __pycache__/
 
 # Docker
 **/image/
+
+# Local / IDE
+.claude/

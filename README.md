@@ -1,6 +1,6 @@
 # GitOps Starter Repository
 
-This starter repo contains a minimal GitOps setup: Terraform scaffold, ArgoCD Application manifest, a Helm chart for an example service, a simple Flask example service, and a CI workflow to build/push the container image.
+This starter repo contains a minimal GitOps setup: Terraform scaffold, ArgoCD Application manifest, a Helm chart for an example service, a simple Flask example service, an in-repo Kafka consumer for the data pipeline, and a CI workflow to build/push container images.
 
 Structure:
 
@@ -10,7 +10,8 @@ Structure:
 - `gitops/charts/plc-api/` — Helm chart for the Siemens PLC connection API
 - `gitops/charts/datapipeline-consumer/` — Helm chart for the data pipeline Kafka consumer (A/B variants)
 - `services/example-service/` — Example Flask service and `Dockerfile`
-- `.github/workflows/ci.yml` — CI to build and push image to GitHub Container Registry (GHCR)
+- `services/datapipeline-consumer/` — In-repo Kafka consumer (A/B topics); image used by `gitops/charts/datapipeline-consumer`
+- `.github/workflows/ci.yml` — CI to build and push images to GitHub Container Registry (GHCR)
 
 ## Infrastructure Diagram
 

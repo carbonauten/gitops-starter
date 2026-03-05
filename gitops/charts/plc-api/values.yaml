@@ -5,6 +5,12 @@ image:
   tag: latest
   pullPolicy: IfNotPresent
 
+# Siemens PLC connection — set these to your PLC's address (or override in Argo CD Application)
+plc:
+  host: "127.0.0.1"   # PLC IP or hostname
+  rack: 0             # S7 rack (optional, leave null if not used)
+  slot: 1             # S7 slot (optional, leave null if not used)
+
 service:
   type: ClusterIP
   port: 8081
