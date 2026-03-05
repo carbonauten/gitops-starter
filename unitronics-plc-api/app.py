@@ -1,3 +1,7 @@
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from flask import Flask, jsonify, request
 
 from plc_client import PLCClient, load_plc_config_from_env
@@ -7,6 +11,7 @@ from github_client import (
     list_repos,
     trigger_workflow,
 )
+from data_store import append as store_append, read_latest as store_read_latest
 
 
 app = Flask(__name__)
@@ -116,6 +121,51 @@ def github_workflow_dispatch():
 def github_latest_release(owner, repo):
     status, data = get_latest_release(owner, repo)
     return jsonify(data), status
+
+
+# --- Store data collected from UniLogic/PLC ---
+
+
+@app.route("/data/collect", methods=["POST"])
+def data_collect():
+    """
+    Store data sent from UniLogic/PLC. Body: any JSON (e.g. {"tag": "Temp1", "value": 23.5}).
+    Optional query param: source=plc (default). Data is appended to a file with a UTC timestamp.
+    """
+    body = request.get_json(force=True, silent=True) or {}
+    source = request.args.get("source", "plc")
+    if not body:
+        return jsonify({"error": "empty_body", "message": "Send JSON body to store"}), 400
+    record = store_append(body, source=source)
+    return jsonify({"status": "stored", "id": record["id"], "record": record}), 201
+
+
+@app.route("/data/latest", methods=["GET"])
+def data_latest():
+    """Read last N stored records (default 100). Query param: n=50."""
+    n = request.args.get("n", type=int) or 100
+    n = min(max(1, n), 1000)
+    records = store_read_latest(n)
+    return jsonify({"count": len(records), "records": records}), 200
+
+
+# --- Snowflake: load from Azure Blob stage ---
+
+
+@app.route("/snowflake/load", methods=["POST"])
+def snowflake_load():
+    """
+    Create stage/table/file format if needed, then run COPY INTO to load PLC data
+    from the Azure Blob stage into Snowflake. Requires Snowflake + Azure env vars.
+    """
+    try:
+        from snowflake_loader import setup_and_load
+        result = setup_and_load()
+        if result.get("error"):
+            return jsonify(result), 400
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": "snowflake_load_failed", "message": str(e)}), 500
 
 
 if __name__ == "__main__":
