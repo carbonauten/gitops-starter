@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Generator, Optional
 from uuid import uuid4
 
-from sqlalchemy import DateTime, Integer, String, Text, create_engine, event, text
+from sqlalchemy import Boolean, Date, DateTime, Integer, String, Text, create_engine, event, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 logger = logging.getLogger(__name__)
@@ -52,6 +52,30 @@ class FileAsset(Base):
     uploaded_by_id: Mapped[str] = mapped_column(String(100))
     uploaded_by_name: Mapped[str] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class Certificate(Base):
+    __tablename__ = "certificates"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    name: Mapped[str] = mapped_column(String(500))
+    category: Mapped[str] = mapped_column(String(50), default="compliance")
+    issuer: Mapped[str] = mapped_column(String(500), default="")
+    valid_from: Mapped[date] = mapped_column(Date)
+    valid_to: Mapped[date] = mapped_column(Date)
+    renewal_in_progress: Mapped[bool] = mapped_column(Boolean, default=False)
+    responsible_name: Mapped[str] = mapped_column(String(200), default="")
+    responsible_email: Mapped[str] = mapped_column(String(200), default="")
+    file_asset_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    notes: Mapped[str] = mapped_column(Text, default="")
+    created_by_id: Mapped[str] = mapped_column(String(100))
+    created_by_name: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
 
 
 def init_database(database_url: str, max_attempts: int = 10, retry_delay: float = 3.0) -> None:

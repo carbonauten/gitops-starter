@@ -36,7 +36,7 @@ export type ArticleTemplate = {
 };
 
 export type SearchResult = {
-  type: "article" | "file";
+  type: "article" | "file" | "certificate";
   id: string;
   title: string;
   snippet: string;
@@ -45,11 +45,35 @@ export type SearchResult = {
   updated_at: string;
 };
 
+export type Certificate = {
+  id: string;
+  name: string;
+  category: "compliance" | "product" | "training" | "ssl";
+  issuer: string;
+  valid_from: string;
+  valid_to: string;
+  renewal_in_progress: boolean;
+  status: "valid" | "expiring" | "expired" | "renewal";
+  days_until_expiry: number;
+  responsible_name: string;
+  responsible_email: string;
+  file_asset_id: string | null;
+  file_name: string | null;
+  notes: string;
+  created_by_id: string;
+  created_by_name: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type DashboardStats = {
   drafts: number;
   published: number;
   files: number;
   certificates: number;
+  expiring_30: number;
+  expiring_60: number;
+  expiring_90: number;
 };
 
 type ApiError = {
@@ -187,4 +211,51 @@ export function fileDownloadUrl(id: string): string {
 export async function searchContent(q: string): Promise<SearchResult[]> {
   const payload = await request<{ results: SearchResult[] }>(`/api/search?q=${encodeURIComponent(q)}`);
   return payload.results;
+}
+
+export async function fetchCertificates(
+  q?: string,
+  category?: string,
+  status?: string,
+): Promise<Certificate[]> {
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (category) params.set("category", category);
+  if (status) params.set("status", status);
+  const query = params.toString();
+  const payload = await request<{ certificates: Certificate[] }>(
+    `/api/certificates${query ? `?${query}` : ""}`,
+  );
+  return payload.certificates;
+}
+
+export async function fetchCertificate(id: string): Promise<Certificate> {
+  const payload = await request<{ certificate: Certificate }>(`/api/certificates/${id}`);
+  return payload.certificate;
+}
+
+export async function createCertificate(
+  data: Omit<Certificate, "id" | "status" | "days_until_expiry" | "file_name" | "created_by_id" | "created_by_name" | "created_at" | "updated_at">,
+): Promise<Certificate> {
+  const payload = await request<{ certificate: Certificate }>("/api/certificates", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return payload.certificate;
+}
+
+export async function updateCertificate(id: string, data: Partial<Certificate>): Promise<Certificate> {
+  const payload = await request<{ certificate: Certificate }>(`/api/certificates/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+  return payload.certificate;
+}
+
+export async function deleteCertificate(id: string): Promise<void> {
+  await request<void>(`/api/certificates/${id}`, { method: "DELETE" });
+}
+
+export function certificatesExportUrl(): string {
+  return "/api/certificates/export";
 }

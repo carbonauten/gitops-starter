@@ -30,7 +30,11 @@
     "published": "已发布",
     "files": "文件",
     "certificates": "证书",
-    "sprintNote": "Sprint 2：文章编辑器、文件上传和搜索已上线。"
+    "expiringTitle": "即将到期的证书",
+    "expiring30": "30 天内",
+    "expiring60": "60 天内",
+    "expiring90": "90 天内",
+    "sprintNote": "Sprint 3：证书管理与到期跟踪已上线。"
   },
   "articles": {
     "title": "文章",
@@ -75,8 +79,40 @@
   "certificates": {
     "title": "证书管理",
     "subtitle": "记录、监控证书并在到期前及时续期",
-    "empty": "完整证书管理将在 Sprint 3 提供。",
-    "comingSoon": "Sprint 3",
+    "empty": "暂无证书。请添加第一份证书。",
+    "new": "新建证书",
+    "edit": "编辑证书",
+    "back": "返回列表",
+    "save": "保存证书",
+    "delete": "删除",
+    "export": "导出 CSV",
+    "confirmDelete": "删除此证书？",
+    "editorSubtitle": "填写证书信息、有效期和负责人。",
+    "searchPlaceholder": "搜索证书…",
+    "allCategories": "全部分类",
+    "allStatuses": "全部状态",
+    "validUntil": "有效期至",
+    "responsible": "负责人",
+    "noIssuer": "无签发机构",
+    "daysLeft": "剩余 {{count}} 天",
+    "overdue": "已逾期 {{count}} 天",
+    "attachedFile": "附件",
+    "fieldName": "证书名称",
+    "fieldCategory": "分类",
+    "fieldIssuer": "签发机构",
+    "fieldValidFrom": "生效日期",
+    "fieldValidTo": "到期日期",
+    "fieldRenewal": "续期中",
+    "fieldResponsibleName": "负责人姓名",
+    "fieldResponsibleEmail": "负责人邮箱",
+    "fieldNotes": "备注",
+    "fieldFile": "证书文件（PDF、PEM、CRT）",
+    "status": {
+      "valid": "有效",
+      "expiring": "即将到期",
+      "expired": "已过期",
+      "renewal": "续期中"
+    },
     "categories": {
       "compliance": "合规与 ISO",
       "product": "产品证书",
@@ -85,7 +121,7 @@
     }
   },
   "search": {
-    "placeholder": "搜索文章和文件…",
+    "placeholder": "搜索文章、文件和证书…",
     "action": "搜索",
     "noResults": "未找到结果。"
   },

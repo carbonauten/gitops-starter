@@ -30,7 +30,11 @@
     "published": "Veröffentlicht",
     "files": "Dateien",
     "certificates": "Zertifikate",
-    "sprintNote": "Sprint 2: Artikel-Editor, Datei-Upload und Suche sind aktiv."
+    "expiringTitle": "Bald ablaufende Zertifikate",
+    "expiring30": "Innerhalb 30 Tage",
+    "expiring60": "Innerhalb 60 Tage",
+    "expiring90": "Innerhalb 90 Tage",
+    "sprintNote": "Sprint 3: Zertifikatsverwaltung mit Ablaufüberwachung ist aktiv."
   },
   "articles": {
     "title": "Artikel",
@@ -75,8 +79,40 @@
   "certificates": {
     "title": "Zertifikatsverwaltung",
     "subtitle": "Zertifikate erfassen, überwachen und rechtzeitig erneuern",
-    "empty": "Vollständige Zertifikatsverwaltung kommt in Sprint 3.",
-    "comingSoon": "Sprint 3",
+    "empty": "Noch keine Zertifikate. Legen Sie das erste Zertifikat an.",
+    "new": "Neues Zertifikat",
+    "edit": "Zertifikat bearbeiten",
+    "back": "Zurück zur Liste",
+    "save": "Zertifikat speichern",
+    "delete": "Löschen",
+    "export": "CSV exportieren",
+    "confirmDelete": "Dieses Zertifikat löschen?",
+    "editorSubtitle": "Erfassen Sie Zertifikatsdaten, Gültigkeit und Verantwortliche.",
+    "searchPlaceholder": "Zertifikate durchsuchen…",
+    "allCategories": "Alle Kategorien",
+    "allStatuses": "Alle Status",
+    "validUntil": "Gültig bis",
+    "responsible": "Verantwortlich",
+    "noIssuer": "Kein Aussteller",
+    "daysLeft": "Noch {{count}} Tage",
+    "overdue": "{{count}} Tage überfällig",
+    "attachedFile": "Angehängte Datei",
+    "fieldName": "Zertifikatsname",
+    "fieldCategory": "Kategorie",
+    "fieldIssuer": "Aussteller",
+    "fieldValidFrom": "Gültig ab",
+    "fieldValidTo": "Gültig bis",
+    "fieldRenewal": "Erneuerung läuft",
+    "fieldResponsibleName": "Verantwortliche Person",
+    "fieldResponsibleEmail": "E-Mail Verantwortliche",
+    "fieldNotes": "Notizen",
+    "fieldFile": "Zertifikatsdatei (PDF, PEM, CRT)",
+    "status": {
+      "valid": "Gültig",
+      "expiring": "Läuft ab",
+      "expired": "Abgelaufen",
+      "renewal": "In Erneuerung"
+    },
     "categories": {
       "compliance": "Compliance & ISO",
       "product": "Produktzertifikate",
@@ -85,7 +121,7 @@
     }
   },
   "search": {
-    "placeholder": "Artikel und Dateien suchen…",
+    "placeholder": "Artikel, Dateien und Zertifikate suchen…",
     "action": "Suchen",
     "noResults": "Keine Treffer gefunden."
   },

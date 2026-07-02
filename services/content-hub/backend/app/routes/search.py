@@ -5,7 +5,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from ..auth import require_user
-from ..database import Article, FileAsset, get_db
+from ..database import Article, Certificate, FileAsset, get_db
 from ..schemas import SearchResult
 
 router = APIRouter(prefix="/api/search", tags=["search"])
@@ -42,6 +42,18 @@ def search(
         .order_by(FileAsset.created_at.desc())
         .limit(20)
     ).all()
+    certificates = db.scalars(
+        select(Certificate)
+        .where(
+            or_(
+                Certificate.name.ilike(pattern),
+                Certificate.issuer.ilike(pattern),
+                Certificate.responsible_name.ilike(pattern),
+            )
+        )
+        .order_by(Certificate.updated_at.desc())
+        .limit(20)
+    ).all()
 
     results: list[SearchResult] = []
     for article in articles:
@@ -64,6 +76,17 @@ def search(
                 snippet=file_asset.folder,
                 folder=file_asset.folder,
                 updated_at=file_asset.created_at,
+            )
+        )
+    for certificate in certificates:
+        results.append(
+            SearchResult(
+                type="certificate",
+                id=certificate.id,
+                title=certificate.name,
+                snippet=certificate.issuer or certificate.category,
+                status=certificate.category,
+                updated_at=certificate.updated_at,
             )
         )
 

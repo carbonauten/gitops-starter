@@ -485,6 +485,85 @@ a {
   border-color: #f2c7c2;
 }
 
+.header-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.compact-grid {
+  margin-bottom: 1rem;
+}
+
+.compact-grid .stat-value {
+  font-size: 1.8rem;
+}
+
+.section-block {
+  margin-top: 1.5rem;
+}
+
+.section-block h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.list-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.status-valid {
+  background: #dcfae6;
+  color: #067647;
+}
+
+.status-expiring {
+  background: #fef0c7;
+  color: #b54708;
+}
+
+.status-expired {
+  background: #fee4e2;
+  color: #b42318;
+}
+
+.status-renewal {
+  background: #e0eaff;
+  color: #175cd3;
+}
+
+.editor-form textarea,
+.editor-form select {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+}
+
 @media (max-width: 900px) {
   .list-card,
   .row-header {
@@ -494,5 +573,9 @@ a {
 
   .search-bar form {
     flex-direction: column;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
   }
 }

@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from .config import get_settings
 from .database import ensure_upload_dir, init_database
 from .i18n import parse_accept_language, translate
-from .routes import articles, auth, dashboard, files, health, search, user
+from .routes import articles, auth, certificates, dashboard, files, health, search, user
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
@@ -75,6 +75,7 @@ def create_app() -> FastAPI:
     app.include_router(user.router)
     app.include_router(articles.router)
     app.include_router(files.router)
+    app.include_router(certificates.router)
     app.include_router(search.router)
     app.include_router(dashboard.router)
 

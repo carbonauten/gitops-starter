@@ -55,7 +55,7 @@ flowchart LR
 |--------|-------|--------|------|
 | 1 | 2 Wochen | ✅ Abgeschlossen | Fundament: Login, Branding, Mehrsprachigkeit, CI/CD |
 | 2 | 2 Wochen | ✅ Abgeschlossen | Redaktion: Artikel-Editor, Dateiverwaltung, Suche |
-| 3 | 2 Wochen | 🔜 Nächster | **Zertifikatsverwaltung:** Erfassung, Ablauf, Erinnerungen |
+| 3 | 2 Wochen | ✅ Abgeschlossen | **Zertifikatsverwaltung:** Erfassung, Ablauf, Erinnerungen |
 | 4 | 2 Wochen | Geplant | Multichannel: Teams, Notion, Outlook |
 | 5 | 2 Wochen | Geplant | China: Alibaba-Deployment, Datensync EU ↔ CN |
 | 6 | 1 Woche | Geplant | Workflow, Freigaben, Audit, Go-Live |
@@ -139,15 +139,15 @@ frontend/src/pages/FilesPage.tsx (erweitert)
 
 ### Geplante Features
 
-- [ ] Zertifikat anlegen: Name, Kategorie, Aussteller, Gültig von/bis
-- [ ] PDF/Datei-Upload pro Zertifikat (verknüpft mit Datei-Speicher aus Sprint 2)
-- [ ] Dashboard-Widget: „Läuft in 30/60/90 Tagen ab“
-- [ ] Ampel-Status: gültig / läuft ab / abgelaufen
-- [ ] Verantwortliche Person + Entra-Benutzer zuweisen
-- [ ] Erinnerungen per **Outlook** (E-Mail) und **Teams** (Nachricht)
-- [ ] Erneuerungs-Workflow: abgelaufen → in Bearbeitung → erneuert
-- [ ] Filter & Suche nach Kategorie, Status, Aussteller
-- [ ] Export-Liste (CSV/PDF) für Audits
+- [x] Zertifikat anlegen: Name, Kategorie, Aussteller, Gültig von/bis
+- [x] PDF/Datei-Upload pro Zertifikat (verknüpft mit Datei-Speicher aus Sprint 2)
+- [x] Dashboard-Widget: „Läuft in 30/60/90 Tagen ab“
+- [x] Ampel-Status: gültig / läuft ab / abgelaufen
+- [x] Verantwortliche Person + E-Mail zuweisen
+- [ ] Erinnerungen per **Outlook** (E-Mail) und **Teams** (Nachricht) — Sprint 4
+- [x] Erneuerungs-Workflow: in Bearbeitung markieren
+- [x] Filter & Suche nach Kategorie, Status, Aussteller
+- [x] Export-Liste (CSV) für Audits
 - [ ] Optional: SSL-Zertifikat-Import (.pem / .crt) mit automatischer Ablauf-Erkennung
 
 ### Akzeptanzkriterien

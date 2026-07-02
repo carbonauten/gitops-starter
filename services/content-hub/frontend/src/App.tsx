@@ -4,6 +4,7 @@ import { Layout } from "./components/Layout";
 import { useAuth } from "./hooks/useAuth";
 import { ArticleEditorPage } from "./pages/ArticleEditorPage";
 import { ArticlesPage } from "./pages/ArticlesPage";
+import { CertificateEditorPage } from "./pages/CertificateEditorPage";
 import { CertificatesPage } from "./pages/CertificatesPage";
 import { DashboardPage } from "./pages/DashboardPage";
 import { FilesPage } from "./pages/FilesPage";
@@ -65,6 +66,22 @@ export default function App() {
         element={
           <ProtectedRoute>
             <FilesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/certificates/new"
+        element={
+          <ProtectedRoute>
+            <CertificateEditorPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/certificates/:id/edit"
+        element={
+          <ProtectedRoute>
+            <CertificateEditorPage />
           </ProtectedRoute>
         }
       />

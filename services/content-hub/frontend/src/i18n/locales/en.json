@@ -30,7 +30,11 @@
     "published": "Published",
     "files": "Files",
     "certificates": "Certificates",
-    "sprintNote": "Sprint 2: article editor, file upload, and search are live."
+    "expiringTitle": "Certificates expiring soon",
+    "expiring30": "Within 30 days",
+    "expiring60": "Within 60 days",
+    "expiring90": "Within 90 days",
+    "sprintNote": "Sprint 3: certificate management with expiry tracking is live."
   },
   "articles": {
     "title": "Articles",
@@ -75,8 +79,40 @@
   "certificates": {
     "title": "Certificate Management",
     "subtitle": "Track, store, and renew certificates before they expire",
-    "empty": "Full certificate management arrives in Sprint 3.",
-    "comingSoon": "Sprint 3",
+    "empty": "No certificates yet. Add your first certificate.",
+    "new": "New certificate",
+    "edit": "Edit certificate",
+    "back": "Back to list",
+    "save": "Save certificate",
+    "delete": "Delete",
+    "export": "Export CSV",
+    "confirmDelete": "Delete this certificate?",
+    "editorSubtitle": "Record certificate details, validity dates, and responsible contacts.",
+    "searchPlaceholder": "Search certificates…",
+    "allCategories": "All categories",
+    "allStatuses": "All statuses",
+    "validUntil": "Valid until",
+    "responsible": "Responsible",
+    "noIssuer": "No issuer",
+    "daysLeft": "{{count}} days left",
+    "overdue": "{{count}} days overdue",
+    "attachedFile": "Attached file",
+    "fieldName": "Certificate name",
+    "fieldCategory": "Category",
+    "fieldIssuer": "Issuer",
+    "fieldValidFrom": "Valid from",
+    "fieldValidTo": "Valid until",
+    "fieldRenewal": "Renewal in progress",
+    "fieldResponsibleName": "Responsible person",
+    "fieldResponsibleEmail": "Responsible email",
+    "fieldNotes": "Notes",
+    "fieldFile": "Certificate file (PDF, PEM, CRT)",
+    "status": {
+      "valid": "Valid",
+      "expiring": "Expiring soon",
+      "expired": "Expired",
+      "renewal": "Renewal in progress"
+    },
     "categories": {
       "compliance": "Compliance & ISO",
       "product": "Product certificates",
@@ -85,7 +121,7 @@
     }
   },
   "search": {
-    "placeholder": "Search articles and files…",
+    "placeholder": "Search articles, files, and certificates…",
     "action": "Search",
     "noResults": "No results found."
   },

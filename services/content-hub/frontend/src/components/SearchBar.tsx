@@ -25,6 +25,10 @@ export function SearchBar() {
       navigate(`/articles/${result.id}/edit`);
       return;
     }
+    if (result.type === "certificate") {
+      navigate(`/certificates/${result.id}/edit`);
+      return;
+    }
     navigate("/files");
   }
 
@@ -47,7 +51,13 @@ export function SearchBar() {
             results.map((result) => (
               <button key={`${result.type}-${result.id}`} type="button" className="search-result" onClick={() => openResult(result)}>
                 <strong>{result.title}</strong>
-                <span>{result.type === "article" ? t("nav.articles") : t("nav.files")}</span>
+                <span>
+                  {result.type === "article"
+                    ? t("nav.articles")
+                    : result.type === "certificate"
+                      ? t("nav.certificates")
+                      : t("nav.files")}
+                </span>
                 <p className="muted">{result.snippet}</p>
               </button>
             ))

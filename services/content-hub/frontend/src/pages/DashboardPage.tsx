@@ -11,6 +11,9 @@ export function DashboardPage() {
     published: 0,
     files: 0,
     certificates: 0,
+    expiring_30: 0,
+    expiring_60: 0,
+    expiring_90: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -32,6 +35,12 @@ export function DashboardPage() {
     { label: t("dashboard.certificates"), value: stats.certificates, to: "/certificates" },
   ];
 
+  const expiryCards = [
+    { label: t("dashboard.expiring30"), value: stats.expiring_30 },
+    { label: t("dashboard.expiring60"), value: stats.expiring_60 },
+    { label: t("dashboard.expiring90"), value: stats.expiring_90 },
+  ];
+
   return (
     <section className="page">
       <header className="page-header">
@@ -48,6 +57,18 @@ export function DashboardPage() {
             <p className="stat-label">{card.label}</p>
           </Link>
         ))}
+      </div>
+
+      <div className="section-block">
+        <h2>{t("dashboard.expiringTitle")}</h2>
+        <div className="card-grid compact-grid">
+          {expiryCards.map((card) => (
+            <Link key={card.label} to="/certificates" className="stat-card stat-card-link">
+              <p className="stat-value">{card.value}</p>
+              <p className="stat-label">{card.label}</p>
+            </Link>
+          ))}
+        </div>
       </div>
 
       <div className="info-banner">{t("dashboard.sprintNote")}</div>
