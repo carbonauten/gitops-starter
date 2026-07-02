@@ -14,5 +14,9 @@
   "errors.registration_disabled": "自助注册已关闭，请联系 IT。",
   "errors.it_role_locked": "IT 账户始终保持主管理员角色。",
   "errors.it_account_locked": "IT 账户不能被停用。",
+  "errors.invalid_credentials": "邮箱或密码不正确。",
+  "errors.user_exists": "该邮箱的用户已存在。",
+  "errors.mock_auth_disabled": "模拟登录已禁用。",
+  "errors.microsoft_auth_unavailable": "Microsoft 登录未配置。",
   "messages.language_updated": "语言已更新。"
 }

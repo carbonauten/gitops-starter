@@ -39,6 +39,9 @@ class Settings(BaseSettings):
     entra_mock_auth: bool = False
     mock_user_email: str = "demo@example.com"
     mock_user_name: str = "Demo User"
+    initial_admin_email: str = ""
+    initial_admin_password: str = ""
+    initial_admin_name: str = ""
     it_admin_emails: str = ""
     default_user_role: str = "editor"
     allow_self_registration: bool = True

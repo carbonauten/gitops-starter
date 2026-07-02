@@ -9,14 +9,24 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 
-import { fetchCurrentUser, loginUrl, logout, updateUserLanguage, type User } from "../api/client";
+import {
+  fetchAuthConfig,
+  fetchCurrentUser,
+  loginUrl,
+  loginWithPassword,
+  logout,
+  updateUserLanguage,
+  type User,
+} from "../api/client";
 import type { AppLanguage } from "../i18n";
 
 type AuthContextValue = {
   user: User | null;
   loading: boolean;
+  microsoftAuthEnabled: boolean;
   refresh: () => Promise<void>;
-  signIn: () => void;
+  signInWithPassword: (email: string, password: string) => Promise<void>;
+  signInWithMicrosoft: () => void;
   signOut: () => Promise<void>;
   setLanguage: (language: AppLanguage) => Promise<void>;
 };
@@ -27,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { i18n } = useTranslation();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [microsoftAuthEnabled, setMicrosoftAuthEnabled] = useState(false);
 
   const refresh = useCallback(async () => {
     const current = await fetchCurrentUser();
@@ -39,6 +50,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void (async () => {
       try {
+        const authConfig = await fetchAuthConfig();
+        setMicrosoftAuthEnabled(authConfig.microsoft_auth);
         await refresh();
       } finally {
         setLoading(false);
@@ -46,7 +59,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
   }, [refresh]);
 
-  const signIn = useCallback(() => {
+  const signInWithPassword = useCallback(
+    async (email: string, password: string) => {
+      const loggedInUser = await loginWithPassword(email, password);
+      setUser(loggedInUser);
+      if (loggedInUser.language) {
+        await i18n.changeLanguage(loggedInUser.language);
+      }
+    },
+    [i18n],
+  );
+
+  const signInWithMicrosoft = useCallback(() => {
     window.location.href = loginUrl(i18n.language);
   }, [i18n.language]);
 
@@ -68,8 +92,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo(
-    () => ({ user, loading, refresh, signIn, signOut, setLanguage }),
-    [user, loading, refresh, signIn, signOut, setLanguage],
+    () => ({
+      user,
+      loading,
+      microsoftAuthEnabled,
+      refresh,
+      signInWithPassword,
+      signInWithMicrosoft,
+      signOut,
+      setLanguage,
+    }),
+    [user, loading, microsoftAuthEnabled, refresh, signInWithPassword, signInWithMicrosoft, signOut, setLanguage],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

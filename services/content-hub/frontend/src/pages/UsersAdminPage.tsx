@@ -3,12 +3,14 @@ import { useTranslation } from "react-i18next";
 
 import {
   createDepartment,
+  createUser,
   deleteDepartment,
   fetchDepartments,
   fetchUsers,
   updateDepartment,
   updateUserActive,
   updateUserDepartment,
+  updateUserPassword,
   updateUserRole,
   type Department,
   type User,
@@ -35,6 +37,11 @@ export function UsersAdminPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [newDepartmentName, setNewDepartmentName] = useState("");
   const [newDepartmentCode, setNewDepartmentCode] = useState("");
+  const [newUserName, setNewUserName] = useState("");
+  const [newUserEmail, setNewUserEmail] = useState("");
+  const [newUserPassword, setNewUserPassword] = useState("");
+  const [newUserRole, setNewUserRole] = useState<User["role"]>("editor");
+  const [newUserDepartmentId, setNewUserDepartmentId] = useState("");
 
   async function load() {
     setLoading(true);
@@ -92,6 +99,49 @@ export function UsersAdminPage() {
     setBusyId(user.db_id);
     try {
       await updateUserDepartment(user.db_id, nextDepartmentId);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleCreateUser(event: React.FormEvent) {
+    event.preventDefault();
+    if (!newUserName.trim() || !newUserEmail.trim() || newUserPassword.length < 8) {
+      return;
+    }
+    setBusyId("new-user");
+    try {
+      await createUser({
+        name: newUserName.trim(),
+        email: newUserEmail.trim(),
+        password: newUserPassword,
+        role: newUserRole,
+        department_id: newUserDepartmentId || null,
+      });
+      setNewUserName("");
+      setNewUserEmail("");
+      setNewUserPassword("");
+      setNewUserRole("editor");
+      setNewUserDepartmentId("");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handlePasswordReset(user: User) {
+    const nextPassword = window.prompt(t("users.passwordPrompt", { name: user.name }));
+    if (!nextPassword || nextPassword.length < 8) {
+      return;
+    }
+    setBusyId(user.db_id);
+    try {
+      await updateUserPassword(user.db_id, nextPassword);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
@@ -187,6 +237,62 @@ export function UsersAdminPage() {
       {loading ? <p>{t("common.loading")}</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
 
+      {!loading && tab === "employees" ? (
+        <form className="employee-create-form" onSubmit={(event) => void handleCreateUser(event)}>
+          <h2>{t("users.create.title")}</h2>
+          <div className="employee-create-grid">
+            <input
+              type="text"
+              value={newUserName}
+              placeholder={t("users.create.name")}
+              onChange={(event) => setNewUserName(event.target.value)}
+              required
+            />
+            <input
+              type="email"
+              value={newUserEmail}
+              placeholder={t("users.create.email")}
+              onChange={(event) => setNewUserEmail(event.target.value)}
+              required
+            />
+            <input
+              type="password"
+              value={newUserPassword}
+              placeholder={t("users.create.password")}
+              minLength={8}
+              onChange={(event) => setNewUserPassword(event.target.value)}
+              required
+            />
+            <select
+              className="admin-select"
+              value={newUserRole}
+              onChange={(event) => setNewUserRole(event.target.value as User["role"])}
+            >
+              {ROLES.map((role) => (
+                <option key={role} value={role}>
+                  {t(`users.roles.${role}`)}
+                </option>
+              ))}
+            </select>
+            <select
+              className="admin-select"
+              value={newUserDepartmentId}
+              onChange={(event) => setNewUserDepartmentId(event.target.value)}
+            >
+              <option value="">{t("departments.unassigned")}</option>
+              {activeDepartments.map((department) => (
+                <option key={department.id} value={department.id}>
+                  {department.name}
+                </option>
+              ))}
+            </select>
+            <button type="submit" className="primary-button" disabled={busyId === "new-user"}>
+              {t("users.create.submit")}
+            </button>
+          </div>
+        </form>
+      ) : null}
+
       {!loading && tab === "employees" && users.length > 0 ? (
         <div className="admin-table-wrap">
           <table className="admin-table">
@@ -198,6 +304,7 @@ export function UsersAdminPage() {
                 <th>{t("users.columns.role")}</th>
                 <th>{t("users.columns.platformAccess")}</th>
                 <th>{t("users.columns.lastLogin")}</th>
+                <th>{t("departments.columns.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -259,6 +366,16 @@ export function UsersAdminPage() {
                       {user.last_login_at
                         ? new Date(user.last_login_at).toLocaleString()
                         : t("users.neverLoggedIn")}
+                    </td>
+                    <td>
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        disabled={isBusy}
+                        onClick={() => void handlePasswordReset(user)}
+                      >
+                        {t("users.setPassword")}
+                      </button>
                     </td>
                   </tr>
                 );

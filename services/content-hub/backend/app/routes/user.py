@@ -13,10 +13,12 @@ from ..dependencies import get_current_user, require_it_master
 from ..i18n import normalize_language, translate
 from ..roles import ALL_ROLES
 from ..user_service import (
+    create_user_account,
     enrich_user_session,
     list_users,
     update_user_active,
     update_user_department,
+    update_user_password,
     update_user_role,
     users_to_sessions,
 )
@@ -38,6 +40,18 @@ class ActiveUpdate(BaseModel):
 
 class DepartmentUpdate(BaseModel):
     department_id: Optional[str] = None
+
+
+class UserCreate(BaseModel):
+    email: str = Field(..., min_length=3, max_length=200)
+    name: str = Field(..., min_length=1, max_length=200)
+    password: str = Field(..., min_length=8, max_length=200)
+    role: str = Field(..., description="it_master, editor, or viewer")
+    department_id: Optional[str] = None
+
+
+class PasswordUpdate(BaseModel):
+    password: str = Field(..., min_length=8, max_length=200)
 
 
 @router.patch("/language")
@@ -79,6 +93,25 @@ def get_users(
     return {"users": users_to_sessions(db, users)}
 
 
+@router.post("/users")
+def create_user(
+    payload: UserCreate,
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(require_it_master),
+) -> dict:
+    if payload.role not in ALL_ROLES:
+        raise HTTPException(status_code=422, detail="validation")
+    user = create_user_account(
+        db,
+        email=payload.email,
+        name=payload.name,
+        password=payload.password,
+        role=payload.role,
+        department_id=payload.department_id,
+    )
+    return {"user": enrich_user_session(db, user)}
+
+
 @router.patch("/users/{user_id}/role")
 def set_user_role(
     user_id: str,
@@ -111,4 +144,15 @@ def set_user_department(
     _admin: dict = Depends(require_it_master),
 ) -> dict:
     user = update_user_department(db, user_id, payload.department_id)
+    return {"user": enrich_user_session(db, user)}
+
+
+@router.patch("/users/{user_id}/password")
+def set_user_password(
+    user_id: str,
+    payload: PasswordUpdate,
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(require_it_master),
+) -> dict:
+    user = update_user_password(db, user_id, payload.password)
     return {"user": enrich_user_session(db, user)}

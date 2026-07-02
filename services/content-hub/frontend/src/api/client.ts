@@ -164,8 +164,31 @@ export async function logout(): Promise<void> {
   await request<void>("/api/auth/logout", { method: "POST" });
 }
 
+export async function loginWithPassword(email: string, password: string): Promise<User> {
+  const payload = await request<{ user: User }>("/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+  return payload.user;
+}
+
 export function loginUrl(language: string): string {
   return `/api/auth/login?lang=${encodeURIComponent(language)}`;
+}
+
+export type AuthConfig = {
+  password_auth: boolean;
+  microsoft_auth: boolean;
+  mock_auth: boolean;
+};
+
+export async function fetchAuthConfig(): Promise<AuthConfig> {
+  const payload = await request<AuthConfig & { status: string }>("/api/health");
+  return {
+    password_auth: payload.password_auth,
+    microsoft_auth: payload.microsoft_auth,
+    mock_auth: payload.mock_auth,
+  };
 }
 
 export async function fetchDashboardStats(): Promise<DashboardStats> {
@@ -294,6 +317,28 @@ export function certificatesExportUrl(): string {
 export async function fetchUsers(): Promise<User[]> {
   const payload = await request<{ users: User[] }>("/api/user/users");
   return payload.users;
+}
+
+export async function createUser(data: {
+  email: string;
+  name: string;
+  password: string;
+  role: User["role"];
+  department_id?: string | null;
+}): Promise<User> {
+  const payload = await request<{ user: User }>("/api/user/users", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return payload.user;
+}
+
+export async function updateUserPassword(userId: string, password: string): Promise<User> {
+  const payload = await request<{ user: User }>(`/api/user/users/${userId}/password`, {
+    method: "PATCH",
+    body: JSON.stringify({ password }),
+  });
+  return payload.user;
 }
 
 export async function updateUserRole(userId: string, role: User["role"]): Promise<User> {

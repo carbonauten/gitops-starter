@@ -26,6 +26,26 @@ def test_it_master_can_create_and_assign_department(it_auth_client):
     assert assign.json()["user"]["department_name"] == "Forschung"
 
 
+def test_it_master_can_create_user_with_password(it_auth_client):
+    create = it_auth_client.post(
+        "/api/user/users",
+        json={
+            "email": "employee@carbonauten.com",
+            "name": "Employee One",
+            "password": "employee-password",
+            "role": "editor",
+        },
+    )
+    assert create.status_code == 200
+
+    login = it_auth_client.post(
+        "/api/auth/login",
+        json={"email": "employee@carbonauten.com", "password": "employee-password"},
+    )
+    assert login.status_code == 200
+    assert login.json()["user"]["role"] == "editor"
+
+
 def test_editor_cannot_create_department(auth_client):
     response = auth_client.post(
         "/api/departments",

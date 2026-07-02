@@ -14,5 +14,9 @@
   "errors.registration_disabled": "Self-registration is disabled. Contact IT.",
   "errors.it_role_locked": "IT accounts always keep the master role.",
   "errors.it_account_locked": "IT accounts cannot be deactivated.",
+  "errors.invalid_credentials": "Email or password is incorrect.",
+  "errors.user_exists": "A user with this email already exists.",
+  "errors.mock_auth_disabled": "Mock sign-in is disabled.",
+  "errors.microsoft_auth_unavailable": "Microsoft sign-in is not configured.",
   "messages.language_updated": "Language updated."
 }

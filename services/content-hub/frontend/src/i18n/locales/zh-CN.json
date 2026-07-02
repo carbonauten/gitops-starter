@@ -13,10 +13,13 @@
     "users": "员工管理"
   },
   "auth": {
-    "signIn": "使用 Microsoft 登录",
+    "signIn": "登录",
+    "signInMicrosoft": "使用 Microsoft 登录",
     "signOut": "退出登录",
     "welcome": "欢迎使用 Unified Carbonauten Platform",
-    "description": "使用 Microsoft 工作账户登录。首次登录将自动创建您的账户。",
+    "description": "使用您的邮箱和密码登录。",
+    "email": "邮箱",
+    "password": "密码",
     "signedInAs": "当前用户"
   },
   "language": {
@@ -141,6 +144,17 @@
       "employees": "员工",
       "departments": "部门"
     },
+    "create": {
+      "title": "添加员工",
+      "name": "姓名",
+      "email": "邮箱",
+      "password": "初始密码",
+      "role": "角色",
+      "department": "部门",
+      "submit": "创建员工"
+    },
+    "setPassword": "设置密码",
+    "passwordPrompt": "{{name}} 的新密码",
     "platformAccess": {
       "on": "访问已启用",
       "off": "访问已禁用"

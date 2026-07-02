@@ -13,10 +13,13 @@
     "users": "Mitarbeiterverwaltung"
   },
   "auth": {
-    "signIn": "Mit Microsoft anmelden",
+    "signIn": "Anmelden",
+    "signInMicrosoft": "Mit Microsoft anmelden",
     "signOut": "Abmelden",
     "welcome": "Willkommen auf der Unified Carbonauten Platform",
-    "description": "Melden Sie sich mit Ihrem Microsoft-Arbeitskonto an. Beim ersten Login wird Ihr Profil automatisch angelegt.",
+    "description": "Melden Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort an.",
+    "email": "E-Mail",
+    "password": "Passwort",
     "signedInAs": "Angemeldet als"
   },
   "language": {
@@ -141,6 +144,17 @@
       "employees": "Mitarbeiter",
       "departments": "Abteilungen"
     },
+    "create": {
+      "title": "Neuen Mitarbeiter anlegen",
+      "name": "Name",
+      "email": "E-Mail",
+      "password": "Initiales Passwort",
+      "role": "Rolle",
+      "department": "Abteilung",
+      "submit": "Mitarbeiter anlegen"
+    },
+    "setPassword": "Passwort setzen",
+    "passwordPrompt": "Neues Passwort für {{name}}",
     "platformAccess": {
       "on": "Zugriff aktiv",
       "off": "Zugriff gesperrt"

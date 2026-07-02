@@ -14,5 +14,9 @@
   "errors.registration_disabled": "Selbstregistrierung ist deaktiviert. Bitte IT kontaktieren.",
   "errors.it_role_locked": "IT-Konten behalten immer die Master-Rolle.",
   "errors.it_account_locked": "IT-Konten können nicht deaktiviert werden.",
+  "errors.invalid_credentials": "E-Mail oder Passwort ist falsch.",
+  "errors.user_exists": "Ein Benutzer mit dieser E-Mail existiert bereits.",
+  "errors.mock_auth_disabled": "Mock-Anmeldung ist deaktiviert.",
+  "errors.microsoft_auth_unavailable": "Microsoft-Anmeldung ist nicht konfiguriert.",
   "messages.language_updated": "Sprache wurde aktualisiert."
 }

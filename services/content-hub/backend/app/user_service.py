@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from uuid import uuid4
 
 from fastapi import HTTPException
 from sqlalchemy import select
@@ -9,6 +10,7 @@ from sqlalchemy.orm import Session
 from .config import Settings, get_settings
 from .database import Department, UserAccount
 from .i18n import normalize_language
+from .password_service import hash_password, verify_password
 from .roles import ALL_ROLES, ROLE_EDITOR, ROLE_IT_MASTER
 
 
@@ -99,6 +101,108 @@ def upsert_user_from_login(
             user.language = language
         sync_master_role_from_env(db, user)
 
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def get_user_by_email(db: Session, email: str) -> UserAccount | None:
+    return db.scalar(select(UserAccount).where(UserAccount.email == email.strip().lower()))
+
+
+def authenticate_by_password(db: Session, email: str, password: str) -> UserAccount:
+    normalized_email = email.strip().lower()
+    user = get_user_by_email(db, normalized_email)
+    if not user or not user.is_active or not user.password_hash:
+        raise HTTPException(status_code=401, detail="invalid_credentials")
+    if not verify_password(password, user.password_hash):
+        raise HTTPException(status_code=401, detail="invalid_credentials")
+
+    user.last_login_at = datetime.now(timezone.utc)
+    sync_master_role_from_env(db, user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def ensure_initial_admin(db: Session) -> None:
+    settings = get_settings()
+    email = settings.initial_admin_email.strip().lower()
+    password = settings.initial_admin_password.strip()
+    if not email or not password:
+        return
+
+    user = get_user_by_email(db, email)
+    password_hash = hash_password(password)
+    display_name = settings.initial_admin_name.strip() or email.split("@", 1)[0].replace(".", " ").title()
+
+    if user is None:
+        user = UserAccount(
+            entra_id=f"local-{uuid4()}",
+            email=email,
+            name=display_name,
+            role=resolve_role_for_email(email, settings),
+            password_hash=password_hash,
+            language=settings.default_language,
+            is_active=True,
+            last_login_at=datetime.now(timezone.utc),
+        )
+        db.add(user)
+    elif not user.password_hash:
+        user.password_hash = password_hash
+        user.name = display_name or user.name
+        sync_master_role_from_env(db, user)
+
+    db.commit()
+
+
+def create_user_account(
+    db: Session,
+    *,
+    email: str,
+    name: str,
+    password: str,
+    role: str,
+    department_id: str | None = None,
+) -> UserAccount:
+    if role not in ALL_ROLES:
+        raise HTTPException(status_code=422, detail="validation")
+
+    normalized_email = email.strip().lower()
+    normalized_name = name.strip()
+    if not normalized_email or not normalized_name or len(password) < 8:
+        raise HTTPException(status_code=422, detail="validation")
+    if get_user_by_email(db, normalized_email):
+        raise HTTPException(status_code=409, detail="user_exists")
+
+    if department_id:
+        department = db.get(Department, department_id)
+        if not department or not department.is_active:
+            raise HTTPException(status_code=404, detail="not_found")
+
+    user = UserAccount(
+        entra_id=f"local-{uuid4()}",
+        email=normalized_email,
+        name=normalized_name,
+        role=role if normalized_email not in get_settings().it_admin_emails_list else ROLE_IT_MASTER,
+        department_id=department_id,
+        password_hash=hash_password(password),
+        language=get_settings().default_language,
+        is_active=True,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def update_user_password(db: Session, user_id: str, password: str) -> UserAccount:
+    if len(password) < 8:
+        raise HTTPException(status_code=422, detail="validation")
+    user = db.get(UserAccount, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="not_found")
+    user.password_hash = hash_password(password)
     db.commit()
     db.refresh(user)
     return user

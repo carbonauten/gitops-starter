@@ -2,14 +2,18 @@ import sys
 from pathlib import Path
 
 import pytest
+from sqlalchemy import select
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1] / "backend"
 sys.path.insert(0, str(BACKEND_ROOT))
 
+TEST_PASSWORD = "test-password-123"
+TEST_EMAIL = "demo@example.com"
+
 
 @pytest.fixture(autouse=True)
 def test_env(monkeypatch, tmp_path):
-    monkeypatch.setenv("ENTRA_MOCK_AUTH", "true")
+    monkeypatch.setenv("ENTRA_MOCK_AUTH", "false")
     monkeypatch.setenv("SESSION_SECRET", "test-session-secret")
     monkeypatch.setenv("AZURE_TENANT_ID", "")
     monkeypatch.setenv("AZURE_CLIENT_ID", "")
@@ -32,34 +36,59 @@ def client():
         yield test_client
 
 
+def _seed_password_user(email: str = TEST_EMAIL, role: str = "editor") -> None:
+    from app.database import UserAccount, _SessionLocal
+    from app.password_service import hash_password
+
+    db = _SessionLocal()
+    try:
+        user = db.scalar(select(UserAccount).where(UserAccount.email == email))
+        if user is None:
+            user = UserAccount(
+                entra_id="test-user-001",
+                email=email,
+                name="Demo User",
+                role=role,
+                password_hash=hash_password(TEST_PASSWORD),
+                is_active=True,
+            )
+            db.add(user)
+        else:
+            user.password_hash = hash_password(TEST_PASSWORD)
+            user.role = role
+            user.is_active = True
+        db.commit()
+    finally:
+        db.close()
+
+
+def _login(client, email: str = TEST_EMAIL, password: str = TEST_PASSWORD):
+    response = client.post("/api/auth/login", json={"email": email, "password": password})
+    assert response.status_code == 200
+    return response
+
+
 @pytest.fixture
 def auth_client(client):
-    client.get("/api/auth/login", follow_redirects=False)
+    _seed_password_user()
+    _login(client)
     return client
 
 
 @pytest.fixture
 def it_auth_client(client, monkeypatch):
-    monkeypatch.setenv("IT_ADMIN_EMAILS", "demo@example.com")
+    monkeypatch.setenv("IT_ADMIN_EMAILS", TEST_EMAIL)
     from app.config import get_settings
 
     get_settings.cache_clear()
-    client.get("/api/auth/login", follow_redirects=False)
+    _seed_password_user(role="editor")
+    _login(client)
     yield client
     get_settings.cache_clear()
 
 
 @pytest.fixture
 def viewer_auth_client(client):
-    client.get("/api/auth/login", follow_redirects=False)
-    me = client.get("/api/auth/me").json()["user"]
-    from app.database import UserAccount, _SessionLocal
-
-    db = _SessionLocal()
-    try:
-        user = db.get(UserAccount, me["db_id"])
-        user.role = "viewer"
-        db.commit()
-    finally:
-        db.close()
+    _seed_password_user(role="viewer")
+    _login(client)
     return client

@@ -80,6 +80,7 @@ class UserAccount(Base):
     name: Mapped[str] = mapped_column(String(200))
     role: Mapped[str] = mapped_column(String(30), default="editor")
     department_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     language: Mapped[str] = mapped_column(String(10), default="en")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -122,6 +123,9 @@ def ensure_schema_updates(engine, is_sqlite: bool) -> None:
         if "department_id" not in columns:
             with engine.begin() as connection:
                 connection.execute(text("ALTER TABLE users ADD COLUMN department_id VARCHAR(36)"))
+        if "password_hash" not in columns:
+            with engine.begin() as connection:
+                connection.execute(text("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255)"))
 
 
 DEFAULT_DEPARTMENTS: tuple[tuple[str, str, int], ...] = (
@@ -171,6 +175,9 @@ def init_database(database_url: str, max_attempts: int = 10, retry_delay: float 
             _SessionLocal = sessionmaker(bind=_engine, autocommit=False, autoflush=False, future=True)
             with _SessionLocal() as db:
                 seed_default_departments(db)
+                from .user_service import ensure_initial_admin
+
+                ensure_initial_admin(db)
             logger.info("Database initialized")
             return
         except Exception as exc:  # noqa: BLE001

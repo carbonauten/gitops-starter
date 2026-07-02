@@ -53,10 +53,16 @@ Die App wandelt `postgres://` automatisch für SQLAlchemy um.
 | Variable | Wert | Pflicht |
 |----------|------|---------|
 | `SESSION_SECRET` | z. B. `openssl rand -hex 32` | ✅ |
-| `ENTRA_MOCK_AUTH` | `true` (erster Test) | ✅ |
+| `ENTRA_MOCK_AUTH` | `false` | ✅ |
 | `UPLOAD_DIR` | `/app/data/uploads` | ✅ |
+| `IT_ADMIN_EMAILS` | z. B. `mike.mueller@carbonauten.com` | ✅ |
+| `INITIAL_ADMIN_EMAIL` | dieselbe E-Mail wie IT-Admin | ✅ |
+| `INITIAL_ADMIN_PASSWORD` | sicheres Startpasswort (min. 8 Zeichen) | ✅ |
+| `INITIAL_ADMIN_NAME` | optional, z. B. `Mike Mueller` | optional |
 
-**Rollen & SSO (Produktion):**
+**Login:** E-Mail + Passwort auf `/login` (kein Auto-Login mehr).
+
+**Microsoft SSO (später optional):**
 
 | Variable | Wert |
 |----------|------|
@@ -72,18 +78,7 @@ Die App wandelt `postgres://` automatisch für SQLAlchemy um.
 
 Prüfen ob die Variable aktiv ist: `https://app.carbonauten.com/api/health` → `"it_admin_configured": true`
 
-**Erster Test (Mock-Login):**
-
-| Variable | Wert |
-|----------|------|
-| `ENTRA_MOCK_AUTH` | `true` |
-| `IT_ADMIN_EMAILS` | `mike.mueller@carbonauten.com` |
-| `MOCK_USER_EMAIL` | `mike.mueller@carbonauten.com` (muss zu `IT_ADMIN_EMAILS` passen) |
-| `MOCK_USER_NAME` | optional, z. B. `Mike Mueller` |
-
-> Im Mock-Modus ist die Login-E-Mail **nicht** dein echtes Microsoft-Konto, sondern `MOCK_USER_EMAIL` (Standard: `demo@example.com`). `IT_ADMIN_EMAILS` muss **dieselbe E-Mail** enthalten.
-
-Ohne passende `IT_ADMIN_EMAILS` meldet sich der Mock-User als **Redakteur** — die Mitarbeiterverwaltung erscheint nur für **IT-Master**.
+Prüfen: `https://app.carbonauten.com/api/health` → `"password_auth": true`, `"mock_auth": false`
 
 `DATABASE_URL` kommt aus Schritt 3 (Reference).
 
@@ -113,10 +108,11 @@ Health-Check: `https://DEINE-DOMAIN/api/health` → sollte `{"status":"ok"}` zur
 
 ## 7. Erster Test
 
-1. `ENTRA_MOCK_AUTH=true` gesetzt?
-2. Domain im Browser öffnen
-3. **Mit Microsoft anmelden** klicken → Mock-Login als Demo User
-4. Dashboard, Artikel, Dateien testen
+1. `ENTRA_MOCK_AUTH=false` und Initial-Admin-Variablen gesetzt?
+2. Domain öffnen → `/login`
+3. Mit `INITIAL_ADMIN_EMAIL` + `INITIAL_ADMIN_PASSWORD` anmelden
+4. Oben rechts sollte **IT-Master** stehen
+5. Dashboard, Mitarbeiterverwaltung und Abteilungen testen
 
 ---
 

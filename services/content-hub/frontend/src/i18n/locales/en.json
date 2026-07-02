@@ -13,10 +13,13 @@
     "users": "Employee management"
   },
   "auth": {
-    "signIn": "Sign in with Microsoft",
+    "signIn": "Sign in",
+    "signInMicrosoft": "Sign in with Microsoft",
     "signOut": "Sign out",
     "welcome": "Welcome to the Unified Carbonauten Platform",
-    "description": "Sign in with your Microsoft work account. Your profile is created automatically on first login.",
+    "description": "Sign in with your email address and password.",
+    "email": "Email",
+    "password": "Password",
     "signedInAs": "Signed in as"
   },
   "language": {
@@ -175,6 +178,17 @@
       "employees": "Employees",
       "departments": "Departments"
     },
+    "create": {
+      "title": "Add employee",
+      "name": "Name",
+      "email": "Email",
+      "password": "Initial password",
+      "role": "Role",
+      "department": "Department",
+      "submit": "Create employee"
+    },
+    "setPassword": "Set password",
+    "passwordPrompt": "New password for {{name}}",
     "platformAccess": {
       "on": "Access enabled",
       "off": "Access blocked"

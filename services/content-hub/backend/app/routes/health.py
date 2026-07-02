@@ -14,6 +14,8 @@ def health() -> dict:
         "display_name": settings.app_name,
         "entra_configured": settings.entra_configured,
         "mock_auth": settings.entra_mock_auth,
+        "password_auth": True,
+        "microsoft_auth": settings.entra_configured and not settings.entra_mock_auth,
         "it_admin_configured": bool(settings.it_admin_emails_list),
         "supported_languages": list(settings.supported_languages),
     }
