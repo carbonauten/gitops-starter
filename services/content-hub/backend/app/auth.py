@@ -114,10 +114,13 @@ async def exchange_code_for_user(code: str, settings: Settings | None = None) ->
 
 
 def mock_user(language: str | None = None) -> dict[str, Any]:
+    settings = get_settings()
+    email = settings.mock_user_email.strip().lower() or "demo@example.com"
+    name = settings.mock_user_name.strip() or email.split("@", 1)[0].replace(".", " ").title()
     return {
         "id": "mock-user-001",
-        "name": "Demo User",
-        "email": "demo@example.com",
+        "name": name,
+        "email": email,
         "language": normalize_language(language),
     }
 

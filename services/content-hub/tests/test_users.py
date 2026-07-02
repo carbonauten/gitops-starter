@@ -26,6 +26,20 @@ def test_it_master_can_manage_users(it_auth_client):
     assert any(user["role"] == "it_master" for user in users)
 
 
+def test_it_admin_email_promoted_on_me_without_relogin(client, monkeypatch):
+    client.get("/api/auth/login", follow_redirects=False)
+    me = client.get("/api/auth/me")
+    assert me.json()["user"]["role"] == "editor"
+
+    monkeypatch.setenv("IT_ADMIN_EMAILS", "demo@example.com")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    me = client.get("/api/auth/me")
+    assert me.json()["user"]["role"] == "it_master"
+    get_settings.cache_clear()
+
+
 def test_editor_cannot_manage_users(auth_client):
     response = auth_client.get("/api/user/users")
     assert response.status_code == 403

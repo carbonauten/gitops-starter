@@ -37,6 +37,8 @@ class Settings(BaseSettings):
     azure_client_secret: str = ""
     redirect_uri: str = "http://localhost:8080/api/auth/callback"
     entra_mock_auth: bool = False
+    mock_user_email: str = "demo@example.com"
+    mock_user_name: str = "Demo User"
     it_admin_emails: str = ""
     default_user_role: str = "editor"
     allow_self_registration: bool = True

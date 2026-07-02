@@ -70,14 +70,20 @@ Die App wandelt `postgres://` automatisch für SQLAlchemy um.
 
 `IT_ADMIN_EMAILS` erhält **immer** die Master-Rolle (`it_master`).
 
+Prüfen ob die Variable aktiv ist: `https://app.carbonauten.com/api/health` → `"it_admin_configured": true`
+
 **Erster Test (Mock-Login):**
 
 | Variable | Wert |
 |----------|------|
 | `ENTRA_MOCK_AUTH` | `true` |
-| `IT_ADMIN_EMAILS` | `demo@example.com` (damit Mock-Login die Master-Rolle erhält) |
+| `IT_ADMIN_EMAILS` | `mike.mueller@carbonauten.com` |
+| `MOCK_USER_EMAIL` | `mike.mueller@carbonauten.com` (muss zu `IT_ADMIN_EMAILS` passen) |
+| `MOCK_USER_NAME` | optional, z. B. `Mike Mueller` |
 
-Ohne `IT_ADMIN_EMAILS` meldet sich der Mock-User als **Redakteur** — die Mitarbeiterverwaltung erscheint nur für **IT-Master**.
+> Im Mock-Modus ist die Login-E-Mail **nicht** dein echtes Microsoft-Konto, sondern `MOCK_USER_EMAIL` (Standard: `demo@example.com`). `IT_ADMIN_EMAILS` muss **dieselbe E-Mail** enthalten.
+
+Ohne passende `IT_ADMIN_EMAILS` meldet sich der Mock-User als **Redakteur** — die Mitarbeiterverwaltung erscheint nur für **IT-Master**.
 
 `DATABASE_URL` kommt aus Schritt 3 (Reference).
 

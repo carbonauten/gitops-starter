@@ -12,6 +12,15 @@ from .i18n import normalize_language
 from .roles import ALL_ROLES, ROLE_EDITOR, ROLE_IT_MASTER
 
 
+def sync_master_role_from_env(db: Session, user: UserAccount) -> UserAccount:
+    settings = get_settings()
+    if user.email.lower() in settings.it_admin_emails_list and user.role != ROLE_IT_MASTER:
+        user.role = ROLE_IT_MASTER
+        db.commit()
+        db.refresh(user)
+    return user
+
+
 def resolve_role_for_email(email: str, settings: Settings | None = None) -> str:
     settings = settings or get_settings()
     if email.strip().lower() in settings.it_admin_emails_list:
@@ -88,8 +97,7 @@ def upsert_user_from_login(
         user.last_login_at = now
         if language:
             user.language = language
-        if normalized_email in settings.it_admin_emails_list:
-            user.role = ROLE_IT_MASTER
+        sync_master_role_from_env(db, user)
 
     db.commit()
     db.refresh(user)

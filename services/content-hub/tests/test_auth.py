@@ -10,6 +10,22 @@ def test_mock_login_and_profile(client):
     assert user["role"] == "editor"
 
 
+def test_mock_login_with_custom_email_gets_master_role(client, monkeypatch):
+    monkeypatch.setenv("MOCK_USER_EMAIL", "mike.mueller@carbonauten.com")
+    monkeypatch.setenv("MOCK_USER_NAME", "Mike Mueller")
+    monkeypatch.setenv("IT_ADMIN_EMAILS", "mike.mueller@carbonauten.com")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    client.get("/api/auth/login", follow_redirects=False)
+    me = client.get("/api/auth/me")
+    user = me.json()["user"]
+    assert user["email"] == "mike.mueller@carbonauten.com"
+    assert user["name"] == "Mike Mueller"
+    assert user["role"] == "it_master"
+    get_settings.cache_clear()
+
+
 def test_language_preference_persists_in_session(client):
     client.get("/api/auth/login", follow_redirects=False)
 
