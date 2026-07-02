@@ -14,6 +14,16 @@ def normalize_database_url(url: str) -> str:
     return url
 
 
+def ensure_postgres_ssl(url: str) -> str:
+    """Railway Postgres uses TLS with a self-signed cert; require SSL without verify."""
+    if not url or url.startswith("sqlite"):
+        return url
+    if "sslmode=" in url.lower():
+        return url
+    separator = "&" if "?" in url else "?"
+    return f"{url}{separator}sslmode=require"
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
@@ -48,7 +58,10 @@ class Settings(BaseSettings):
 
     @property
     def effective_database_url(self) -> str:
-        return normalize_database_url(self.database_url)
+        url = (self.database_url or "").strip()
+        if not url:
+            url = "sqlite:///./data/content_hub.db"
+        return ensure_postgres_ssl(normalize_database_url(url))
 
 
 @lru_cache

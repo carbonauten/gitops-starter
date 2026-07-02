@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import logging
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Generator, Optional
 from uuid import uuid4
 
-from sqlalchemy import DateTime, Integer, String, Text, create_engine, event
+from sqlalchemy import DateTime, Integer, String, Text, create_engine, event, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
+
+logger = logging.getLogger(__name__)
 
 _engine = None
 _SessionLocal = None
@@ -50,13 +54,18 @@ class FileAsset(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
-def init_database(database_url: str) -> None:
+def init_database(database_url: str, max_attempts: int = 10, retry_delay: float = 3.0) -> None:
     global _engine, _SessionLocal
 
-    connect_args = {"check_same_thread": False} if database_url.startswith("sqlite") else {}
-    _engine = create_engine(database_url, connect_args=connect_args, future=True)
+    is_sqlite = database_url.startswith("sqlite")
+    connect_args = {"check_same_thread": False} if is_sqlite else {}
+    engine_kwargs = {"connect_args": connect_args, "future": True}
+    if not is_sqlite:
+        engine_kwargs["pool_pre_ping"] = True
 
-    if database_url.startswith("sqlite"):
+    _engine = create_engine(database_url, **engine_kwargs)
+
+    if is_sqlite:
 
         @event.listens_for(_engine, "connect")
         def set_sqlite_pragma(dbapi_connection, connection_record):
@@ -64,8 +73,28 @@ def init_database(database_url: str) -> None:
             cursor.execute("PRAGMA foreign_keys=ON")
             cursor.close()
 
-    Base.metadata.create_all(_engine)
-    _SessionLocal = sessionmaker(bind=_engine, autocommit=False, autoflush=False, future=True)
+    last_error: Exception | None = None
+    for attempt in range(1, max_attempts + 1):
+        try:
+            with _engine.connect() as connection:
+                connection.execute(text("SELECT 1"))
+            Base.metadata.create_all(_engine)
+            _SessionLocal = sessionmaker(bind=_engine, autocommit=False, autoflush=False, future=True)
+            logger.info("Database initialized")
+            return
+        except Exception as exc:  # noqa: BLE001
+            last_error = exc
+            if attempt == max_attempts:
+                break
+            logger.warning(
+                "Database not ready (attempt %s/%s): %s",
+                attempt,
+                max_attempts,
+                exc,
+            )
+            time.sleep(retry_delay)
+
+    raise RuntimeError(f"Database connection failed after {max_attempts} attempts") from last_error
 
 
 def reset_database() -> None:

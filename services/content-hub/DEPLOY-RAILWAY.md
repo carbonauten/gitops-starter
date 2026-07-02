@@ -144,7 +144,7 @@ Oder manuell: Service → **Deployments** → **Redeploy**.
 | Problem | Lösung |
 |---------|--------|
 | Build schlägt fehl | Root Directory = `services/content-hub` prüfen |
-| DB-Verbindung fehlgeschlagen | `DATABASE_URL` Reference von Postgres prüfen |
+| DB-Verbindung fehlgeschlagen | Postgres-Service läuft? `DATABASE_URL` als **Reference** vom Postgres-Service verknüpfen (nicht leer lassen) |
 | Login redirect error | Domain generiert? `RAILWAY_PUBLIC_DOMAIN` wird auto gesetzt |
 | Dateien weg nach Deploy | Volume `/app/data/uploads` mounten |
 | 502 Bad Gateway | Logs unter **Deployments** → letzter Deploy → **View Logs** |
