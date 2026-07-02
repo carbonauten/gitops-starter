@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 import { Layout } from "./components/Layout";
 import { useAuth } from "./hooks/useAuth";
@@ -12,6 +13,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { PublishPage } from "./pages/PublishPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   const { user, loading } = useAuth();
 
   if (loading) {

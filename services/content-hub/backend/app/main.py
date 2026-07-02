@@ -88,6 +88,9 @@ def create_app() -> FastAPI:
         async def spa_fallback(full_path: str):
             if full_path.startswith("api/"):
                 raise HTTPException(status_code=404, detail="not_found")
+            static_file = STATIC_DIR / full_path
+            if static_file.is_file():
+                return FileResponse(static_file)
             index = STATIC_DIR / "index.html"
             if index.exists():
                 return FileResponse(index)
