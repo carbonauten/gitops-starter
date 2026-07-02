@@ -3,10 +3,6 @@ from __future__ import annotations
 import mimetypes
 from pathlib import Path
 
-_ASSET_CACHE: dict[str, tuple[bytes, str]] = {}
-_ROOT_FILE_CACHE: dict[str, tuple[bytes, str]] = {}
-_INDEX_HTML: tuple[bytes, str] | None = None
-
 
 def _media_type(path: Path) -> str:
     guessed, _encoding = mimetypes.guess_type(path.name)
@@ -19,35 +15,23 @@ def _media_type(path: Path) -> str:
     return "application/octet-stream"
 
 
-def preload_static(static_dir: Path) -> None:
-    global _INDEX_HTML
-
-    _ASSET_CACHE.clear()
-    _ROOT_FILE_CACHE.clear()
-    _INDEX_HTML = None
-
-    assets_dir = static_dir / "assets"
-    if assets_dir.exists():
-        for path in sorted(assets_dir.iterdir()):
-            if path.is_file():
-                _ASSET_CACHE[path.name] = (path.read_bytes(), _media_type(path))
-
-    index = static_dir / "index.html"
-    if index.is_file():
-        _INDEX_HTML = (index.read_bytes(), "text/html; charset=utf-8")
-
-    for path in sorted(static_dir.iterdir()):
-        if path.is_file() and path.name != "index.html":
-            _ROOT_FILE_CACHE[path.name] = (path.read_bytes(), _media_type(path))
+def resolve_asset_path(static_dir: Path, asset_name: str) -> Path | None:
+    if not asset_name or "/" in asset_name or ".." in asset_name:
+        return None
+    path = static_dir / "assets" / asset_name
+    if not path.is_file():
+        return None
+    return path
 
 
-def get_asset(asset_name: str) -> tuple[bytes, str] | None:
-    return _ASSET_CACHE.get(asset_name)
+def resolve_root_file(static_dir: Path, filename: str) -> Path | None:
+    if not filename or "/" in filename or ".." in filename:
+        return None
+    path = static_dir / filename
+    if not path.is_file():
+        return None
+    return path
 
 
-def get_root_file(filename: str) -> tuple[bytes, str] | None:
-    return _ROOT_FILE_CACHE.get(filename)
-
-
-def get_index_html() -> tuple[bytes, str] | None:
-    return _INDEX_HTML
+def media_type_for(path: Path) -> str:
+    return _media_type(path)
