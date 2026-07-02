@@ -1,0 +1,103 @@
+{
+  "app": {
+    "name": "Unified Carbonauten Platform",
+    "tagline": "FuckCo2 goes international"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "articles": "Articles",
+    "files": "Files",
+    "certificates": "Certificates",
+    "publish": "Publish"
+  },
+  "auth": {
+    "signIn": "Sign in with Microsoft",
+    "signOut": "Sign out",
+    "welcome": "Welcome to the Unified Carbonauten Platform",
+    "description": "Sign in with your Microsoft account to manage articles and files in one place.",
+    "signedInAs": "Signed in as"
+  },
+  "language": {
+    "label": "Language",
+    "de": "Deutsch",
+    "en": "English",
+    "zh-CN": "中文"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Overview of your content",
+    "drafts": "Drafts",
+    "published": "Published",
+    "files": "Files",
+    "certificates": "Certificates",
+    "sprintNote": "Sprint 2: article editor, file upload, and search are live."
+  },
+  "articles": {
+    "title": "Articles",
+    "subtitle": "Create and edit content",
+    "empty": "No articles yet. Create your first article.",
+    "new": "New article",
+    "edit": "Edit article",
+    "back": "Back to list",
+    "editorSubtitle": "Write content and save as draft or publish directly.",
+    "templates": "Templates",
+    "fieldTitle": "Title",
+    "fieldContent": "Content",
+    "saveDraft": "Save draft",
+    "publish": "Publish",
+    "searchPlaceholder": "Search articles…",
+    "allStatuses": "All statuses",
+    "statusDraft": "Draft",
+    "statusPublished": "Published",
+    "untitled": "Untitled",
+    "delete": "Delete",
+    "confirmDelete": "Delete this article?"
+  },
+  "files": {
+    "title": "Files",
+    "subtitle": "Manage attachments and documents",
+    "empty": "No files in this folder yet.",
+    "upload": "Choose files",
+    "dropHint": "Drag files here or click the button",
+    "searchPlaceholder": "Search files…",
+    "folderGeneral": "General",
+    "folderCompliance": "Compliance",
+    "folderMarketing": "Marketing",
+    "download": "Download",
+    "delete": "Delete",
+    "confirmDelete": "Delete this file?"
+  },
+  "publish": {
+    "title": "Publish",
+    "subtitle": "Send content to Teams, Notion, and Outlook",
+    "empty": "Multichannel publishing starts in Sprint 4."
+  },
+  "certificates": {
+    "title": "Certificate Management",
+    "subtitle": "Track, store, and renew certificates before they expire",
+    "empty": "Full certificate management arrives in Sprint 3.",
+    "comingSoon": "Sprint 3",
+    "categories": {
+      "compliance": "Compliance & ISO",
+      "product": "Product certificates",
+      "training": "Training & personnel",
+      "ssl": "SSL / infrastructure"
+    }
+  },
+  "search": {
+    "placeholder": "Search articles and files…",
+    "action": "Search",
+    "noResults": "No results found."
+  },
+  "editor": {
+    "bold": "Bold",
+    "italic": "Italic",
+    "heading": "Heading",
+    "bulletList": "Bullet list",
+    "orderedList": "Numbered list"
+  },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong."
+  }
+}

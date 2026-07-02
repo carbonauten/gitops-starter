@@ -1,0 +1,55 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: contenthub
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: contenthub
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U contenthub -d contenthub"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  content-hub:
+    image: ${CONTENT_HUB_IMAGE:-ghcr.io/carbonauten/content-hub:latest}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg2://contenthub:${POSTGRES_PASSWORD}@postgres:5432/contenthub
+      UPLOAD_DIR: /app/data/uploads
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET}
+      ENTRA_MOCK_AUTH: ${ENTRA_MOCK_AUTH:-false}
+      REDIRECT_URI: https://${DOMAIN:?set DOMAIN}/api/auth/callback
+      AZURE_TENANT_ID: ${AZURE_TENANT_ID:-}
+      AZURE_CLIENT_ID: ${AZURE_CLIENT_ID:-}
+      AZURE_CLIENT_SECRET: ${AZURE_CLIENT_SECRET:-}
+    volumes:
+      - upload_data:/app/data/uploads
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - content-hub
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  upload_data:
+  caddy_data:
+  caddy_config:

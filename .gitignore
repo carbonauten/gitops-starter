@@ -11,5 +11,12 @@ __pycache__/
 # Docker
 **/image/
 
+# Node / frontend build artifacts
+**/node_modules/
+services/content-hub/frontend/dist/
+services/content-hub/backend/static/
+services/content-hub/data/
+services/content-hub/.env
+
 # Local / IDE
 .claude/

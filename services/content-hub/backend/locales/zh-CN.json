@@ -1,0 +1,13 @@
+{
+  "errors.generic": "发生了意外错误。",
+  "errors.unauthorized": "请先登录。",
+  "errors.not_found": "未找到请求的资源。",
+  "errors.validation": "提交的数据无效。",
+  "errors.invalid_language": "不支持该语言。",
+  "errors.invalid_oauth_state": "无法完成登录。",
+  "errors.token_exchange_failed": "Microsoft 登录失败。",
+  "errors.profile_fetch_failed": "无法加载用户资料。",
+  "errors.empty_file": "文件为空。",
+  "errors.file_too_large": "文件过大。",
+  "messages.language_updated": "语言已更新。"
+}

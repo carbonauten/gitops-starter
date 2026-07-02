@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: content-hub
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: "https://github.com/carbonauten/gitops-starter"
+    path: "gitops/charts/content-hub"
+    targetRevision: HEAD
+    helm:
+      values: |-
+        image:
+          repository: ghcr.io/carbonauten/content-hub
+          tag: latest
+        env:
+          redirectUri: "https://content-hub.example.com/api/auth/callback"
+        secrets:
+          sessionSecret: "replace-me"
+          azureTenantId: "replace-me"
+          azureClientId: "replace-me"
+          azureClientSecret: "replace-me"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

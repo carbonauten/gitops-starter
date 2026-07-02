@@ -1,0 +1,13 @@
+{
+  "errors.generic": "Ein unerwarteter Fehler ist aufgetreten.",
+  "errors.unauthorized": "Bitte melden Sie sich an.",
+  "errors.not_found": "Die angeforderte Ressource wurde nicht gefunden.",
+  "errors.validation": "Die Eingabe ist ungültig.",
+  "errors.invalid_language": "Diese Sprache wird nicht unterstützt.",
+  "errors.invalid_oauth_state": "Die Anmeldung konnte nicht abgeschlossen werden.",
+  "errors.token_exchange_failed": "Microsoft-Anmeldung fehlgeschlagen.",
+  "errors.profile_fetch_failed": "Benutzerprofil konnte nicht geladen werden.",
+  "errors.empty_file": "Die Datei ist leer.",
+  "errors.file_too_large": "Die Datei ist zu groß.",
+  "messages.language_updated": "Sprache wurde aktualisiert."
+}

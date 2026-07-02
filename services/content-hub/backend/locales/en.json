@@ -1,0 +1,13 @@
+{
+  "errors.generic": "An unexpected error occurred.",
+  "errors.unauthorized": "Please sign in.",
+  "errors.not_found": "The requested resource was not found.",
+  "errors.validation": "The submitted data is invalid.",
+  "errors.invalid_language": "This language is not supported.",
+  "errors.invalid_oauth_state": "Sign-in could not be completed.",
+  "errors.token_exchange_failed": "Microsoft sign-in failed.",
+  "errors.profile_fetch_failed": "Could not load user profile.",
+  "errors.empty_file": "The file is empty.",
+  "errors.file_too_large": "The file is too large.",
+  "messages.language_updated": "Language updated."
+}

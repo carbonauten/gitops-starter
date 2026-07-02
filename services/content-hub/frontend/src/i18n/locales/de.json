@@ -1,0 +1,103 @@
+{
+  "app": {
+    "name": "Unified Carbonauten Platform",
+    "tagline": "FuckCo2 goes international"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "articles": "Artikel",
+    "files": "Dateien",
+    "certificates": "Zertifikate",
+    "publish": "Veröffentlichen"
+  },
+  "auth": {
+    "signIn": "Mit Microsoft anmelden",
+    "signOut": "Abmelden",
+    "welcome": "Willkommen auf der Unified Carbonauten Platform",
+    "description": "Melden Sie sich mit Ihrem Microsoft-Konto an, um Artikel und Dateien zentral zu verwalten.",
+    "signedInAs": "Angemeldet als"
+  },
+  "language": {
+    "label": "Sprache",
+    "de": "Deutsch",
+    "en": "English",
+    "zh-CN": "中文"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Überblick über Ihre Inhalte",
+    "drafts": "Entwürfe",
+    "published": "Veröffentlicht",
+    "files": "Dateien",
+    "certificates": "Zertifikate",
+    "sprintNote": "Sprint 2: Artikel-Editor, Datei-Upload und Suche sind aktiv."
+  },
+  "articles": {
+    "title": "Artikel",
+    "subtitle": "Erstellen und bearbeiten Sie Inhalte",
+    "empty": "Noch keine Artikel. Erstellen Sie den ersten Artikel.",
+    "new": "Neuer Artikel",
+    "edit": "Artikel bearbeiten",
+    "back": "Zurück zur Liste",
+    "editorSubtitle": "Schreiben Sie Inhalte und speichern Sie als Entwurf oder veröffentlichen Sie direkt.",
+    "templates": "Vorlagen",
+    "fieldTitle": "Titel",
+    "fieldContent": "Inhalt",
+    "saveDraft": "Entwurf speichern",
+    "publish": "Veröffentlichen",
+    "searchPlaceholder": "Artikel durchsuchen…",
+    "allStatuses": "Alle Status",
+    "statusDraft": "Entwurf",
+    "statusPublished": "Veröffentlicht",
+    "untitled": "Ohne Titel",
+    "delete": "Löschen",
+    "confirmDelete": "Diesen Artikel wirklich löschen?"
+  },
+  "files": {
+    "title": "Dateien",
+    "subtitle": "Verwalten Sie Anhänge und Dokumente",
+    "empty": "Noch keine Dateien in diesem Ordner.",
+    "upload": "Dateien auswählen",
+    "dropHint": "Dateien hierher ziehen oder Button klicken",
+    "searchPlaceholder": "Dateien durchsuchen…",
+    "folderGeneral": "Allgemein",
+    "folderCompliance": "Compliance",
+    "folderMarketing": "Marketing",
+    "download": "Herunterladen",
+    "delete": "Löschen",
+    "confirmDelete": "Diese Datei wirklich löschen?"
+  },
+  "publish": {
+    "title": "Veröffentlichen",
+    "subtitle": "Inhalte an Teams, Notion und Outlook senden",
+    "empty": "Multichannel-Veröffentlichung startet in Sprint 4."
+  },
+  "certificates": {
+    "title": "Zertifikatsverwaltung",
+    "subtitle": "Zertifikate erfassen, überwachen und rechtzeitig erneuern",
+    "empty": "Vollständige Zertifikatsverwaltung kommt in Sprint 3.",
+    "comingSoon": "Sprint 3",
+    "categories": {
+      "compliance": "Compliance & ISO",
+      "product": "Produktzertifikate",
+      "training": "Schulungen & Personal",
+      "ssl": "SSL / Infrastruktur"
+    }
+  },
+  "search": {
+    "placeholder": "Artikel und Dateien suchen…",
+    "action": "Suchen",
+    "noResults": "Keine Treffer gefunden."
+  },
+  "editor": {
+    "bold": "Fett",
+    "italic": "Kursiv",
+    "heading": "Überschrift",
+    "bulletList": "Liste",
+    "orderedList": "Nummeriert"
+  },
+  "common": {
+    "loading": "Laden…",
+    "error": "Etwas ist schiefgelaufen."
+  }
+}
