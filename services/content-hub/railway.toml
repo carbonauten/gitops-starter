@@ -6,7 +6,7 @@ dockerfilePath = "Dockerfile"
 SERVICE_DIR = ""
 
 [deploy]
-healthcheckPath = "/api/health"
+healthcheckPath = "/healthz"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 numReplicas = 1
