@@ -43,7 +43,7 @@ def main() -> None:
     global SHUTDOWN
 
     def on_signal(_signum, _frame):  # noqa: ARG001
-        nonlocal SHUTDOWN
+        global SHUTDOWN
         SHUTDOWN = True
 
     signal.signal(signal.SIGTERM, on_signal)
