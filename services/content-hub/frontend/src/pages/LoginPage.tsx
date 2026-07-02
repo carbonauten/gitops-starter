@@ -9,11 +9,7 @@ export function LoginPage() {
   const { t } = useTranslation();
   const { user, loading, signIn } = useAuth();
 
-  if (loading) {
-    return <div className="center-screen">{t("common.loading")}</div>;
-  }
-
-  if (user) {
+  if (!loading && user) {
     return <Navigate to="/" replace />;
   }
 
@@ -26,8 +22,8 @@ export function LoginPage() {
         </div>
         <h1 className="login-title">{t("auth.welcome")}</h1>
         <p className="muted login-description">{t("auth.description")}</p>
-        <button type="button" className="primary-button" onClick={signIn}>
-          {t("auth.signIn")}
+        <button type="button" className="primary-button" onClick={signIn} disabled={loading}>
+          {loading ? t("common.loading") : t("auth.signIn")}
         </button>
       </div>
     </div>

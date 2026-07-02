@@ -15,7 +15,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div className="center-screen">…</div>;
+    return (
+      <div className="center-screen" style={{ fontSize: "1.1rem", color: "#334155" }}>
+        {t("common.loading")}
+      </div>
+    );
   }
 
   if (!user) {

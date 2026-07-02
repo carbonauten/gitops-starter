@@ -88,28 +88,36 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(path, {
-    credentials: "include",
-    ...init,
-    headers,
-  });
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 15000);
 
-  if (!response.ok) {
-    let message = "Request failed";
-    try {
-      const payload = (await response.json()) as ApiError;
-      message = payload.error ?? message;
-    } catch {
-      // ignore parse errors
+  try {
+    const response = await fetch(path, {
+      credentials: "include",
+      ...init,
+      headers,
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      let message = "Request failed";
+      try {
+        const payload = (await response.json()) as ApiError;
+        message = payload.error ?? message;
+      } catch {
+        // ignore parse errors
+      }
+      throw new Error(message);
     }
-    throw new Error(message);
-  }
 
-  if (response.status === 204) {
-    return undefined as T;
-  }
+    if (response.status === 204) {
+      return undefined as T;
+    }
 
-  return (await response.json()) as T;
+    return (await response.json()) as T;
+  } finally {
+    window.clearTimeout(timeout);
+  }
 }
 
 export async function fetchCurrentUser(): Promise<User | null> {
