@@ -144,6 +144,7 @@
     },
     "tabs": {
       "employees": "Mitarbeiter",
+      "invites": "Einladungen",
       "departments": "Abteilungen"
     },
     "create": {
@@ -170,7 +171,33 @@
       "it_master": "Vollzugriff inkl. Mitarbeiterverwaltung",
       "editor": "Inhalte erstellen und bearbeiten",
       "viewer": "Nur Lesen, keine Bearbeitung"
+    },
+    "invites": {
+      "createTitle": "Mitarbeiter per E-Mail einladen",
+      "createHint": "Die eingeladene Person erhält einen Link zur Registrierung. Rolle und Abteilung werden dabei bereits zugewiesen.",
+      "send": "Einladung senden",
+      "sent": "Einladung wurde per E-Mail versendet.",
+      "resent": "Einladung wurde erneut versendet.",
+      "linkOnly": "SMTP ist nicht konfiguriert — bitte den Einladungslink manuell teilen.",
+      "copyLink": "Link kopieren",
+      "copied": "Einladungslink in die Zwischenablage kopiert.",
+      "expires": "Gültig bis",
+      "resend": "Erneut senden",
+      "revoke": "Widerrufen",
+      "confirmRevoke": "Einladung für {{email}} wirklich widerrufen?",
+      "empty": "Keine offenen Einladungen."
     }
+  },
+  "invite": {
+    "title": "Konto einrichten",
+    "description": "{{name}} hat Sie als {{role}} eingeladen.",
+    "name": "Ihr Name",
+    "password": "Passwort",
+    "confirmPassword": "Passwort bestätigen",
+    "submit": "Konto aktivieren",
+    "invalid": "Diese Einladung ist ungültig oder abgelaufen.",
+    "passwordTooShort": "Das Passwort muss mindestens 8 Zeichen lang sein.",
+    "passwordMismatch": "Die Passwörter stimmen nicht überein."
   },
   "departments": {
     "unassigned": "Keine Abteilung",

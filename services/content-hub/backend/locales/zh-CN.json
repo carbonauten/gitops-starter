@@ -18,5 +18,8 @@
   "errors.user_exists": "该邮箱的用户已存在。",
   "errors.mock_auth_disabled": "模拟登录已禁用。",
   "errors.microsoft_auth_unavailable": "Microsoft 登录未配置。",
+  "errors.invite_not_found": "未找到此邀请。",
+  "errors.invite_expired": "此邀请已过期。",
+  "errors.invite_already_used": "此邀请已被使用。",
   "messages.language_updated": "语言已更新。"
 }

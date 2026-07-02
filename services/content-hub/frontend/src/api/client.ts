@@ -20,6 +20,29 @@ export type Department = {
   member_count?: number;
 };
 
+export type UserInvite = {
+  id: string;
+  email: string;
+  role: User["role"];
+  department_id?: string | null;
+  department_name?: string | null;
+  invited_by_name: string;
+  expires_at: string;
+  accepted_at?: string | null;
+  created_at: string;
+  status: "pending" | "accepted" | "expired";
+  invite_url: string;
+  email_sent?: boolean;
+};
+
+export type PublicInvite = {
+  email: string;
+  role: User["role"];
+  department_name?: string | null;
+  invited_by_name: string;
+  expires_at: string;
+};
+
 export function canEditContent(role: User["role"]): boolean {
   return role === "it_master" || role === "editor";
 }
@@ -168,6 +191,19 @@ export async function loginWithPassword(email: string, password: string): Promis
   const payload = await request<{ user: User }>("/api/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
+  });
+  return payload.user;
+}
+
+export async function fetchInvite(token: string): Promise<PublicInvite> {
+  const payload = await request<{ invite: PublicInvite }>(`/api/auth/invite/${encodeURIComponent(token)}`);
+  return payload.invite;
+}
+
+export async function acceptInvite(token: string, name: string, password: string): Promise<User> {
+  const payload = await request<{ user: User }>("/api/auth/accept-invite", {
+    method: "POST",
+    body: JSON.stringify({ token, name, password }),
   });
   return payload.user;
 }
@@ -396,4 +432,32 @@ export async function updateDepartment(
 
 export async function deleteDepartment(departmentId: string): Promise<void> {
   await request<void>(`/api/departments/${departmentId}`, { method: "DELETE" });
+}
+
+export async function fetchInvites(): Promise<UserInvite[]> {
+  const payload = await request<{ invites: UserInvite[] }>("/api/user/invites");
+  return payload.invites;
+}
+
+export async function createInvite(data: {
+  email: string;
+  role: User["role"];
+  department_id?: string | null;
+}): Promise<UserInvite> {
+  const payload = await request<{ invite: UserInvite }>("/api/user/invites", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return payload.invite;
+}
+
+export async function resendInvite(inviteId: string): Promise<UserInvite> {
+  const payload = await request<{ invite: UserInvite }>(`/api/user/invites/${inviteId}/resend`, {
+    method: "POST",
+  });
+  return payload.invite;
+}
+
+export async function revokeInvite(inviteId: string): Promise<void> {
+  await request<void>(`/api/user/invites/${inviteId}`, { method: "DELETE" });
 }

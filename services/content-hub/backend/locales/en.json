@@ -18,5 +18,8 @@
   "errors.user_exists": "A user with this email already exists.",
   "errors.mock_auth_disabled": "Mock sign-in is disabled.",
   "errors.microsoft_auth_unavailable": "Microsoft sign-in is not configured.",
+  "errors.invite_not_found": "This invite was not found.",
+  "errors.invite_expired": "This invite has expired.",
+  "errors.invite_already_used": "This invite has already been used.",
   "messages.language_updated": "Language updated."
 }

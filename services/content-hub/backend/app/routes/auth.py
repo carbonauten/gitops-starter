@@ -20,6 +20,7 @@ from ..database import get_db
 from ..dependencies import get_current_user
 from ..i18n import normalize_language
 from ..user_service import authenticate_by_password, enrich_user_session, upsert_user_from_login
+from ..invite_service import accept_invite, get_public_invite
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -27,6 +28,12 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 class PasswordLoginRequest(BaseModel):
     email: str = Field(..., min_length=3, max_length=200)
     password: str = Field(..., min_length=1, max_length=200)
+
+
+class AcceptInviteRequest(BaseModel):
+    token: str = Field(..., min_length=10, max_length=200)
+    name: str = Field(..., min_length=1, max_length=200)
+    password: str = Field(..., min_length=8, max_length=200)
 
 
 def _login_user(db: Session, *, entra_id: str, email: str, name: str, language: str | None) -> dict:
@@ -109,3 +116,19 @@ def logout() -> Response:
     response = Response(status_code=204)
     clear_session(response)
     return response
+
+
+@router.get("/invite/{token}")
+def get_invite(token: str, db: Session = Depends(get_db)) -> dict:
+    return {"invite": get_public_invite(db, token)}
+
+
+@router.post("/accept-invite")
+def accept_invite_route(
+    payload: AcceptInviteRequest,
+    response: Response,
+    db: Session = Depends(get_db),
+) -> dict:
+    user = accept_invite(db, token=payload.token, name=payload.name, password=payload.password)
+    set_session(response, {"user": user})
+    return {"user": user}

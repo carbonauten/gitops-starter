@@ -12,6 +12,12 @@ from ..database import UserAccount, get_db
 from ..dependencies import get_current_user, require_it_master
 from ..i18n import normalize_language, translate
 from ..roles import ALL_ROLES
+from ..invite_service import (
+    create_invite,
+    list_invites,
+    resend_invite,
+    revoke_invite,
+)
 from ..user_service import (
     create_user_account,
     enrich_user_session,
@@ -52,6 +58,12 @@ class UserCreate(BaseModel):
 
 class PasswordUpdate(BaseModel):
     password: str = Field(..., min_length=8, max_length=200)
+
+
+class InviteCreate(BaseModel):
+    email: str = Field(..., min_length=3, max_length=200)
+    role: str = Field(..., description="it_master, editor, or viewer")
+    department_id: Optional[str] = None
 
 
 @router.patch("/language")
@@ -156,3 +168,50 @@ def set_user_password(
 ) -> dict:
     user = update_user_password(db, user_id, payload.password)
     return {"user": enrich_user_session(db, user)}
+
+
+@router.get("/invites")
+def get_invites(
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(require_it_master),
+) -> dict:
+    return {"invites": list_invites(db)}
+
+
+@router.post("/invites")
+def send_invite(
+    payload: InviteCreate,
+    db: Session = Depends(get_db),
+    admin: dict = Depends(require_it_master),
+) -> dict:
+    if payload.role not in ALL_ROLES:
+        raise HTTPException(status_code=422, detail="validation")
+    invite = create_invite(
+        db,
+        email=payload.email,
+        role=payload.role,
+        department_id=payload.department_id,
+        invited_by_id=admin["db_id"],
+        invited_by_name=admin["name"],
+    )
+    return {"invite": invite}
+
+
+@router.post("/invites/{invite_id}/resend")
+def resend_user_invite(
+    invite_id: str,
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(require_it_master),
+) -> dict:
+    invite = resend_invite(db, invite_id)
+    return {"invite": invite}
+
+
+@router.delete("/invites/{invite_id}")
+def delete_invite(
+    invite_id: str,
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(require_it_master),
+) -> Response:
+    revoke_invite(db, invite_id)
+    return Response(status_code=204)

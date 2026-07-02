@@ -3,10 +3,14 @@ import { useTranslation } from "react-i18next";
 
 import {
   createDepartment,
+  createInvite,
   createUser,
   deleteDepartment,
   fetchDepartments,
+  fetchInvites,
   fetchUsers,
+  resendInvite,
+  revokeInvite,
   updateDepartment,
   updateUserActive,
   updateUserDepartment,
@@ -14,6 +18,7 @@ import {
   updateUserRole,
   type Department,
   type User,
+  type UserInvite,
 } from "../api/client";
 
 const ROLES: User["role"][] = ["it_master", "editor", "viewer"];
@@ -29,8 +34,9 @@ function slugifyDepartmentCode(name: string): string {
 
 export function UsersAdminPage() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<"employees" | "departments">("employees");
+  const [tab, setTab] = useState<"employees" | "invites" | "departments">("employees");
   const [users, setUsers] = useState<User[]>([]);
+  const [invites, setInvites] = useState<UserInvite[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -42,17 +48,24 @@ export function UsersAdminPage() {
   const [newUserPassword, setNewUserPassword] = useState("");
   const [newUserRole, setNewUserRole] = useState<User["role"]>("editor");
   const [newUserDepartmentId, setNewUserDepartmentId] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<User["role"]>("editor");
+  const [inviteDepartmentId, setInviteDepartmentId] = useState("");
+  const [lastInviteLink, setLastInviteLink] = useState("");
+  const [inviteNotice, setInviteNotice] = useState("");
 
   async function load() {
     setLoading(true);
     setError("");
     try {
-      const [nextUsers, nextDepartments] = await Promise.all([
+      const [nextUsers, nextDepartments, nextInvites] = await Promise.all([
         fetchUsers(),
         fetchDepartments(true),
+        fetchInvites(),
       ]);
       setUsers(nextUsers);
       setDepartments(nextDepartments);
+      setInvites(nextInvites);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
@@ -197,7 +210,78 @@ export function UsersAdminPage() {
     }
   }
 
+  async function handleSendInvite(event: React.FormEvent) {
+    event.preventDefault();
+    if (!inviteEmail.trim()) {
+      return;
+    }
+    setBusyId("new-invite");
+    setInviteNotice("");
+    setLastInviteLink("");
+    try {
+      const invite = await createInvite({
+        email: inviteEmail.trim(),
+        role: inviteRole,
+        department_id: inviteDepartmentId || null,
+      });
+      setInviteEmail("");
+      setInviteRole("editor");
+      setInviteDepartmentId("");
+      setLastInviteLink(invite.invite_url);
+      setInviteNotice(
+        invite.email_sent ? t("users.invites.sent") : t("users.invites.linkOnly"),
+      );
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleResendInvite(invite: UserInvite) {
+    setBusyId(invite.id);
+    setInviteNotice("");
+    try {
+      const updated = await resendInvite(invite.id);
+      setLastInviteLink(updated.invite_url);
+      setInviteNotice(
+        updated.email_sent ? t("users.invites.resent") : t("users.invites.linkOnly"),
+      );
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleRevokeInvite(invite: UserInvite) {
+    if (!window.confirm(t("users.invites.confirmRevoke", { email: invite.email }))) {
+      return;
+    }
+    setBusyId(invite.id);
+    try {
+      await revokeInvite(invite.id);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function copyInviteLink(link: string) {
+    try {
+      await navigator.clipboard.writeText(link);
+      setInviteNotice(t("users.invites.copied"));
+    } catch {
+      setInviteNotice(link);
+    }
+  }
+
   const activeDepartments = departments.filter((department) => department.is_active);
+  const pendingInvites = invites.filter((invite) => invite.status === "pending");
 
   return (
     <section className="page">
@@ -213,6 +297,13 @@ export function UsersAdminPage() {
           onClick={() => setTab("employees")}
         >
           {t("users.tabs.employees")}
+        </button>
+        <button
+          type="button"
+          className={tab === "invites" ? "admin-tab active" : "admin-tab"}
+          onClick={() => setTab("invites")}
+        >
+          {t("users.tabs.invites")}
         </button>
         <button
           type="button"
@@ -387,6 +478,110 @@ export function UsersAdminPage() {
 
       {!loading && tab === "employees" && users.length === 0 ? (
         <p className="muted">{t("users.empty")}</p>
+      ) : null}
+
+      {!loading && tab === "invites" ? (
+        <>
+          <form className="employee-create-form" onSubmit={(event) => void handleSendInvite(event)}>
+            <h2>{t("users.invites.createTitle")}</h2>
+            <p className="muted">{t("users.invites.createHint")}</p>
+            <div className="employee-create-grid">
+              <input
+                type="email"
+                value={inviteEmail}
+                placeholder={t("users.create.email")}
+                onChange={(event) => setInviteEmail(event.target.value)}
+                required
+              />
+              <select
+                className="admin-select"
+                value={inviteRole}
+                onChange={(event) => setInviteRole(event.target.value as User["role"])}
+              >
+                {ROLES.map((role) => (
+                  <option key={role} value={role}>
+                    {t(`users.roles.${role}`)}
+                  </option>
+                ))}
+              </select>
+              <select
+                className="admin-select"
+                value={inviteDepartmentId}
+                onChange={(event) => setInviteDepartmentId(event.target.value)}
+              >
+                <option value="">{t("departments.unassigned")}</option>
+                {activeDepartments.map((department) => (
+                  <option key={department.id} value={department.id}>
+                    {department.name}
+                  </option>
+                ))}
+              </select>
+              <button type="submit" className="primary-button" disabled={busyId === "new-invite"}>
+                {t("users.invites.send")}
+              </button>
+            </div>
+          </form>
+
+          {inviteNotice ? <p className="invite-notice">{inviteNotice}</p> : null}
+          {lastInviteLink ? (
+            <div className="invite-link-row">
+              <code className="invite-link">{lastInviteLink}</code>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => void copyInviteLink(lastInviteLink)}
+              >
+                {t("users.invites.copyLink")}
+              </button>
+            </div>
+          ) : null}
+
+          {pendingInvites.length > 0 ? (
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>{t("users.columns.email")}</th>
+                    <th>{t("users.columns.role")}</th>
+                    <th>{t("users.columns.department")}</th>
+                    <th>{t("users.invites.expires")}</th>
+                    <th>{t("departments.columns.actions")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingInvites.map((invite) => (
+                    <tr key={invite.id}>
+                      <td>{invite.email}</td>
+                      <td>{t(`users.roles.${invite.role}`)}</td>
+                      <td>{invite.department_name ?? t("departments.unassigned")}</td>
+                      <td className="muted">{new Date(invite.expires_at).toLocaleString()}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          disabled={busyId === invite.id}
+                          onClick={() => void handleResendInvite(invite)}
+                        >
+                          {t("users.invites.resend")}
+                        </button>
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          disabled={busyId === invite.id}
+                          onClick={() => void handleRevokeInvite(invite)}
+                        >
+                          {t("users.invites.revoke")}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="muted">{t("users.invites.empty")}</p>
+          )}
+        </>
       ) : null}
 
       {!loading && tab === "departments" ? (

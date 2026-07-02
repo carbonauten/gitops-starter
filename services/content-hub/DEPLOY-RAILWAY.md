@@ -82,6 +82,21 @@ Prüfen: `https://app.carbonauten.com/api/health` → `"password_auth": true`, `
 
 > `INITIAL_ADMIN_PASSWORD` wird bei jedem Deploy für `INITIAL_ADMIN_EMAIL` synchronisiert (Passwort-Reset). Nach dem ersten Login kann die Variable in Railway entfernt werden.
 
+**E-Mail-Einladungen (Mitarbeiterverwaltung → Tab „Einladungen“):**
+
+| Variable | Wert | Pflicht |
+|----------|------|---------|
+| `APP_PUBLIC_URL` | z. B. `https://app.carbonauten.com` | ✅ (für korrekten Einladungslink) |
+| `SMTP_HOST` | z. B. `smtp.office365.com` | optional |
+| `SMTP_PORT` | `587` | optional |
+| `SMTP_USER` | SMTP-Benutzer | optional |
+| `SMTP_PASSWORD` | SMTP-Passwort | optional |
+| `SMTP_FROM_EMAIL` | Absender-Adresse | optional |
+| `SMTP_FROM_NAME` | z. B. `Carbonauten Platform` | optional |
+| `INVITE_EXPIRY_DAYS` | `7` (Standard) | optional |
+
+Ohne SMTP wird die Einladung trotzdem erstellt; der Link erscheint in der Admin-Oberfläche zum manuellen Teilen. Prüfen: `/api/health` → `"smtp_configured": true`
+
 `DATABASE_URL` kommt aus Schritt 3 (Reference).
 
 ---

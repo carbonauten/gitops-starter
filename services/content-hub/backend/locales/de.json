@@ -18,5 +18,8 @@
   "errors.user_exists": "Ein Benutzer mit dieser E-Mail existiert bereits.",
   "errors.mock_auth_disabled": "Mock-Anmeldung ist deaktiviert.",
   "errors.microsoft_auth_unavailable": "Microsoft-Anmeldung ist nicht konfiguriert.",
+  "errors.invite_not_found": "Diese Einladung wurde nicht gefunden.",
+  "errors.invite_expired": "Diese Einladung ist abgelaufen.",
+  "errors.invite_already_used": "Diese Einladung wurde bereits verwendet.",
   "messages.language_updated": "Sprache wurde aktualisiert."
 }

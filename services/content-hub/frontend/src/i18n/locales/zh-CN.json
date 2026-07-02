@@ -144,6 +144,7 @@
     },
     "tabs": {
       "employees": "员工",
+      "invites": "邀请",
       "departments": "部门"
     },
     "create": {
@@ -170,7 +171,33 @@
       "it_master": "完全访问权限，包括员工管理",
       "editor": "创建和编辑内容",
       "viewer": "只读，不可编辑"
+    },
+    "invites": {
+      "createTitle": "通过邮件邀请员工",
+      "createHint": "受邀者将收到注册链接，角色和部门已在邀请中指定。",
+      "send": "发送邀请",
+      "sent": "邀请邮件已发送。",
+      "resent": "邀请已重新发送。",
+      "linkOnly": "未配置 SMTP — 请手动分享邀请链接。",
+      "copyLink": "复制链接",
+      "copied": "邀请链接已复制到剪贴板。",
+      "expires": "有效期至",
+      "resend": "重新发送",
+      "revoke": "撤销",
+      "confirmRevoke": "确定撤销对 {{email}} 的邀请？",
+      "empty": "没有待处理的邀请。"
     }
+  },
+  "invite": {
+    "title": "设置您的账户",
+    "description": "{{name}} 邀请您以 {{role}} 身份加入。",
+    "name": "您的姓名",
+    "password": "密码",
+    "confirmPassword": "确认密码",
+    "submit": "激活账户",
+    "invalid": "此邀请无效或已过期。",
+    "passwordTooShort": "密码至少需要 8 个字符。",
+    "passwordMismatch": "两次输入的密码不一致。"
   },
   "departments": {
     "unassigned": "未分配部门",

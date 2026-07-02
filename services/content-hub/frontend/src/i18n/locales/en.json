@@ -178,6 +178,7 @@
     },
     "tabs": {
       "employees": "Employees",
+      "invites": "Invites",
       "departments": "Departments"
     },
     "create": {
@@ -204,7 +205,33 @@
       "it_master": "Full access including employee management",
       "editor": "Create and edit content",
       "viewer": "Read-only access"
+    },
+    "invites": {
+      "createTitle": "Invite employee by email",
+      "createHint": "The invitee receives a sign-up link. Role and department are assigned with the invite.",
+      "send": "Send invite",
+      "sent": "Invite email sent.",
+      "resent": "Invite resent.",
+      "linkOnly": "SMTP is not configured — share the invite link manually.",
+      "copyLink": "Copy link",
+      "copied": "Invite link copied to clipboard.",
+      "expires": "Expires",
+      "resend": "Resend",
+      "revoke": "Revoke",
+      "confirmRevoke": "Revoke invite for {{email}}?",
+      "empty": "No pending invites."
     }
+  },
+  "invite": {
+    "title": "Set up your account",
+    "description": "{{name}} invited you as {{role}}.",
+    "name": "Your name",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "submit": "Activate account",
+    "invalid": "This invite is invalid or has expired.",
+    "passwordTooShort": "Password must be at least 8 characters.",
+    "passwordMismatch": "Passwords do not match."
   },
   "common": {
     "loading": "Loading…",

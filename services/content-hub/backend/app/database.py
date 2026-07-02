@@ -92,6 +92,21 @@ class UserAccount(Base):
     last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+class UserInvite(Base):
+    __tablename__ = "user_invites"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    email: Mapped[str] = mapped_column(String(200), index=True)
+    role: Mapped[str] = mapped_column(String(30), default="editor")
+    department_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    token: Mapped[str] = mapped_column(String(128), unique=True, index=True)
+    invited_by_id: Mapped[str] = mapped_column(String(100))
+    invited_by_name: Mapped[str] = mapped_column(String(200))
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    accepted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
 class Certificate(Base):
     __tablename__ = "certificates"
 

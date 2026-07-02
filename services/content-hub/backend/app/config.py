@@ -46,6 +46,15 @@ class Settings(BaseSettings):
     it_admin_emails: str = ""
     default_user_role: str = "editor"
     allow_self_registration: bool = True
+    invite_expiry_days: int = 7
+
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = ""
+    smtp_from_name: str = ""
+    smtp_use_tls: bool = True
 
     database_url: str = "sqlite:///./data/content_hub.db"
     upload_dir: str = "./data/uploads"
@@ -96,6 +105,17 @@ class Settings(BaseSettings):
         if override == "true":
             return True
         return self.effective_public_origin.startswith("https://")
+
+    @property
+    def smtp_configured(self) -> bool:
+        return bool(self.smtp_host.strip() and self.smtp_from_email.strip())
+
+    @property
+    def invite_base_url(self) -> str:
+        origin = self.effective_public_origin
+        if origin:
+            return origin
+        return "http://localhost:8080"
 
     @property
     def effective_database_url(self) -> str:

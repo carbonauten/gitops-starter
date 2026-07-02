@@ -20,6 +20,7 @@ def health() -> dict:
         "bootstrap_admin_configured": bool(
             settings.initial_admin_email.strip() and settings.initial_admin_password.strip()
         ),
+        "smtp_configured": settings.smtp_configured,
         "sso_redirect_uri": settings.effective_redirect_uri if settings.entra_configured else None,
         "supported_languages": list(settings.supported_languages),
     }
