@@ -25,13 +25,13 @@ Railway deployt aus GitHub. Das Repo muss dort liegen (z. B. `carbonauten/gitops
 1. Öffne [railway.app](https://railway.app) → **Login with GitHub**
 2. **New Project** → **Deploy from GitHub repo**
 3. Repository auswählen
-4. Service öffnen → **Settings** → **Root Directory:**
+4. **Settings → Build:**
+   - **Builder:** Dockerfile
+   - **Dockerfile Path:** `/services/content-hub/Dockerfile`
 
-```text
-services/content-hub
-```
+5. Optional: **Settings → Source → Root Directory:** `services/content-hub`
 
-5. **Settings** → **Build**: Dockerfile wird automatisch erkannt (`railway.toml` ist vorhanden)
+> Das Dockerfile funktioniert auch **ohne** Root Directory (Monorepo-Pfad ist eingebaut).
 
 ---
 

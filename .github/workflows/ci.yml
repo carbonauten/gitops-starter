@@ -45,7 +45,7 @@ jobs:
           IMAGE: ghcr.io/${{ github.repository_owner }}/content-hub
         run: |
           IMAGE=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
-          docker build -t $IMAGE:${{ github.sha }} -t $IMAGE:latest ./services/content-hub
+          docker build --build-arg SERVICE_DIR= -t $IMAGE:${{ github.sha }} -t $IMAGE:latest ./services/content-hub
 
       - name: Install test dependencies
         run: |

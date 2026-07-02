@@ -2,6 +2,9 @@
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
+[build.buildArgs]
+SERVICE_DIR = ""
+
 [deploy]
 healthcheckPath = "/api/health"
 healthcheckTimeout = 300
