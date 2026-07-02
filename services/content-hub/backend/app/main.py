@@ -5,15 +5,22 @@ from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse, Response
 
 from .config import get_settings
 from .database import ensure_upload_dir, init_database
 from .i18n import parse_accept_language, translate
 from .routes import articles, auth, certificates, dashboard, files, health, search, user
+from .static_assets import get_asset, get_index_html, get_root_file, preload_static
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+
+
+def _cached_response(content: bytes, media_type: str, *, immutable: bool = False) -> Response:
+    headers = {"Content-Length": str(len(content))}
+    if immutable:
+        headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    return Response(content=content, media_type=media_type, headers=headers)
 
 
 @asynccontextmanager
@@ -21,12 +28,14 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     init_database(settings.effective_database_url)
     ensure_upload_dir(settings.upload_dir)
+    if STATIC_DIR.exists():
+        preload_static(STATIC_DIR)
     yield
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title=settings.app_name, version="0.2.0", lifespan=lifespan)
+    app = FastAPI(title=settings.app_name, version="0.3.0", lifespan=lifespan)
 
     @app.middleware("http")
     async def attach_language(request: Request, call_next):
@@ -80,20 +89,34 @@ def create_app() -> FastAPI:
     app.include_router(dashboard.router)
 
     if STATIC_DIR.exists():
-        assets_dir = STATIC_DIR / "assets"
-        if assets_dir.exists():
-            app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+        @app.get("/assets/{asset_name}")
+        async def serve_asset(asset_name: str):
+            item = get_asset(asset_name)
+            if not item:
+                raise HTTPException(status_code=404, detail="not_found")
+            content, media_type = item
+            return _cached_response(content, media_type, immutable=True)
 
         @app.get("/{full_path:path}")
         async def spa_fallback(full_path: str):
             if full_path.startswith("api/"):
                 raise HTTPException(status_code=404, detail="not_found")
+
+            root_file = get_root_file(full_path)
+            if root_file:
+                content, media_type = root_file
+                return _cached_response(content, media_type)
+
             static_file = STATIC_DIR / full_path
             if static_file.is_file():
                 return FileResponse(static_file)
-            index = STATIC_DIR / "index.html"
-            if index.exists():
-                return FileResponse(index)
+
+            index = get_index_html()
+            if index:
+                content, media_type = index
+                return _cached_response(content, media_type)
+
             raise HTTPException(status_code=404, detail="not_found")
 
     return app

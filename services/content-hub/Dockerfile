@@ -27,4 +27,4 @@ COPY --from=frontend /frontend/dist ./static
 
 EXPOSE 8080
 ENV PORT=8080
-CMD ["sh", "-c", "gunicorn app.main:app -k uvicorn.workers.UvicornWorker -b 0.0.0.0:${PORT:-8080} --workers ${WEB_CONCURRENCY:-1}"]
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080} --timeout-keep-alive 75"]
