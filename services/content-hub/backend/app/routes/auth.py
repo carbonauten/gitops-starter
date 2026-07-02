@@ -19,7 +19,7 @@ from ..config import get_settings
 from ..database import get_db
 from ..dependencies import get_current_user
 from ..i18n import normalize_language
-from ..user_service import upsert_user_from_login, user_to_session
+from ..user_service import enrich_user_session, upsert_user_from_login
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -32,7 +32,7 @@ def _login_user(db: Session, *, entra_id: str, email: str, name: str, language: 
         name=name,
         language=language,
     )
-    return user_to_session(user)
+    return enrich_user_session(db, user)
 
 
 @router.get("/login")

@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import { Layout } from "./components/Layout";
+import { MasterRoute } from "./components/MasterRoute";
 import { useAuth } from "./hooks/useAuth";
 import { ArticleEditorPage } from "./pages/ArticleEditorPage";
 import { ArticlesPage } from "./pages/ArticlesPage";
@@ -103,9 +104,9 @@ export default function App() {
       <Route
         path="/users"
         element={
-          <ProtectedRoute>
+          <MasterRoute>
             <UsersAdminPage />
-          </ProtectedRoute>
+          </MasterRoute>
         }
       />
       <Route

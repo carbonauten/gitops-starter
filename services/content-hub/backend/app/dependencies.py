@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from .database import get_db
 from .roles import ADMIN_ROLES, EDIT_ROLES
-from .user_service import get_user_by_entra_id, user_to_session
+from .user_service import get_user_by_entra_id, enrich_user_session
 
 
 def _session_user(request: Request) -> dict[str, Any]:
@@ -28,7 +28,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> dict[st
     user = get_user_by_entra_id(db, entra_id)
     if not user or not user.is_active:
         raise HTTPException(status_code=401, detail="unauthorized")
-    return user_to_session(user)
+    return enrich_user_session(db, user)
 
 
 def require_editor(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:

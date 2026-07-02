@@ -9,7 +9,8 @@
     "files": "文件",
     "certificates": "证书",
     "publish": "发布",
-    "users": "用户"
+    "adminSection": "管理",
+    "users": "员工管理"
   },
   "auth": {
     "signIn": "使用 Microsoft 登录",
@@ -122,14 +123,59 @@
     }
   },
   "users": {
-    "title": "用户管理",
-    "subtitle": "管理员工角色和权限（仅 IT 主管理员）。",
+    "title": "员工管理",
+    "subtitle": "管理员工角色和平台访问权限。",
+    "empty": "尚无注册员工。",
+    "neverLoggedIn": "从未",
     "active": "启用",
     "lastLogin": "上次登录",
+    "columns": {
+      "name": "姓名",
+      "email": "邮箱",
+      "department": "部门",
+      "role": "角色",
+      "platformAccess": "平台访问",
+      "lastLogin": "上次登录"
+    },
+    "tabs": {
+      "employees": "员工",
+      "departments": "部门"
+    },
+    "platformAccess": {
+      "on": "访问已启用",
+      "off": "访问已禁用"
+    },
     "roles": {
       "it_master": "IT 主管理员",
       "editor": "编辑者",
       "viewer": "只读"
+    },
+    "roleDescriptions": {
+      "it_master": "完全访问权限，包括员工管理",
+      "editor": "创建和编辑内容",
+      "viewer": "只读，不可编辑"
+    }
+  },
+  "departments": {
+    "unassigned": "未分配部门",
+    "empty": "尚未创建部门。",
+    "delete": "删除",
+    "confirmDelete": "确定删除部门“{{name}}”？",
+    "form": {
+      "name": "部门名称",
+      "code": "代码（如 marketing）",
+      "add": "添加部门"
+    },
+    "columns": {
+      "name": "部门",
+      "code": "代码",
+      "members": "成员",
+      "status": "状态",
+      "actions": "操作"
+    },
+    "status": {
+      "active": "启用",
+      "inactive": "停用"
     }
   },
   "search": {

@@ -4,9 +4,20 @@ export type User = {
   name: string;
   email: string;
   role: "it_master" | "editor" | "viewer";
+  department_id?: string | null;
+  department_name?: string | null;
   language: string;
   is_active: boolean;
   last_login_at?: string | null;
+};
+
+export type Department = {
+  id: string;
+  name: string;
+  code: string;
+  is_active: boolean;
+  sort_order: number;
+  member_count?: number;
 };
 
 export function canEditContent(role: User["role"]): boolean {
@@ -299,4 +310,45 @@ export async function updateUserActive(userId: string, isActive: boolean): Promi
     body: JSON.stringify({ is_active: isActive }),
   });
   return payload.user;
+}
+
+export async function updateUserDepartment(userId: string, departmentId: string | null): Promise<User> {
+  const payload = await request<{ user: User }>(`/api/user/users/${userId}/department`, {
+    method: "PATCH",
+    body: JSON.stringify({ department_id: departmentId }),
+  });
+  return payload.user;
+}
+
+export async function fetchDepartments(includeInactive = false): Promise<Department[]> {
+  const query = includeInactive ? "?include_inactive=true" : "";
+  const payload = await request<{ departments: Department[] }>(`/api/departments${query}`);
+  return payload.departments;
+}
+
+export async function createDepartment(data: {
+  name: string;
+  code: string;
+  sort_order?: number;
+}): Promise<Department> {
+  const payload = await request<{ department: Department }>("/api/departments", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return payload.department;
+}
+
+export async function updateDepartment(
+  departmentId: string,
+  data: Partial<Pick<Department, "name" | "code" | "is_active" | "sort_order">>,
+): Promise<Department> {
+  const payload = await request<{ department: Department }>(`/api/departments/${departmentId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+  return payload.department;
+}
+
+export async function deleteDepartment(departmentId: string): Promise<void> {
+  await request<void>(`/api/departments/${departmentId}`, { method: "DELETE" });
 }

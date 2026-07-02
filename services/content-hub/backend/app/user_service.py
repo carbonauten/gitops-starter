@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .config import Settings, get_settings
-from .database import UserAccount
+from .database import Department, UserAccount
 from .i18n import normalize_language
 from .roles import ALL_ROLES, ROLE_EDITOR, ROLE_IT_MASTER
 
@@ -22,17 +22,35 @@ def resolve_role_for_email(email: str, settings: Settings | None = None) -> str:
     return default_role
 
 
-def user_to_session(user: UserAccount) -> dict:
+def user_to_session(user: UserAccount, department: Department | None = None) -> dict:
     return {
         "id": user.entra_id,
         "db_id": user.id,
         "name": user.name,
         "email": user.email,
         "role": user.role,
+        "department_id": user.department_id,
+        "department_name": department.name if department else None,
         "language": user.language,
         "is_active": user.is_active,
         "last_login_at": user.last_login_at.isoformat() if user.last_login_at else None,
     }
+
+
+def enrich_user_session(db: Session, user: UserAccount) -> dict:
+    department = db.get(Department, user.department_id) if user.department_id else None
+    return user_to_session(user, department)
+
+
+def users_to_sessions(db: Session, users: list[UserAccount]) -> list[dict]:
+    department_ids = {user.department_id for user in users if user.department_id}
+    departments: dict[str, Department] = {}
+    if department_ids:
+        departments = {
+            department.id: department
+            for department in db.scalars(select(Department).where(Department.id.in_(department_ids))).all()
+        }
+    return [user_to_session(user, departments.get(user.department_id)) for user in users]
 
 
 def upsert_user_from_login(
@@ -107,6 +125,20 @@ def update_user_active(db: Session, user_id: str, is_active: bool) -> UserAccoun
     if not is_active and user.email.lower() in get_settings().it_admin_emails_list:
         raise HTTPException(status_code=400, detail="it_account_locked")
     user.is_active = is_active
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def update_user_department(db: Session, user_id: str, department_id: str | None) -> UserAccount:
+    user = db.get(UserAccount, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="not_found")
+    if department_id:
+        department = db.get(Department, department_id)
+        if not department or not department.is_active:
+            raise HTTPException(status_code=404, detail="not_found")
+    user.department_id = department_id
     db.commit()
     db.refresh(user)
     return user

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
@@ -10,7 +12,14 @@ from ..database import UserAccount, get_db
 from ..dependencies import get_current_user, require_it_master
 from ..i18n import normalize_language, translate
 from ..roles import ALL_ROLES
-from ..user_service import list_users, update_user_active, update_user_role, user_to_session
+from ..user_service import (
+    enrich_user_session,
+    list_users,
+    update_user_active,
+    update_user_department,
+    update_user_role,
+    users_to_sessions,
+)
 
 router = APIRouter(prefix="/api/user", tags=["user"])
 
@@ -25,6 +34,10 @@ class RoleUpdate(BaseModel):
 
 class ActiveUpdate(BaseModel):
     is_active: bool
+
+
+class DepartmentUpdate(BaseModel):
+    department_id: Optional[str] = None
 
 
 @router.patch("/language")
@@ -46,7 +59,7 @@ def update_language(
     db.commit()
     db.refresh(user)
 
-    updated = user_to_session(user)
+    updated = enrich_user_session(db, user)
     session = get_session(request) or {}
     session["user"] = updated
     set_session(response, session)
@@ -63,7 +76,7 @@ def get_users(
     _admin: dict = Depends(require_it_master),
 ) -> dict:
     users = list_users(db)
-    return {"users": [user_to_session(user) for user in users]}
+    return {"users": users_to_sessions(db, users)}
 
 
 @router.patch("/users/{user_id}/role")
@@ -76,7 +89,7 @@ def set_user_role(
     if payload.role not in ALL_ROLES:
         raise HTTPException(status_code=422, detail="validation")
     user = update_user_role(db, user_id, payload.role)
-    return {"user": user_to_session(user)}
+    return {"user": enrich_user_session(db, user)}
 
 
 @router.patch("/users/{user_id}/active")
@@ -87,4 +100,15 @@ def set_user_active(
     _admin: dict = Depends(require_it_master),
 ) -> dict:
     user = update_user_active(db, user_id, payload.is_active)
-    return {"user": user_to_session(user)}
+    return {"user": enrich_user_session(db, user)}
+
+
+@router.patch("/users/{user_id}/department")
+def set_user_department(
+    user_id: str,
+    payload: DepartmentUpdate,
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(require_it_master),
+) -> dict:
+    user = update_user_department(db, user_id, payload.department_id)
+    return {"user": enrich_user_session(db, user)}

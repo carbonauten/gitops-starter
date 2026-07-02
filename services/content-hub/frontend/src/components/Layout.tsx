@@ -22,6 +22,9 @@ export function TopBar() {
             <span>
               {t("auth.signedInAs")} <strong>{user.name}</strong>
               <span className="role-chip"> · {t(`users.roles.${user.role}`)}</span>
+              {user.department_name ? (
+                <span className="role-chip"> · {user.department_name}</span>
+              ) : null}
             </span>
             <button type="button" className="ghost-button" onClick={() => void signOut()}>
               {t("auth.signOut")}
@@ -44,9 +47,6 @@ export function Sidebar() {
     { to: "/certificates", label: t("nav.certificates") },
     { to: "/publish", label: t("nav.publish") },
   ];
-  if (canManageUsers) {
-    items.push({ to: "/users", label: t("nav.users") });
-  }
 
   return (
     <aside className="sidebar">
@@ -61,6 +61,17 @@ export function Sidebar() {
             {item.label}
           </NavLink>
         ))}
+        {canManageUsers ? (
+          <>
+            <div className="nav-section-label">{t("nav.adminSection")}</div>
+            <NavLink
+              to="/users"
+              className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+            >
+              {t("nav.users")}
+            </NavLink>
+          </>
+        ) : null}
       </nav>
     </aside>
   );

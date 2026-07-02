@@ -9,7 +9,8 @@
     "files": "Dateien",
     "certificates": "Zertifikate",
     "publish": "Veröffentlichen",
-    "users": "Benutzer"
+    "adminSection": "Administration",
+    "users": "Mitarbeiterverwaltung"
   },
   "auth": {
     "signIn": "Mit Microsoft anmelden",
@@ -122,14 +123,59 @@
     }
   },
   "users": {
-    "title": "Benutzerverwaltung",
-    "subtitle": "Rollen und Zugriffe für Mitarbeiter verwalten (nur IT-Master).",
+    "title": "Mitarbeiterverwaltung",
+    "subtitle": "Rollen und Plattformzugriff für Mitarbeiter verwalten.",
+    "empty": "Noch keine Mitarbeiter registriert.",
+    "neverLoggedIn": "Noch nie",
     "active": "Aktiv",
     "lastLogin": "Letzter Login",
+    "columns": {
+      "name": "Name",
+      "email": "E-Mail",
+      "department": "Abteilung",
+      "role": "Rolle",
+      "platformAccess": "Plattformzugriff",
+      "lastLogin": "Letzter Login"
+    },
+    "tabs": {
+      "employees": "Mitarbeiter",
+      "departments": "Abteilungen"
+    },
+    "platformAccess": {
+      "on": "Zugriff aktiv",
+      "off": "Zugriff gesperrt"
+    },
     "roles": {
       "it_master": "IT-Master",
       "editor": "Redakteur",
       "viewer": "Leser"
+    },
+    "roleDescriptions": {
+      "it_master": "Vollzugriff inkl. Mitarbeiterverwaltung",
+      "editor": "Inhalte erstellen und bearbeiten",
+      "viewer": "Nur Lesen, keine Bearbeitung"
+    }
+  },
+  "departments": {
+    "unassigned": "Keine Abteilung",
+    "empty": "Noch keine Abteilungen angelegt.",
+    "delete": "Löschen",
+    "confirmDelete": "Abteilung „{{name}}“ wirklich löschen?",
+    "form": {
+      "name": "Abteilungsname",
+      "code": "Kürzel (z. B. marketing)",
+      "add": "Abteilung anlegen"
+    },
+    "columns": {
+      "name": "Abteilung",
+      "code": "Kürzel",
+      "members": "Mitarbeiter",
+      "status": "Status",
+      "actions": "Aktionen"
+    },
+    "status": {
+      "active": "Aktiv",
+      "inactive": "Inaktiv"
     }
   },
   "search": {

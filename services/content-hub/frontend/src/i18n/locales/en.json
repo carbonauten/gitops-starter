@@ -9,7 +9,8 @@
     "files": "Files",
     "certificates": "Certificates",
     "publish": "Publish",
-    "users": "Users"
+    "adminSection": "Administration",
+    "users": "Employee management"
   },
   "auth": {
     "signIn": "Sign in with Microsoft",
@@ -121,6 +122,28 @@
       "ssl": "SSL / infrastructure"
     }
   },
+  "departments": {
+    "unassigned": "No department",
+    "empty": "No departments created yet.",
+    "delete": "Delete",
+    "confirmDelete": "Delete department \"{{name}}\"?",
+    "form": {
+      "name": "Department name",
+      "code": "Code (e.g. marketing)",
+      "add": "Add department"
+    },
+    "columns": {
+      "name": "Department",
+      "code": "Code",
+      "members": "Members",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    }
+  },
   "search": {
     "placeholder": "Search articles, files, and certificates…",
     "action": "Search",
@@ -134,14 +157,37 @@
     "orderedList": "Numbered list"
   },
   "users": {
-    "title": "User management",
-    "subtitle": "Manage roles and access for employees (IT master only).",
+    "title": "Employee management",
+    "subtitle": "Manage roles and platform access for employees.",
+    "empty": "No employees registered yet.",
+    "neverLoggedIn": "Never",
     "active": "Active",
     "lastLogin": "Last login",
+    "columns": {
+      "name": "Name",
+      "email": "Email",
+      "department": "Department",
+      "role": "Role",
+      "platformAccess": "Platform access",
+      "lastLogin": "Last login"
+    },
+    "tabs": {
+      "employees": "Employees",
+      "departments": "Departments"
+    },
+    "platformAccess": {
+      "on": "Access enabled",
+      "off": "Access blocked"
+    },
     "roles": {
       "it_master": "IT master",
       "editor": "Editor",
       "viewer": "Viewer"
+    },
+    "roleDescriptions": {
+      "it_master": "Full access including employee management",
+      "editor": "Create and edit content",
+      "viewer": "Read-only access"
     }
   },
   "common": {

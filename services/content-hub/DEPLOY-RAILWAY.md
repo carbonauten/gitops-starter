@@ -75,6 +75,9 @@ Die App wandelt `postgres://` automatisch für SQLAlchemy um.
 | Variable | Wert |
 |----------|------|
 | `ENTRA_MOCK_AUTH` | `true` |
+| `IT_ADMIN_EMAILS` | `demo@example.com` (damit Mock-Login die Master-Rolle erhält) |
+
+Ohne `IT_ADMIN_EMAILS` meldet sich der Mock-User als **Redakteur** — die Mitarbeiterverwaltung erscheint nur für **IT-Master**.
 
 `DATABASE_URL` kommt aus Schritt 3 (Reference).
 
