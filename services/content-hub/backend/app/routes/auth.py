@@ -86,12 +86,13 @@ async def callback(
         raise HTTPException(status_code=400, detail="invalid_oauth_state")
 
     profile = await exchange_code_for_user(code)
+    language = session.get("language")
     user = _login_user(
         db,
         entra_id=profile["id"],
         email=profile["email"],
         name=profile["name"],
-        language=profile.get("language"),
+        language=language or profile.get("language"),
     )
     response = RedirectResponse(url="/", status_code=302)
     set_session(response, {"user": user})

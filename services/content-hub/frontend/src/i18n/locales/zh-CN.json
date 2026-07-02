@@ -18,6 +18,8 @@
     "signOut": "退出登录",
     "welcome": "欢迎使用 Unified Carbonauten Platform",
     "description": "使用您的邮箱和密码登录。",
+    "descriptionWithSso": "使用 Microsoft 或邮箱和密码登录。",
+    "or": "或",
     "email": "邮箱",
     "password": "密码",
     "signedInAs": "当前用户"

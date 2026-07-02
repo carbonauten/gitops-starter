@@ -38,7 +38,7 @@ def set_session(response: Response, data: dict[str, Any]) -> None:
         SESSION_COOKIE,
         token,
         httponly=True,
-        secure=settings.effective_redirect_uri.startswith("https://"),
+        secure=settings.cookie_secure,
         samesite="lax",
         max_age=settings.session_max_age,
     )

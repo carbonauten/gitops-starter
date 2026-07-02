@@ -79,27 +79,32 @@ def upsert_user_from_login(
 
     user = db.scalar(select(UserAccount).where(UserAccount.entra_id == entra_id))
     if user is None:
-        if not settings.allow_self_registration and not settings.entra_mock_auth:
-            raise HTTPException(status_code=403, detail="registration_disabled")
-        user = UserAccount(
-            entra_id=entra_id,
-            email=normalized_email,
-            name=name,
-            role=resolve_role_for_email(normalized_email, settings),
-            language=language,
-            is_active=True,
-            last_login_at=now,
-        )
-        db.add(user)
-    else:
-        if not user.is_active:
-            raise HTTPException(status_code=403, detail="account_disabled")
-        user.email = normalized_email
-        user.name = name
-        user.last_login_at = now
-        if language:
-            user.language = language
-        sync_master_role_from_env(db, user)
+        user = get_user_by_email(db, normalized_email)
+        if user:
+            user.entra_id = entra_id
+        else:
+            if not settings.allow_self_registration:
+                raise HTTPException(status_code=403, detail="registration_disabled")
+            user = UserAccount(
+                entra_id=entra_id,
+                email=normalized_email,
+                name=name,
+                role=resolve_role_for_email(normalized_email, settings),
+                language=language,
+                is_active=True,
+                last_login_at=now,
+            )
+            db.add(user)
+
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="account_disabled")
+
+    user.email = normalized_email
+    user.name = name
+    user.last_login_at = now
+    if language:
+        user.language = language
+    sync_master_role_from_env(db, user)
 
     db.commit()
     db.refresh(user)

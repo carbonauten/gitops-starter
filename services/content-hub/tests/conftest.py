@@ -13,6 +13,7 @@ TEST_EMAIL = "demo@example.com"
 
 @pytest.fixture(autouse=True)
 def test_env(monkeypatch, tmp_path):
+    monkeypatch.setenv("COOKIE_SECURE", "false")
     monkeypatch.setenv("ENTRA_MOCK_AUTH", "false")
     monkeypatch.setenv("SESSION_SECRET", "test-session-secret")
     monkeypatch.setenv("AZURE_TENANT_ID", "")

@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     azure_client_id: str = ""
     azure_client_secret: str = ""
     redirect_uri: str = "http://localhost:8080/api/auth/callback"
+    app_public_url: str = ""
     entra_mock_auth: bool = False
     mock_user_email: str = "demo@example.com"
     mock_user_name: str = "Demo User"
@@ -62,11 +63,39 @@ class Settings(BaseSettings):
         return {email.strip().lower() for email in self.it_admin_emails.split(",") if email.strip()}
 
     @property
+    def effective_public_origin(self) -> str:
+        if self.app_public_url.strip():
+            return self.app_public_url.strip().rstrip("/")
+        explicit = self.redirect_uri.strip()
+        if explicit.startswith("https://") and "/api/auth/callback" in explicit:
+            return explicit.split("/api/auth/callback", 1)[0]
+        railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN", "").strip()
+        if railway_domain:
+            return f"https://{railway_domain}"
+        if explicit.startswith("http"):
+            return explicit.split("/api/auth/callback", 1)[0]
+        return ""
+
+    @property
     def effective_redirect_uri(self) -> str:
+        if self.app_public_url.strip():
+            return f"{self.app_public_url.strip().rstrip('/')}/api/auth/callback"
+        explicit = self.redirect_uri.strip()
+        if explicit and "localhost" not in explicit:
+            return explicit
         railway_domain = os.getenv("RAILWAY_PUBLIC_DOMAIN", "").strip()
         if railway_domain:
             return f"https://{railway_domain}/api/auth/callback"
-        return self.redirect_uri
+        return explicit or "http://localhost:8080/api/auth/callback"
+
+    @property
+    def cookie_secure(self) -> bool:
+        override = os.getenv("COOKIE_SECURE", "").strip().lower()
+        if override == "false":
+            return False
+        if override == "true":
+            return True
+        return self.effective_public_origin.startswith("https://")
 
     @property
     def effective_database_url(self) -> str:

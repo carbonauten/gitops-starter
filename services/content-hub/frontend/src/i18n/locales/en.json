@@ -18,6 +18,8 @@
     "signOut": "Sign out",
     "welcome": "Welcome to the Unified Carbonauten Platform",
     "description": "Sign in with your email address and password.",
+    "descriptionWithSso": "Sign in with Microsoft or with email and password.",
+    "or": "or",
     "email": "Email",
     "password": "Password",
     "signedInAs": "Signed in as"

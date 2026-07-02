@@ -116,23 +116,66 @@ Health-Check: `https://DEINE-DOMAIN/api/health` → sollte `{"status":"ok"}` zur
 
 ---
 
-## 8. M365-Login aktivieren (wenn bereit)
+## 8. Microsoft SSO aktivieren
+
+E-Mail/Passwort und Microsoft-Login funktionieren **parallel**. Bestehende Konten werden per E-Mail verknüpft.
+
+### 8.1 Entra App Registration
 
 1. [Entra Admin](https://entra.microsoft.com) → **App registrations** → **New registration**
-2. Redirect URI (Web):
+2. Name: `Unified Carbonauten Platform`
+3. Supported account types: **Single tenant** (nur eure Organisation)
+4. Redirect URI (Web):
 
 ```text
 https://app.carbonauten.com/api/auth/callback
 ```
 
-3. **Certificates & secrets** → neues Client Secret
-4. API permissions: `openid`, `profile`, `email`, `User.Read`
-5. Werte in Railway Variables eintragen
-6. `IT_ADMIN_EMAILS` mit IT-E-Mail-Adressen setzen
-7. `ENTRA_MOCK_AUTH` → `false`
-8. Redeploy
+5. **Register** klicken und notieren:
+   - **Application (client) ID**
+   - **Directory (tenant) ID**
 
-Beim ersten Microsoft-Login wird jedes Konto **automatisch registriert** (Self-Service).
+### 8.2 Client Secret
+
+1. App → **Certificates & secrets** → **New client secret**
+2. Secret-Wert kopieren (wird nur einmal angezeigt)
+
+### 8.3 API Permissions
+
+1. App → **API permissions** → **Add a permission** → **Microsoft Graph** → **Delegated**
+2. Hinzufügen: `openid`, `profile`, `email`, `User.Read`
+3. Optional: **Grant admin consent** für die Organisation
+
+### 8.4 Railway Variables (zusätzlich)
+
+| Variable | Wert |
+|----------|------|
+| `AZURE_TENANT_ID` | Directory (tenant) ID |
+| `AZURE_CLIENT_ID` | Application (client) ID |
+| `AZURE_CLIENT_SECRET` | Client Secret |
+| `APP_PUBLIC_URL` | `https://app.carbonauten.com` |
+| `ENTRA_MOCK_AUTH` | `false` |
+| `IT_ADMIN_EMAILS` | `mike.mueller@carbonauten.com` |
+
+> `APP_PUBLIC_URL` ist wichtig bei Custom Domain. Die Redirect-URI wird daraus automatisch gebildet.
+
+Alternativ statt `APP_PUBLIC_URL`:
+
+```text
+REDIRECT_URI=https://app.carbonauten.com/api/auth/callback
+```
+
+### 8.5 Testen
+
+1. Redeploy abwarten
+2. `https://app.carbonauten.com/api/health` prüfen:
+   - `"microsoft_auth": true`
+   - `"sso_redirect_uri": "https://app.carbonauten.com/api/auth/callback"`
+3. `/login` öffnen → **Mit Microsoft anmelden**
+4. Mit M365-Konto anmelden
+5. IT-Master-E-Mails erhalten automatisch die Master-Rolle
+
+Beim ersten Microsoft-Login wird das Konto **automatisch angelegt** (Self-Service). Existiert bereits ein Konto mit derselben E-Mail (Passwort-Login), wird es **verknüpft** — Passwort-Login bleibt optional nutzbar.
 
 ---
 

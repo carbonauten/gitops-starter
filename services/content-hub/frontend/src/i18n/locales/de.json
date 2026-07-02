@@ -18,6 +18,8 @@
     "signOut": "Abmelden",
     "welcome": "Willkommen auf der Unified Carbonauten Platform",
     "description": "Melden Sie sich mit Ihrer E-Mail-Adresse und Ihrem Passwort an.",
+    "descriptionWithSso": "Melden Sie sich mit Microsoft oder mit E-Mail und Passwort an.",
+    "or": "oder",
     "email": "E-Mail",
     "password": "Passwort",
     "signedInAs": "Angemeldet als"

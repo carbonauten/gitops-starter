@@ -41,7 +41,25 @@ export function LoginPage() {
           <LanguageSwitch />
         </div>
         <h1 className="login-title">{t("auth.welcome")}</h1>
-        <p className="muted login-description">{t("auth.description")}</p>
+        <p className="muted login-description">
+          {microsoftAuthEnabled ? t("auth.descriptionWithSso") : t("auth.description")}
+        </p>
+
+        {microsoftAuthEnabled ? (
+          <>
+            <button
+              type="button"
+              className="primary-button login-submit microsoft-button"
+              onClick={signInWithMicrosoft}
+              disabled={loading || submitting}
+            >
+              {t("auth.signInMicrosoft")}
+            </button>
+            <div className="login-divider">
+              <span>{t("auth.or")}</span>
+            </div>
+          </>
+        ) : null}
 
         <form className="login-form" onSubmit={(event) => void handleSubmit(event)}>
           <label className="form-field">
@@ -65,21 +83,14 @@ export function LoginPage() {
             />
           </label>
           {error ? <p className="error-text">{error}</p> : null}
-          <button type="submit" className="primary-button login-submit" disabled={loading || submitting}>
+          <button
+            type="submit"
+            className={microsoftAuthEnabled ? "ghost-button login-submit" : "primary-button login-submit"}
+            disabled={loading || submitting}
+          >
             {submitting ? t("common.loading") : t("auth.signIn")}
           </button>
         </form>
-
-        {microsoftAuthEnabled ? (
-          <button
-            type="button"
-            className="ghost-button login-microsoft"
-            onClick={signInWithMicrosoft}
-            disabled={loading || submitting}
-          >
-            {t("auth.signInMicrosoft")}
-          </button>
-        ) : null}
       </div>
     </div>
   );
