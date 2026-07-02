@@ -78,7 +78,9 @@ Die App wandelt `postgres://` automatisch für SQLAlchemy um.
 
 Prüfen ob die Variable aktiv ist: `https://app.carbonauten.com/api/health` → `"it_admin_configured": true`
 
-Prüfen: `https://app.carbonauten.com/api/health` → `"password_auth": true`, `"mock_auth": false`
+Prüfen: `https://app.carbonauten.com/api/health` → `"password_auth": true`, `"bootstrap_admin_configured": true`
+
+> `INITIAL_ADMIN_PASSWORD` wird bei jedem Deploy für `INITIAL_ADMIN_EMAIL` synchronisiert (Passwort-Reset). Nach dem ersten Login kann die Variable in Railway entfernt werden.
 
 `DATABASE_URL` kommt aus Schritt 3 (Reference).
 

@@ -17,6 +17,9 @@ def health() -> dict:
         "password_auth": True,
         "microsoft_auth": settings.entra_configured and not settings.entra_mock_auth,
         "it_admin_configured": bool(settings.it_admin_emails_list),
+        "bootstrap_admin_configured": bool(
+            settings.initial_admin_email.strip() and settings.initial_admin_password.strip()
+        ),
         "sso_redirect_uri": settings.effective_redirect_uri if settings.entra_configured else None,
         "supported_languages": list(settings.supported_languages),
     }

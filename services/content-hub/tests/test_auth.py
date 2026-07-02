@@ -46,6 +46,20 @@ def test_initial_admin_bootstrap(client, monkeypatch):
         )
         assert login.status_code == 200
         assert login.json()["user"]["role"] == "it_master"
+
+        bootstrap_client.post("/api/auth/logout")
+
+        get_settings.cache_clear()
+        monkeypatch.setenv("INITIAL_ADMIN_PASSWORD", "new-bootstrap-password")
+        get_settings.cache_clear()
+
+        with TestClient(create_app()) as restarted_client:
+            login = restarted_client.post(
+                "/api/auth/login",
+                json={"email": "admin@carbonauten.com", "password": "new-bootstrap-password"},
+            )
+            assert login.status_code == 200
+
     get_settings.cache_clear()
 
 

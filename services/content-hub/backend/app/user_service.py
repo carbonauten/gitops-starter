@@ -153,9 +153,10 @@ def ensure_initial_admin(db: Session) -> None:
             last_login_at=datetime.now(timezone.utc),
         )
         db.add(user)
-    elif not user.password_hash:
+    else:
         user.password_hash = password_hash
         user.name = display_name or user.name
+        user.is_active = True
         sync_master_role_from_env(db, user)
 
     db.commit()
