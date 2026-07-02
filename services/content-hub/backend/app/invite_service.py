@@ -146,9 +146,9 @@ def create_invite(
 
     department = db.get(Department, department_id) if department_id else None
     payload = invite_to_dict(invite, department)
-    payload["email_pending"] = settings.smtp_configured
+    payload["email_pending"] = settings.email_delivery_configured
     payload["email_sent"] = False
-    if not settings.smtp_configured:
+    if not settings.email_delivery_configured:
         logger.warning(
             "SMTP not configured; invite link for %s: %s",
             normalized_email,
@@ -172,7 +172,7 @@ def resend_invite(db: Session, invite_id: str) -> dict:
 
     department = db.get(Department, invite.department_id) if invite.department_id else None
     payload = invite_to_dict(invite, department)
-    payload["email_pending"] = settings.smtp_configured
+    payload["email_pending"] = settings.email_delivery_configured
     payload["email_sent"] = False
     return payload
 

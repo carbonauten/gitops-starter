@@ -84,18 +84,32 @@ Prüfen: `https://app.carbonauten.com/api/health` → `"password_auth": true`, `
 
 **E-Mail-Einladungen (Mitarbeiterverwaltung → Tab „Einladungen“):**
 
+> **Wichtig:** Railway **Hobby/Free blockiert SMTP** (Port 587). Nutze **Resend** (HTTPS-API) — das ist der empfohlene Weg.
+
 | Variable | Wert | Pflicht |
 |----------|------|---------|
 | `APP_PUBLIC_URL` | z. B. `https://app.carbonauten.com` | ✅ (für korrekten Einladungslink) |
-| `SMTP_HOST` | z. B. `smtp.office365.com` | optional |
-| `SMTP_PORT` | `587` | optional |
-| `SMTP_USER` | SMTP-Benutzer | optional |
-| `SMTP_PASSWORD` | SMTP-Passwort | optional |
-| `SMTP_FROM_EMAIL` | Absender-Adresse | optional |
+| `RESEND_API_KEY` | API-Key von [resend.com](https://resend.com) | ✅ (empfohlen auf Railway) |
+| `SMTP_FROM_EMAIL` | z. B. `noreply@carbonauten.com` (Domain in Resend verifizieren) | ✅ |
 | `SMTP_FROM_NAME` | z. B. `Carbonauten Platform` | optional |
 | `INVITE_EXPIRY_DAYS` | `7` (Standard) | optional |
 
-Ohne SMTP wird die Einladung trotzdem erstellt; der Link erscheint in der Admin-Oberfläche zum manuellen Teilen. Prüfen: `/api/health` → `"smtp_configured": true`
+**Resend einrichten (5 Min):**
+1. Account auf [resend.com](https://resend.com) anlegen
+2. Domain `carbonauten.com` hinzufügen → DNS-Einträge setzen (SPF, DKIM)
+3. API Key erstellen → als `RESEND_API_KEY` in Railway
+4. `SMTP_FROM_EMAIL` = verifizierte Absender-Adresse (z. B. `noreply@carbonauten.com`)
+5. Redeploy → `/api/health` sollte `"email_provider": "resend"` zeigen
+
+**SMTP (nur Railway Pro oder anderer Host):**
+
+| Variable | Wert |
+|----------|------|
+| `SMTP_HOST` | z. B. `smtp.office365.com` |
+| `SMTP_PORT` | `587` |
+| `SMTP_USER` / `SMTP_PASSWORD` | Postfach-Zugangsdaten |
+
+Ohne E-Mail-Konfiguration wird die Einladung trotzdem erstellt; der Link erscheint in der Admin-Oberfläche zum manuellen Teilen. Prüfen: `/api/health` → `"email_delivery_configured": true`
 
 `DATABASE_URL` kommt aus Schritt 3 (Reference).
 

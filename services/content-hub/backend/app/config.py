@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     smtp_from_email: str = ""
     smtp_from_name: str = ""
     smtp_use_tls: bool = True
+    resend_api_key: str = ""
 
     database_url: str = "sqlite:///./data/content_hub.db"
     upload_dir: str = "./data/uploads"
@@ -107,8 +108,28 @@ class Settings(BaseSettings):
         return self.effective_public_origin.startswith("https://")
 
     @property
+    def effective_from_email(self) -> str:
+        return self.smtp_from_email.strip()
+
+    @property
     def smtp_configured(self) -> bool:
-        return bool(self.smtp_host.strip() and self.smtp_from_email.strip())
+        return bool(self.smtp_host.strip() and self.effective_from_email)
+
+    @property
+    def resend_configured(self) -> bool:
+        return bool(self.resend_api_key.strip() and self.effective_from_email)
+
+    @property
+    def email_delivery_configured(self) -> bool:
+        return self.resend_configured or self.smtp_configured
+
+    @property
+    def email_provider(self) -> str:
+        if self.resend_configured:
+            return "resend"
+        if self.smtp_configured:
+            return "smtp"
+        return "none"
 
     @property
     def invite_base_url(self) -> str:

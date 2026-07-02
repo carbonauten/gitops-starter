@@ -21,6 +21,9 @@ def health() -> dict:
             settings.initial_admin_email.strip() and settings.initial_admin_password.strip()
         ),
         "smtp_configured": settings.smtp_configured,
+        "resend_configured": settings.resend_configured,
+        "email_delivery_configured": settings.email_delivery_configured,
+        "email_provider": settings.email_provider,
         "sso_redirect_uri": settings.effective_redirect_uri if settings.entra_configured else None,
         "supported_languages": list(settings.supported_languages),
     }
