@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -80,7 +81,7 @@ def create_app() -> FastAPI:
     app.include_router(search.router)
     app.include_router(dashboard.router)
 
-    if STATIC_DIR.exists():
+    if STATIC_DIR.exists() and os.getenv("SERVE_STATIC", "true").lower() != "false":
 
         @app.get("/assets/{asset_name}")
         async def serve_asset(asset_name: str):
