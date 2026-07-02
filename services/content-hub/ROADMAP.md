@@ -277,17 +277,16 @@ flowchart LR
 
 ## Kosten-Richtwerte (monatlich)
 
-### Phase 1 — Hetzner Start (empfohlen jetzt)
+### Phase 1 — Railway Start (empfohlen jetzt)
 
 | Posten | Lösung | Kosten |
 |--------|--------|--------|
-| Server | Hetzner CX22 | ~€4,50 |
-| HTTPS | Caddy + Let's Encrypt | €0 |
-| Datenbank | PostgreSQL im Container | €0 |
+| App-Hosting | Railway | Trial / ~$5–15/Monat |
+| Datenbank | Railway PostgreSQL | inkl. / günstig |
 | CI/CD + Registry | GitHub + GHCR | €0 |
-| **Gesamt** | | **~€5/Monat** |
+| **Gesamt** | | **~$0–15/Monat** |
 
-Siehe [DEPLOY-HETZNER.md](./DEPLOY-HETZNER.md).
+Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ### Später — Multi-Cloud
 

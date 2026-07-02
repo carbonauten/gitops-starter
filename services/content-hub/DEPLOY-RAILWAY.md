@@ -1,6 +1,6 @@
 # Railway Deployment — Unified Carbonauten Platform
 
-Kostenloser Start zum Testen, später Migration zu Hetzner möglich.
+Kostenloser Start zum Testen auf Railway.
 
 ## Checkliste (ca. 15 Minuten)
 
@@ -136,12 +136,6 @@ https://DEINE-RAILWAY-DOMAIN.up.railway.app/api/auth/callback
 Push auf `main` (Pfad `services/content-hub/**`) → Railway baut automatisch neu.
 
 Oder manuell: Service → **Deployments** → **Redeploy**.
-
----
-
-## Später: Migration zu Hetzner
-
-Siehe [DEPLOY-HETZNER.md](./DEPLOY-HETZNER.md) — gleiches Docker-Image, kein Code-Umbau.
 
 ---
 

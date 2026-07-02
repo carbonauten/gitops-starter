@@ -83,19 +83,15 @@ docker run --rm -p 8080:8080 \
 
 ## Deployment
 
-### Railway (free trial — good for testing)
+### Railway (recommended)
 
-See **[DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md)** — deploy from GitHub, add PostgreSQL, no server admin. Move to Hetzner when going production.
-
-### Hetzner (recommended production, ~€5/month)
-
-See **[DEPLOY-HETZNER.md](./DEPLOY-HETZNER.md)** for full setup: CX22 VPS, Docker Compose, PostgreSQL, Caddy HTTPS, GitHub Actions auto-deploy.
+See **[DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md)** — deploy from GitHub, add PostgreSQL, no server admin.
 
 Quick local stack:
 
 ```bash
 cd services/content-hub
-cp .env.example .env   # edit DOMAIN and secrets
+cp .env.example .env   # edit secrets
 docker compose up -d
 ```
 
