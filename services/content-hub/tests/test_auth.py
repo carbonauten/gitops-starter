@@ -7,6 +7,7 @@ def test_mock_login_and_profile(client):
     user = me.json()["user"]
     assert user["email"] == "demo@example.com"
     assert user["name"] == "Demo User"
+    assert user["role"] == "editor"
 
 
 def test_language_preference_persists_in_session(client):

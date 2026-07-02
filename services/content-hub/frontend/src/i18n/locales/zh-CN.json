@@ -8,13 +8,14 @@
     "articles": "文章",
     "files": "文件",
     "certificates": "证书",
-    "publish": "发布"
+    "publish": "发布",
+    "users": "用户"
   },
   "auth": {
     "signIn": "使用 Microsoft 登录",
     "signOut": "退出登录",
     "welcome": "欢迎使用 Unified Carbonauten Platform",
-    "description": "使用 Microsoft 账户登录，集中管理文章和文件。",
+    "description": "使用 Microsoft 工作账户登录。首次登录将自动创建您的账户。",
     "signedInAs": "当前用户"
   },
   "language": {
@@ -118,6 +119,17 @@
       "product": "产品证书",
       "training": "培训与人员",
       "ssl": "SSL / 基础设施"
+    }
+  },
+  "users": {
+    "title": "用户管理",
+    "subtitle": "管理员工角色和权限（仅 IT 主管理员）。",
+    "active": "启用",
+    "lastLogin": "上次登录",
+    "roles": {
+      "it_master": "IT 主管理员",
+      "editor": "编辑者",
+      "viewer": "只读"
     }
   },
   "search": {

@@ -5,6 +5,7 @@ import { LanguageSwitch } from "./LanguageSwitch";
 import { SearchBar } from "./SearchBar";
 import { BrandLogo } from "./BrandLogo";
 import { useAuth } from "../hooks/useAuth";
+import { usePermissions } from "../hooks/usePermissions";
 
 export function TopBar() {
   const { t } = useTranslation();
@@ -20,6 +21,7 @@ export function TopBar() {
           <div className="user-chip">
             <span>
               {t("auth.signedInAs")} <strong>{user.name}</strong>
+              <span className="role-chip"> · {t(`users.roles.${user.role}`)}</span>
             </span>
             <button type="button" className="ghost-button" onClick={() => void signOut()}>
               {t("auth.signOut")}
@@ -33,6 +35,7 @@ export function TopBar() {
 
 export function Sidebar() {
   const { t } = useTranslation();
+  const { canManageUsers } = usePermissions();
 
   const items = [
     { to: "/", label: t("nav.dashboard"), end: true },
@@ -41,6 +44,9 @@ export function Sidebar() {
     { to: "/certificates", label: t("nav.certificates") },
     { to: "/publish", label: t("nav.publish") },
   ];
+  if (canManageUsers) {
+    items.push({ to: "/users", label: t("nav.users") });
+  }
 
   return (
     <aside className="sidebar">

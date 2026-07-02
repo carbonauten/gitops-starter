@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from ..auth import require_user
+from ..dependencies import get_current_user
 from ..database import Article, Certificate, FileAsset, get_db
 from ..certificates import expiry_window_end
 from ..schemas import DashboardStats
@@ -31,7 +31,7 @@ def _count_expiring(db: Session, days: int, today: date) -> int:
 @router.get("/stats")
 def dashboard_stats(
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_user),
+    _user: dict = Depends(get_current_user),
 ) -> dict:
     today = date.today()
     drafts = db.scalar(select(func.count()).select_from(Article).where(Article.status == "draft")) or 0

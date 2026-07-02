@@ -8,13 +8,14 @@
     "articles": "Articles",
     "files": "Files",
     "certificates": "Certificates",
-    "publish": "Publish"
+    "publish": "Publish",
+    "users": "Users"
   },
   "auth": {
     "signIn": "Sign in with Microsoft",
     "signOut": "Sign out",
     "welcome": "Welcome to the Unified Carbonauten Platform",
-    "description": "Sign in with your Microsoft account to manage articles and files in one place.",
+    "description": "Sign in with your Microsoft work account. Your profile is created automatically on first login.",
     "signedInAs": "Signed in as"
   },
   "language": {
@@ -131,6 +132,17 @@
     "heading": "Heading",
     "bulletList": "Bullet list",
     "orderedList": "Numbered list"
+  },
+  "users": {
+    "title": "User management",
+    "subtitle": "Manage roles and access for employees (IT master only).",
+    "active": "Active",
+    "lastLogin": "Last login",
+    "roles": {
+      "it_master": "IT master",
+      "editor": "Editor",
+      "viewer": "Viewer"
+    }
   },
   "common": {
     "loading": "Loading…",

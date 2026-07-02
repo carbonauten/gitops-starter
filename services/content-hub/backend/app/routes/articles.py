@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from ..auth import require_user
+from ..dependencies import get_current_user, require_editor
 from ..database import Article, get_db
 from ..i18n import normalize_language
 from ..schemas import ArticleCreate, ArticleResponse, ArticleUpdate
@@ -50,7 +50,7 @@ def list_articles(
     q: Optional[str] = Query(default=None),
     status: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_user),
+    _user: dict = Depends(get_current_user),
 ) -> dict:
     stmt = select(Article).order_by(Article.updated_at.desc())
     if status in {"draft", "published"}:
@@ -66,7 +66,7 @@ def list_articles(
 def create_article(
     payload: ArticleCreate,
     db: Session = Depends(get_db),
-    user: dict = Depends(require_user),
+    user: dict = Depends(require_editor),
 ) -> dict:
     article = Article(
         title=payload.title,
@@ -87,7 +87,7 @@ def create_article(
 def get_article(
     article_id: str,
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_user),
+    _user: dict = Depends(get_current_user),
 ) -> dict:
     article = db.get(Article, article_id)
     if not article:
@@ -100,7 +100,7 @@ def update_article(
     article_id: str,
     payload: ArticleUpdate,
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_user),
+    _user: dict = Depends(require_editor),
 ) -> dict:
     article = db.get(Article, article_id)
     if not article:
@@ -122,7 +122,7 @@ def update_article(
 def delete_article(
     article_id: str,
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_user),
+    _user: dict = Depends(require_editor),
 ):
     article = db.get(Article, article_id)
     if not article:

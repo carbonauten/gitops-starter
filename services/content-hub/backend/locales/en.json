@@ -9,5 +9,10 @@
   "errors.profile_fetch_failed": "Could not load user profile.",
   "errors.empty_file": "The file is empty.",
   "errors.file_too_large": "The file is too large.",
+  "errors.forbidden": "You do not have permission for this action.",
+  "errors.account_disabled": "Your account has been deactivated.",
+  "errors.registration_disabled": "Self-registration is disabled. Contact IT.",
+  "errors.it_role_locked": "IT accounts always keep the master role.",
+  "errors.it_account_locked": "IT accounts cannot be deactivated.",
   "messages.language_updated": "Language updated."
 }

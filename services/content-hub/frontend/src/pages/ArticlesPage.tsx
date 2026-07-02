@@ -3,9 +3,11 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { deleteArticle, fetchArticles, type Article } from "../api/client";
+import { usePermissions } from "../hooks/usePermissions";
 
 export function ArticlesPage() {
   const { t } = useTranslation();
+  const { canEdit } = usePermissions();
   const [articles, setArticles] = useState<Article[]>([]);
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("");
@@ -42,9 +44,11 @@ export function ArticlesPage() {
           <h1>{t("articles.title")}</h1>
           <p className="muted">{t("articles.subtitle")}</p>
         </div>
-        <Link to="/articles/new" className="primary-button link-button">
-          {t("articles.new")}
-        </Link>
+        {canEdit ? (
+          <Link to="/articles/new" className="primary-button link-button">
+            {t("articles.new")}
+          </Link>
+        ) : null}
       </header>
 
       <div className="toolbar">
@@ -76,12 +80,16 @@ export function ArticlesPage() {
               </p>
             </div>
             <div className="list-card-actions">
-              <Link to={`/articles/${article.id}/edit`} className="ghost-button link-button">
-                {t("articles.edit")}
-              </Link>
-              <button type="button" className="ghost-button danger" onClick={() => void handleDelete(article.id)}>
-                {t("articles.delete")}
-              </button>
+              {canEdit ? (
+                <>
+                  <Link to={`/articles/${article.id}/edit`} className="ghost-button link-button">
+                    {t("articles.edit")}
+                  </Link>
+                  <button type="button" className="ghost-button danger" onClick={() => void handleDelete(article.id)}>
+                    {t("articles.delete")}
+                  </button>
+                </>
+              ) : null}
             </div>
           </article>
         ))}

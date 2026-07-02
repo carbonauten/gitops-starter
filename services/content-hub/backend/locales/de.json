@@ -9,5 +9,10 @@
   "errors.profile_fetch_failed": "Benutzerprofil konnte nicht geladen werden.",
   "errors.empty_file": "Die Datei ist leer.",
   "errors.file_too_large": "Die Datei ist zu groß.",
+  "errors.forbidden": "Sie haben keine Berechtigung für diese Aktion.",
+  "errors.account_disabled": "Ihr Konto wurde deaktiviert.",
+  "errors.registration_disabled": "Selbstregistrierung ist deaktiviert. Bitte IT kontaktieren.",
+  "errors.it_role_locked": "IT-Konten behalten immer die Master-Rolle.",
+  "errors.it_account_locked": "IT-Konten können nicht deaktiviert werden.",
   "messages.language_updated": "Sprache wurde aktualisiert."
 }

@@ -36,3 +36,30 @@ def client():
 def auth_client(client):
     client.get("/api/auth/login", follow_redirects=False)
     return client
+
+
+@pytest.fixture
+def it_auth_client(client, monkeypatch):
+    monkeypatch.setenv("IT_ADMIN_EMAILS", "demo@example.com")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    client.get("/api/auth/login", follow_redirects=False)
+    yield client
+    get_settings.cache_clear()
+
+
+@pytest.fixture
+def viewer_auth_client(client):
+    client.get("/api/auth/login", follow_redirects=False)
+    me = client.get("/api/auth/me").json()["user"]
+    from app.database import UserAccount, _SessionLocal
+
+    db = _SessionLocal()
+    try:
+        user = db.get(UserAccount, me["db_id"])
+        user.role = "viewer"
+        db.commit()
+    finally:
+        db.close()
+    return client

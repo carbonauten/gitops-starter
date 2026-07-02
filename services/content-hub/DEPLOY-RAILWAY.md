@@ -56,7 +56,7 @@ Die App wandelt `postgres://` automatisch für SQLAlchemy um.
 | `ENTRA_MOCK_AUTH` | `true` (erster Test) | ✅ |
 | `UPLOAD_DIR` | `/app/data/uploads` | ✅ |
 
-**Später für echten M365-Login:**
+**Rollen & SSO (Produktion):**
 
 | Variable | Wert |
 |----------|------|
@@ -64,8 +64,17 @@ Die App wandelt `postgres://` automatisch für SQLAlchemy um.
 | `AZURE_TENANT_ID` | Entra App Registration |
 | `AZURE_CLIENT_ID` | Entra App Registration |
 | `AZURE_CLIENT_SECRET` | Entra App Registration |
+| `IT_ADMIN_EMAILS` | z. B. `it@carbonauten.com,admin@carbonauten.com` |
+| `DEFAULT_USER_ROLE` | `editor` (Standard für neue Mitarbeiter) |
+| `REDIRECT_URI` | `https://app.carbonauten.com/api/auth/callback` (bei Custom Domain) |
 
-`REDIRECT_URI` **nicht nötig** — wird automatisch aus `RAILWAY_PUBLIC_DOMAIN` gesetzt.
+`IT_ADMIN_EMAILS` erhält **immer** die Master-Rolle (`it_master`).
+
+**Erster Test (Mock-Login):**
+
+| Variable | Wert |
+|----------|------|
+| `ENTRA_MOCK_AUTH` | `true` |
 
 `DATABASE_URL` kommt aus Schritt 3 (Reference).
 
@@ -108,14 +117,17 @@ Health-Check: `https://DEINE-DOMAIN/api/health` → sollte `{"status":"ok"}` zur
 2. Redirect URI (Web):
 
 ```text
-https://DEINE-RAILWAY-DOMAIN.up.railway.app/api/auth/callback
+https://app.carbonauten.com/api/auth/callback
 ```
 
 3. **Certificates & secrets** → neues Client Secret
 4. API permissions: `openid`, `profile`, `email`, `User.Read`
 5. Werte in Railway Variables eintragen
-6. `ENTRA_MOCK_AUTH` → `false`
-7. Redeploy
+6. `IT_ADMIN_EMAILS` mit IT-E-Mail-Adressen setzen
+7. `ENTRA_MOCK_AUTH` → `false`
+8. Redeploy
+
+Beim ersten Microsoft-Login wird jedes Konto **automatisch registriert** (Self-Service).
 
 ---
 

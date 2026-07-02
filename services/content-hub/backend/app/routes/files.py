@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from ..auth import require_user
+from ..dependencies import get_current_user, require_editor
 from ..config import get_settings
 from ..database import FileAsset, get_db
 from ..schemas import FileResponse as FileSchema
@@ -36,7 +36,7 @@ def list_files(
     q: Optional[str] = Query(default=None),
     folder: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_user),
+    _user: dict = Depends(get_current_user),
 ) -> dict:
     stmt = select(FileAsset).order_by(FileAsset.created_at.desc())
     if folder:
@@ -57,7 +57,7 @@ async def upload_file(
     upload: UploadFile = File(...),
     folder: str = Form(default="general"),
     db: Session = Depends(get_db),
-    user: dict = Depends(require_user),
+    user: dict = Depends(require_editor),
 ) -> dict:
     settings = get_settings()
     content = await upload.read()
@@ -89,7 +89,7 @@ async def upload_file(
 def get_file_metadata(
     file_id: str,
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_user),
+    _user: dict = Depends(get_current_user),
 ) -> dict:
     file_asset = db.get(FileAsset, file_id)
     if not file_asset:
@@ -101,7 +101,7 @@ def get_file_metadata(
 def download_file(
     file_id: str,
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_user),
+    _user: dict = Depends(get_current_user),
 ):
     file_asset = db.get(FileAsset, file_id)
     if not file_asset:
@@ -120,7 +120,7 @@ def download_file(
 def delete_file(
     file_id: str,
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_user),
+    _user: dict = Depends(require_editor),
 ):
     file_asset = db.get(FileAsset, file_id)
     if not file_asset:

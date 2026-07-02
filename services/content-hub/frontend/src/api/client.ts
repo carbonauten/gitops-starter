@@ -1,9 +1,21 @@
 export type User = {
   id: string;
+  db_id: string;
   name: string;
   email: string;
+  role: "it_master" | "editor" | "viewer";
   language: string;
+  is_active: boolean;
+  last_login_at?: string | null;
 };
+
+export function canEditContent(role: User["role"]): boolean {
+  return role === "it_master" || role === "editor";
+}
+
+export function canManageUsers(role: User["role"]): boolean {
+  return role === "it_master";
+}
 
 export type Article = {
   id: string;
@@ -266,4 +278,25 @@ export async function deleteCertificate(id: string): Promise<void> {
 
 export function certificatesExportUrl(): string {
   return "/api/certificates/export";
+}
+
+export async function fetchUsers(): Promise<User[]> {
+  const payload = await request<{ users: User[] }>("/api/user/users");
+  return payload.users;
+}
+
+export async function updateUserRole(userId: string, role: User["role"]): Promise<User> {
+  const payload = await request<{ user: User }>(`/api/user/users/${userId}/role`, {
+    method: "PATCH",
+    body: JSON.stringify({ role }),
+  });
+  return payload.user;
+}
+
+export async function updateUserActive(userId: string, isActive: boolean): Promise<User> {
+  const payload = await request<{ user: User }>(`/api/user/users/${userId}/active`, {
+    method: "PATCH",
+    body: JSON.stringify({ is_active: isActive }),
+  });
+  return payload.user;
 }

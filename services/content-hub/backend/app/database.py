@@ -54,6 +54,25 @@ class FileAsset(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class UserAccount(Base):
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    entra_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    email: Mapped[str] = mapped_column(String(200), index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    role: Mapped[str] = mapped_column(String(30), default="editor")
+    language: Mapped[str] = mapped_column(String(10), default="en")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class Certificate(Base):
     __tablename__ = "certificates"
 

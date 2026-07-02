@@ -10,7 +10,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from ..auth import require_user
+from ..dependencies import get_current_user, require_editor
 from ..certificates import compute_certificate_status, days_until_expiry, expiry_window_end
 from ..database import Certificate, FileAsset, get_db
 from ..schemas import CertificateCreate, CertificateResponse, CertificateUpdate
@@ -70,7 +70,7 @@ def list_certificates(
     category: Optional[str] = Query(default=None),
     status: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_user),
+    _user: dict = Depends(get_current_user),
 ) -> dict:
     today = date.today()
     stmt = select(Certificate).order_by(Certificate.valid_to.asc())
@@ -95,7 +95,7 @@ def list_certificates(
 @router.get("/export")
 def export_certificates(
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_user),
+    _user: dict = Depends(get_current_user),
 ) -> StreamingResponse:
     today = date.today()
     certificates = db.scalars(select(Certificate).order_by(Certificate.valid_to.asc())).all()
@@ -145,7 +145,7 @@ def export_certificates(
 def create_certificate(
     payload: CertificateCreate,
     db: Session = Depends(get_db),
-    user: dict = Depends(require_user),
+    user: dict = Depends(require_editor),
 ) -> dict:
     _validate_dates(payload.valid_from, payload.valid_to)
     _validate_file_asset(db, payload.file_asset_id)
@@ -173,7 +173,7 @@ def create_certificate(
 def get_certificate(
     certificate_id: str,
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_user),
+    _user: dict = Depends(get_current_user),
 ) -> dict:
     certificate = db.get(Certificate, certificate_id)
     if not certificate:
@@ -186,7 +186,7 @@ def update_certificate(
     certificate_id: str,
     payload: CertificateUpdate,
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_user),
+    _user: dict = Depends(require_editor),
 ) -> dict:
     certificate = db.get(Certificate, certificate_id)
     if not certificate:
@@ -224,7 +224,7 @@ def update_certificate(
 def delete_certificate(
     certificate_id: str,
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_user),
+    _user: dict = Depends(require_editor),
 ):
     certificate = db.get(Certificate, certificate_id)
     if not certificate:

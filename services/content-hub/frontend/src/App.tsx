@@ -11,6 +11,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { FilesPage } from "./pages/FilesPage";
 import { LoginPage } from "./pages/LoginPage";
 import { PublishPage } from "./pages/PublishPage";
+import { UsersAdminPage } from "./pages/UsersAdminPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
@@ -96,6 +97,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <CertificatesPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/users"
+        element={
+          <ProtectedRoute>
+            <UsersAdminPage />
           </ProtectedRoute>
         }
       />

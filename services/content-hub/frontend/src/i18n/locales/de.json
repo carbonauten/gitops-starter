@@ -8,13 +8,14 @@
     "articles": "Artikel",
     "files": "Dateien",
     "certificates": "Zertifikate",
-    "publish": "Veröffentlichen"
+    "publish": "Veröffentlichen",
+    "users": "Benutzer"
   },
   "auth": {
     "signIn": "Mit Microsoft anmelden",
     "signOut": "Abmelden",
     "welcome": "Willkommen auf der Unified Carbonauten Platform",
-    "description": "Melden Sie sich mit Ihrem Microsoft-Konto an, um Artikel und Dateien zentral zu verwalten.",
+    "description": "Melden Sie sich mit Ihrem Microsoft-Arbeitskonto an. Beim ersten Login wird Ihr Profil automatisch angelegt.",
     "signedInAs": "Angemeldet als"
   },
   "language": {
@@ -118,6 +119,17 @@
       "product": "Produktzertifikate",
       "training": "Schulungen & Personal",
       "ssl": "SSL / Infrastruktur"
+    }
+  },
+  "users": {
+    "title": "Benutzerverwaltung",
+    "subtitle": "Rollen und Zugriffe für Mitarbeiter verwalten (nur IT-Master).",
+    "active": "Aktiv",
+    "lastLogin": "Letzter Login",
+    "roles": {
+      "it_master": "IT-Master",
+      "editor": "Redakteur",
+      "viewer": "Leser"
     }
   },
   "search": {

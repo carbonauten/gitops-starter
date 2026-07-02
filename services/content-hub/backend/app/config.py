@@ -37,6 +37,9 @@ class Settings(BaseSettings):
     azure_client_secret: str = ""
     redirect_uri: str = "http://localhost:8080/api/auth/callback"
     entra_mock_auth: bool = False
+    it_admin_emails: str = ""
+    default_user_role: str = "editor"
+    allow_self_registration: bool = True
 
     database_url: str = "sqlite:///./data/content_hub.db"
     upload_dir: str = "./data/uploads"
@@ -47,7 +50,11 @@ class Settings(BaseSettings):
 
     @property
     def entra_configured(self) -> bool:
-        return bool(self.azure_tenant_id and self.azure_client_id)
+        return bool(self.azure_tenant_id and self.azure_client_id and self.azure_client_secret)
+
+    @property
+    def it_admin_emails_list(self) -> set[str]:
+        return {email.strip().lower() for email in self.it_admin_emails.split(",") if email.strip()}
 
     @property
     def effective_redirect_uri(self) -> str:

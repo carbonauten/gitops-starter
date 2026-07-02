@@ -552,6 +552,11 @@ a {
   color: #b42318;
 }
 
+.role-chip {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
 .status-renewal {
   background: #e0eaff;
   color: #175cd3;

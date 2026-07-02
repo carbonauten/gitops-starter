@@ -9,5 +9,10 @@
   "errors.profile_fetch_failed": "无法加载用户资料。",
   "errors.empty_file": "文件为空。",
   "errors.file_too_large": "文件过大。",
+  "errors.forbidden": "您没有执行此操作的权限。",
+  "errors.account_disabled": "您的账户已被停用。",
+  "errors.registration_disabled": "自助注册已关闭，请联系 IT。",
+  "errors.it_role_locked": "IT 账户始终保持主管理员角色。",
+  "errors.it_account_locked": "IT 账户不能被停用。",
   "messages.language_updated": "语言已更新。"
 }

@@ -8,6 +8,7 @@ import {
   fetchCertificates,
   type Certificate,
 } from "../api/client";
+import { usePermissions } from "../hooks/usePermissions";
 
 const CATEGORIES = ["compliance", "product", "training", "ssl"] as const;
 const STATUSES = ["valid", "expiring", "expired", "renewal"] as const;
@@ -18,6 +19,7 @@ function statusClass(status: Certificate["status"]): string {
 
 export function CertificatesPage() {
   const { t } = useTranslation();
+  const { canEdit } = usePermissions();
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
@@ -69,9 +71,11 @@ export function CertificatesPage() {
           <a href={certificatesExportUrl()} className="ghost-button link-button">
             {t("certificates.export")}
           </a>
-          <Link to="/certificates/new" className="primary-button link-button">
-            {t("certificates.new")}
-          </Link>
+          {canEdit ? (
+            <Link to="/certificates/new" className="primary-button link-button">
+              {t("certificates.new")}
+            </Link>
+          ) : null}
         </div>
       </header>
 
@@ -137,12 +141,16 @@ export function CertificatesPage() {
               ) : null}
             </div>
             <div className="list-card-actions">
-              <Link to={`/certificates/${certificate.id}/edit`} className="ghost-button link-button">
-                {t("certificates.edit")}
-              </Link>
-              <button type="button" className="ghost-button danger" onClick={() => void handleDelete(certificate.id)}>
-                {t("certificates.delete")}
-              </button>
+              {canEdit ? (
+                <>
+                  <Link to={`/certificates/${certificate.id}/edit`} className="ghost-button link-button">
+                    {t("certificates.edit")}
+                  </Link>
+                  <button type="button" className="ghost-button danger" onClick={() => void handleDelete(certificate.id)}>
+                    {t("certificates.delete")}
+                  </button>
+                </>
+              ) : null}
             </div>
           </article>
         ))}

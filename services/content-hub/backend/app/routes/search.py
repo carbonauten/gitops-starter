@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from ..auth import require_user
+from ..dependencies import get_current_user
 from ..database import Article, Certificate, FileAsset, get_db
 from ..schemas import SearchResult
 
@@ -27,7 +27,7 @@ def _snippet(text: str, query: str, max_len: int = 140) -> str:
 def search(
     q: str = Query(min_length=1),
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_user),
+    _user: dict = Depends(get_current_user),
 ) -> dict:
     pattern = f"%{q.strip()}%"
     articles = db.scalars(
@@ -97,7 +97,7 @@ def search(
 @router.get("/folders")
 def list_folders(
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_user),
+    _user: dict = Depends(get_current_user),
 ) -> dict:
     folders = db.scalars(select(FileAsset.folder).distinct().order_by(FileAsset.folder)).all()
     return {"folders": folders}
