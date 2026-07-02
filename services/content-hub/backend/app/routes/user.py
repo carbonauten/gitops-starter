@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -15,6 +15,7 @@ from ..roles import ALL_ROLES
 from ..invite_service import (
     create_invite,
     list_invites,
+    queue_invite_email,
     resend_invite,
     revoke_invite,
 )
@@ -181,6 +182,7 @@ def get_invites(
 @router.post("/invites")
 def send_invite(
     payload: InviteCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     admin: dict = Depends(require_it_master),
 ) -> dict:
@@ -194,16 +196,33 @@ def send_invite(
         invited_by_id=admin["db_id"],
         invited_by_name=admin["name"],
     )
+    if invite.get("email_pending"):
+        background_tasks.add_task(
+            queue_invite_email,
+            to_email=invite["email"],
+            invite_url=invite["invite_url"],
+            role=invite["role"],
+            invited_by_name=admin["name"],
+        )
     return {"invite": invite}
 
 
 @router.post("/invites/{invite_id}/resend")
 def resend_user_invite(
     invite_id: str,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    _admin: dict = Depends(require_it_master),
+    admin: dict = Depends(require_it_master),
 ) -> dict:
     invite = resend_invite(db, invite_id)
+    if invite.get("email_pending"):
+        background_tasks.add_task(
+            queue_invite_email,
+            to_email=invite["email"],
+            invite_url=invite["invite_url"],
+            role=invite["role"],
+            invited_by_name=admin["name"],
+        )
     return {"invite": invite}
 
 

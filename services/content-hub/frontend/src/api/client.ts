@@ -33,6 +33,7 @@ export type UserInvite = {
   status: "pending" | "accepted" | "expired";
   invite_url: string;
   email_sent?: boolean;
+  email_pending?: boolean;
 };
 
 export type PublicInvite = {
@@ -161,6 +162,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     }
 
     return (await response.json()) as T;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("Request timed out. Please try again.");
+    }
+    throw error;
   } finally {
     window.clearTimeout(timeout);
   }

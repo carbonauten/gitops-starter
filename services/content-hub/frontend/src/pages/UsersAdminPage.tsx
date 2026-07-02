@@ -218,6 +218,7 @@ export function UsersAdminPage() {
     setBusyId("new-invite");
     setInviteNotice("");
     setLastInviteLink("");
+    setError("");
     try {
       const invite = await createInvite({
         email: inviteEmail.trim(),
@@ -229,7 +230,11 @@ export function UsersAdminPage() {
       setInviteDepartmentId("");
       setLastInviteLink(invite.invite_url);
       setInviteNotice(
-        invite.email_sent ? t("users.invites.sent") : t("users.invites.linkOnly"),
+        invite.email_pending
+          ? t("users.invites.pending")
+          : invite.email_sent
+            ? t("users.invites.sent")
+            : t("users.invites.linkOnly"),
       );
       await load();
     } catch (err) {
@@ -242,11 +247,16 @@ export function UsersAdminPage() {
   async function handleResendInvite(invite: UserInvite) {
     setBusyId(invite.id);
     setInviteNotice("");
+    setError("");
     try {
       const updated = await resendInvite(invite.id);
       setLastInviteLink(updated.invite_url);
       setInviteNotice(
-        updated.email_sent ? t("users.invites.resent") : t("users.invites.linkOnly"),
+        updated.email_pending
+          ? t("users.invites.pending")
+          : updated.email_sent
+            ? t("users.invites.resent")
+            : t("users.invites.linkOnly"),
       );
       await load();
     } catch (err) {

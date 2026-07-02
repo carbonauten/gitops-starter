@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import secrets
 from datetime import datetime, timedelta, timezone
 
@@ -13,6 +14,8 @@ from .email_service import send_invite_email
 from .roles import ALL_ROLES, ROLE_IT_MASTER
 from .user_service import create_user_account, enrich_user_session, get_user_by_email
 
+logger = logging.getLogger(__name__)
+
 
 def _as_utc(value: datetime) -> datetime:
     if value.tzinfo is None:
@@ -23,6 +26,30 @@ def _as_utc(value: datetime) -> datetime:
 def _invite_is_pending(invite: UserInvite, now: datetime | None = None) -> bool:
     now = now or datetime.now(timezone.utc)
     return invite.accepted_at is None and _as_utc(invite.expires_at) > now
+
+
+ROLE_LABELS = {
+    "it_master": "IT-Master",
+    "editor": "Redakteur",
+    "viewer": "Leser",
+}
+
+
+def queue_invite_email(
+    *,
+    to_email: str,
+    invite_url: str,
+    role: str,
+    invited_by_name: str,
+) -> None:
+    settings = get_settings()
+    send_invite_email(
+        to_email=to_email,
+        invite_url=invite_url,
+        role_label=ROLE_LABELS.get(role, role),
+        invited_by_name=invited_by_name,
+        expires_days=settings.invite_expiry_days,
+    )
 
 
 def invite_to_dict(invite: UserInvite, department: Department | None = None) -> dict:
@@ -119,19 +146,14 @@ def create_invite(
 
     department = db.get(Department, department_id) if department_id else None
     payload = invite_to_dict(invite, department)
-    role_labels = {
-        "it_master": "IT-Master",
-        "editor": "Redakteur",
-        "viewer": "Leser",
-    }
-    email_sent = send_invite_email(
-        to_email=normalized_email,
-        invite_url=payload["invite_url"],
-        role_label=role_labels.get(role, role),
-        invited_by_name=invited_by_name,
-        expires_days=settings.invite_expiry_days,
-    )
-    payload["email_sent"] = email_sent
+    payload["email_pending"] = settings.smtp_configured
+    payload["email_sent"] = False
+    if not settings.smtp_configured:
+        logger.warning(
+            "SMTP not configured; invite link for %s: %s",
+            normalized_email,
+            payload["invite_url"],
+        )
     return payload
 
 
@@ -150,14 +172,8 @@ def resend_invite(db: Session, invite_id: str) -> dict:
 
     department = db.get(Department, invite.department_id) if invite.department_id else None
     payload = invite_to_dict(invite, department)
-    role_labels = {"it_master": "IT-Master", "editor": "Redakteur", "viewer": "Leser"}
-    payload["email_sent"] = send_invite_email(
-        to_email=invite.email,
-        invite_url=payload["invite_url"],
-        role_label=role_labels.get(invite.role, invite.role),
-        invited_by_name=invite.invited_by_name,
-        expires_days=settings.invite_expiry_days,
-    )
+    payload["email_pending"] = settings.smtp_configured
+    payload["email_sent"] = False
     return payload
 
 

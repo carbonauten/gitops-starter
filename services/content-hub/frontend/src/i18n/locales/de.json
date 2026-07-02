@@ -177,6 +177,7 @@
       "createHint": "Die eingeladene Person erhält einen Link zur Registrierung. Rolle und Abteilung werden dabei bereits zugewiesen.",
       "send": "Einladung senden",
       "sent": "Einladung wurde per E-Mail versendet.",
+      "pending": "Einladung erstellt. E-Mail wird versendet — Link unten zum Teilen.",
       "resent": "Einladung wurde erneut versendet.",
       "linkOnly": "SMTP ist nicht konfiguriert — bitte den Einladungslink manuell teilen.",
       "copyLink": "Link kopieren",
