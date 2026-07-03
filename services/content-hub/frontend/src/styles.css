@@ -320,8 +320,48 @@ a {
   background: #fff;
 }
 
+.publish-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.publish-channel-list,
+.publish-settings-grid,
+.publish-delivery-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.publish-channel-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.publish-delivery-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.publish-status-sent {
+  color: #166534;
+}
+
+.publish-status-failed {
+  color: #b91c1c;
+}
+
+.publish-status-pending {
+  color: #a16207;
+}
+
 @media (max-width: 900px) {
   .department-form,
+  .publish-grid,
   .employee-create-grid {
     grid-template-columns: 1fr;
   }

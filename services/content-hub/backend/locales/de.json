@@ -21,5 +21,9 @@
   "errors.invite_not_found": "Diese Einladung wurde nicht gefunden.",
   "errors.invite_expired": "Diese Einladung ist abgelaufen.",
   "errors.invite_already_used": "Diese Einladung wurde bereits verwendet.",
+  "errors.graph_publish_unavailable": "Microsoft Graph ist für Veröffentlichungen nicht konfiguriert.",
+  "errors.graph_token_failed": "Microsoft Graph-Anmeldung fehlgeschlagen.",
+  "errors.retry_limit_reached": "Maximale Anzahl an Wiederholungen erreicht.",
+  "errors.already_sent": "Diese Veröffentlichung wurde bereits gesendet.",
   "messages.language_updated": "Sprache wurde aktualisiert."
 }

@@ -57,6 +57,13 @@ class Settings(BaseSettings):
     smtp_use_tls: bool = True
     resend_api_key: str = ""
 
+    notion_api_key: str = ""
+    notion_database_id: str = ""
+    teams_team_id: str = ""
+    teams_channel_id: str = ""
+    outlook_sender_id: str = ""
+    publish_mock_mode: bool = True
+
     database_url: str = "sqlite:///./data/content_hub.db"
     upload_dir: str = "./data/uploads"
     max_upload_bytes: int = 25 * 1024 * 1024
@@ -137,6 +144,14 @@ class Settings(BaseSettings):
         if origin:
             return origin
         return "http://localhost:8080"
+
+    @property
+    def notion_configured(self) -> bool:
+        return bool(self.notion_api_key.strip() and self.notion_database_id.strip())
+
+    @property
+    def graph_publish_configured(self) -> bool:
+        return self.entra_configured
 
     @property
     def effective_database_url(self) -> str:

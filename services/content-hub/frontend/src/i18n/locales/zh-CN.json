@@ -81,7 +81,44 @@
   "publish": {
     "title": "发布",
     "subtitle": "将内容发送到 Teams、Notion 和 Outlook",
-    "empty": "多渠道发布将在 Sprint 4 开始。"
+    "empty": "尚无发布记录。",
+    "articleTitle": "发布文章",
+    "articleHint": "选择已发布文章和目标渠道。",
+    "selectArticle": "选择文章…",
+    "channelsTitle": "目标渠道",
+    "channels": {
+      "teams": "Microsoft Teams",
+      "outlook": "Outlook",
+      "notion": "Notion"
+    },
+    "channelReady": "已配置",
+    "channelMock": "模拟模式",
+    "submit": "立即发布",
+    "success": "“{{title}}”已发布。",
+    "settingsTitle": "渠道配置",
+    "settingsHint": "组织的 Teams、Outlook 和 Notion 目标。",
+    "teamsTeamId": "Teams 团队 ID",
+    "teamsChannelId": "Teams 频道 ID",
+    "outlookSenderId": "Outlook 发件人（用户 ID 或邮箱）",
+    "notionDatabaseId": "Notion 数据库 ID",
+    "saveSettings": "保存渠道",
+    "settingsSaved": "渠道配置已保存。",
+    "runReminders": "发送证书提醒",
+    "remindersSent": "已触发 {{count}} 条证书提醒。",
+    "historyTitle": "发布历史",
+    "retry": "重试",
+    "openLink": "打开",
+    "history": {
+      "article": "内容",
+      "by": "发布人",
+      "channels": "渠道",
+      "when": "时间"
+    },
+    "status": {
+      "pending": "等待中",
+      "sent": "已发送",
+      "failed": "失败"
+    }
   },
   "certificates": {
     "title": "证书管理",

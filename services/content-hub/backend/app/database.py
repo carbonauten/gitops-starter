@@ -107,6 +107,56 @@ class UserInvite(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class PublishSettings(Base):
+    __tablename__ = "publish_settings"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: "default")
+    teams_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    teams_team_id: Mapped[str] = mapped_column(String(100), default="")
+    teams_channel_id: Mapped[str] = mapped_column(String(100), default="")
+    outlook_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    outlook_sender_id: Mapped[str] = mapped_column(String(200), default="")
+    notion_enabled: Mapped[bool] = mapped_column(Boolean, default=False)
+    notion_database_id: Mapped[str] = mapped_column(String(100), default="")
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class Publication(Base):
+    __tablename__ = "publications"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    resource_type: Mapped[str] = mapped_column(String(50), default="article")
+    resource_id: Mapped[str] = mapped_column(String(36), index=True)
+    title: Mapped[str] = mapped_column(String(500), default="")
+    summary: Mapped[str] = mapped_column(Text, default="")
+    published_by_id: Mapped[str] = mapped_column(String(100))
+    published_by_name: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class PublicationDelivery(Base):
+    __tablename__ = "publication_deliveries"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    publication_id: Mapped[str] = mapped_column(String(36), index=True)
+    channel: Mapped[str] = mapped_column(String(30))
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    external_id: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    external_url: Mapped[Optional[str]] = mapped_column(String(1000), nullable=True)
+    attempt_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
 class Certificate(Base):
     __tablename__ = "certificates"
 

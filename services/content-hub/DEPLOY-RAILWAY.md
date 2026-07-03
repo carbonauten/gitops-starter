@@ -210,6 +210,43 @@ Beim ersten Microsoft-Login wird das Konto **automatisch angelegt** (Self-Servic
 
 ---
 
+## 9. Multichannel-Veröffentlichung (Sprint 4)
+
+Unter `/publish` können veröffentlichte Artikel an **Teams**, **Outlook** und **Notion** gesendet werden.
+
+### Mock-Modus (Standard ohne Graph/Notion)
+
+| Variable | Wert |
+|----------|------|
+| `PUBLISH_MOCK_MODE` | `true` |
+
+Kanäle werden simuliert — gut zum Testen der UI und Historie.
+
+### Produktion (Microsoft Graph + Notion)
+
+**Graph Application Permissions** (Admin Consent):
+
+| Permission | Zweck |
+|------------|-------|
+| `ChannelMessage.Send` | Teams-Kanal-Nachrichten |
+| `Mail.ReadWrite` | Outlook-Entwürfe |
+
+| Variable | Wert |
+|----------|------|
+| `PUBLISH_MOCK_MODE` | `false` |
+| `AZURE_TENANT_ID` / `AZURE_CLIENT_ID` / `AZURE_CLIENT_SECRET` | wie SSO |
+| `TEAMS_TEAM_ID` | Teams Team-ID |
+| `TEAMS_CHANNEL_ID` | Teams Kanal-ID |
+| `OUTLOOK_SENDER_ID` | User-ID oder E-Mail des Absenders |
+| `NOTION_API_KEY` | Notion Integration Token |
+| `NOTION_DATABASE_ID` | Notion Datenbank-ID |
+
+Kanäle können zusätzlich in der App unter **Veröffentlichen** (IT-Master) konfiguriert werden.
+
+`/api/health` zeigt: `publish_mock_mode`, `graph_publish_configured`, `notion_configured`
+
+---
+
 ## Kosten
 
 | Phase | Kosten |

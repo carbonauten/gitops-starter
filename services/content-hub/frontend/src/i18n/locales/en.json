@@ -81,7 +81,44 @@
   "publish": {
     "title": "Publish",
     "subtitle": "Send content to Teams, Notion, and Outlook",
-    "empty": "Multichannel publishing starts in Sprint 4."
+    "empty": "No publications yet.",
+    "articleTitle": "Publish article",
+    "articleHint": "Choose a published article and target channels.",
+    "selectArticle": "Select article…",
+    "channelsTitle": "Target channels",
+    "channels": {
+      "teams": "Microsoft Teams",
+      "outlook": "Outlook",
+      "notion": "Notion"
+    },
+    "channelReady": "configured",
+    "channelMock": "mock mode",
+    "submit": "Publish now",
+    "success": "\"{{title}}\" was published.",
+    "settingsTitle": "Channel configuration",
+    "settingsHint": "Teams, Outlook, and Notion targets for the organization.",
+    "teamsTeamId": "Teams team ID",
+    "teamsChannelId": "Teams channel ID",
+    "outlookSenderId": "Outlook sender (user ID or email)",
+    "notionDatabaseId": "Notion database ID",
+    "saveSettings": "Save channels",
+    "settingsSaved": "Channel configuration saved.",
+    "runReminders": "Send certificate reminders",
+    "remindersSent": "{{count}} certificate reminders triggered.",
+    "historyTitle": "Publication history",
+    "retry": "Retry",
+    "openLink": "Open",
+    "history": {
+      "article": "Content",
+      "by": "By",
+      "channels": "Channels",
+      "when": "When"
+    },
+    "status": {
+      "pending": "pending",
+      "sent": "sent",
+      "failed": "failed"
+    }
   },
   "certificates": {
     "title": "Certificate Management",

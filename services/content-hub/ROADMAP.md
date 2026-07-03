@@ -56,7 +56,7 @@ flowchart LR
 | 1 | 2 Wochen | ✅ Abgeschlossen | Fundament: Login, Branding, Mehrsprachigkeit, CI/CD |
 | 2 | 2 Wochen | ✅ Abgeschlossen | Redaktion: Artikel-Editor, Dateiverwaltung, Suche |
 | 3 | 2 Wochen | ✅ Abgeschlossen | **Zertifikatsverwaltung:** Erfassung, Ablauf, Erinnerungen |
-| 4 | 2 Wochen | Geplant | Multichannel: Teams, Notion, Outlook |
+| 4 | 2 Wochen | ✅ Abgeschlossen | Multichannel: Teams, Notion, Outlook |
 | 5 | 2 Wochen | Geplant | China: Alibaba-Deployment, Datensync EU ↔ CN |
 | 6 | 1 Woche | Geplant | Workflow, Freigaben, Audit, Go-Live |
 | 7+ | laufend | Backlog | Erweiterungen (siehe unten) |
@@ -188,15 +188,15 @@ flowchart LR
 
 ### Geplante Features
 
-- [ ] Microsoft Graph: Teams-Kanal-Nachrichten senden
-- [ ] Microsoft Graph: Outlook-Entwurf / E-Mail mit Anhang
-- [ ] Notion API: Seite in Datenbank anlegen / aktualisieren
-- [ ] Veröffentlichen-Dialog mit Kanal-Checkboxen (Artikel)
-- [ ] Zertifikat-Benachrichtigungen über Graph (aus Sprint 3)
-- [ ] Status pro Kanal: ✓ gesendet / ⏳ wartet / ✗ Fehler
-- [ ] Automatischer Retry bei API-Fehlern
-- [ ] Veröffentlichungs-Historie pro Artikel
-- [ ] Admin: Kanäle konfigurieren (Teams-Team, Notion-DB, etc.)
+- [x] Microsoft Graph: Teams-Kanal-Nachrichten senden
+- [x] Microsoft Graph: Outlook-Entwurf / E-Mail mit Anhang
+- [x] Notion API: Seite in Datenbank anlegen / aktualisieren
+- [x] Veröffentlichen-Dialog mit Kanal-Checkboxen (Artikel)
+- [x] Zertifikat-Benachrichtigungen über Graph (aus Sprint 3)
+- [x] Status pro Kanal: ✓ gesendet / ⏳ wartet / ✗ Fehler
+- [x] Automatischer Retry bei API-Fehlern
+- [x] Veröffentlichungs-Historie pro Artikel
+- [x] Admin: Kanäle konfigurieren (Teams-Team, Notion-DB, etc.)
 
 ### Akzeptanzkriterien
 
@@ -328,6 +328,6 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ## Nächster Schritt
 
-**Sprint 3 starten:** Zertifikatsverwaltung mit Ablaufüberwachung und Erinnerungen.
+**Sprint 5 starten:** China-Deployment mit regionaler URL und EU ↔ CN Sync.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.

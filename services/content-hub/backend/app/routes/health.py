@@ -24,6 +24,9 @@ def health() -> dict:
         "resend_configured": settings.resend_configured,
         "email_delivery_configured": settings.email_delivery_configured,
         "email_provider": settings.email_provider,
+        "publish_mock_mode": settings.publish_mock_mode,
+        "graph_publish_configured": settings.graph_publish_configured,
+        "notion_configured": settings.notion_configured,
         "sso_redirect_uri": settings.effective_redirect_uri if settings.entra_configured else None,
         "supported_languages": list(settings.supported_languages),
     }

@@ -21,5 +21,9 @@
   "errors.invite_not_found": "This invite was not found.",
   "errors.invite_expired": "This invite has expired.",
   "errors.invite_already_used": "This invite has already been used.",
+  "errors.graph_publish_unavailable": "Microsoft Graph is not configured for publishing.",
+  "errors.graph_token_failed": "Microsoft Graph sign-in failed.",
+  "errors.retry_limit_reached": "Maximum retry count reached.",
+  "errors.already_sent": "This delivery was already sent.",
   "messages.language_updated": "Language updated."
 }

@@ -467,3 +467,95 @@ export async function resendInvite(inviteId: string): Promise<UserInvite> {
 export async function revokeInvite(inviteId: string): Promise<void> {
   await request<void>(`/api/user/invites/${inviteId}`, { method: "DELETE" });
 }
+
+export type PublishChannel = {
+  channel: "teams" | "outlook" | "notion";
+  enabled: boolean;
+  configured: boolean;
+  available: boolean;
+};
+
+export type PublicationDelivery = {
+  id: string;
+  channel: PublishChannel["channel"];
+  status: "pending" | "sent" | "failed";
+  error_message?: string | null;
+  external_id?: string | null;
+  external_url?: string | null;
+  attempt_count: number;
+  updated_at: string;
+};
+
+export type Publication = {
+  id: string;
+  resource_type: string;
+  resource_id: string;
+  title: string;
+  summary: string;
+  published_by_id: string;
+  published_by_name: string;
+  created_at: string;
+  deliveries: PublicationDelivery[];
+};
+
+export type PublishSettings = {
+  teams_enabled: boolean;
+  teams_team_id: string;
+  teams_channel_id: string;
+  outlook_enabled: boolean;
+  outlook_sender_id: string;
+  notion_enabled: boolean;
+  notion_database_id: string;
+  notion_configured: boolean;
+  graph_configured: boolean;
+  publish_mock_mode: boolean;
+};
+
+export async function fetchPublishChannels(): Promise<PublishChannel[]> {
+  const payload = await request<{ channels: PublishChannel[] }>("/api/publish/channels");
+  return payload.channels;
+}
+
+export async function fetchPublishSettings(): Promise<PublishSettings> {
+  const payload = await request<{ settings: PublishSettings }>("/api/publish/settings");
+  return payload.settings;
+}
+
+export async function updatePublishSettings(data: PublishSettings): Promise<PublishSettings> {
+  const payload = await request<{ settings: PublishSettings }>("/api/publish/settings", {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+  return payload.settings;
+}
+
+export async function fetchPublishHistory(resourceId?: string): Promise<Publication[]> {
+  const query = resourceId ? `?resource_id=${encodeURIComponent(resourceId)}` : "";
+  const payload = await request<{ publications: Publication[] }>(`/api/publish/history${query}`);
+  return payload.publications;
+}
+
+export async function publishArticle(
+  articleId: string,
+  channels: PublishChannel["channel"][],
+): Promise<Publication> {
+  const payload = await request<{ publication: Publication }>(`/api/publish/articles/${articleId}`, {
+    method: "POST",
+    body: JSON.stringify({ channels }),
+  });
+  return payload.publication;
+}
+
+export async function retryPublicationDelivery(deliveryId: string): Promise<PublicationDelivery> {
+  const payload = await request<{ delivery: PublicationDelivery }>(
+    `/api/publish/deliveries/${deliveryId}/retry`,
+    { method: "POST" },
+  );
+  return payload.delivery;
+}
+
+export async function runCertificateReminders(): Promise<{ reminders_sent: number; items: unknown[] }> {
+  return request<{ reminders_sent: number; items: unknown[] }>("/api/publish/certificate-reminders", {
+    method: "POST",
+  });
+}

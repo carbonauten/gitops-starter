@@ -81,7 +81,44 @@
   "publish": {
     "title": "Veröffentlichen",
     "subtitle": "Inhalte an Teams, Notion und Outlook senden",
-    "empty": "Multichannel-Veröffentlichung startet in Sprint 4."
+    "empty": "Noch keine Veröffentlichungen.",
+    "articleTitle": "Artikel veröffentlichen",
+    "articleHint": "Wählen Sie einen veröffentlichten Artikel und die Zielkanäle.",
+    "selectArticle": "Artikel wählen…",
+    "channelsTitle": "Zielkanäle",
+    "channels": {
+      "teams": "Microsoft Teams",
+      "outlook": "Outlook",
+      "notion": "Notion"
+    },
+    "channelReady": "konfiguriert",
+    "channelMock": "Mock-Modus",
+    "submit": "Jetzt veröffentlichen",
+    "success": "„{{title}}“ wurde veröffentlicht.",
+    "settingsTitle": "Kanal-Konfiguration",
+    "settingsHint": "Teams-, Outlook- und Notion-Ziele für die Organisation.",
+    "teamsTeamId": "Teams Team-ID",
+    "teamsChannelId": "Teams Kanal-ID",
+    "outlookSenderId": "Outlook Absender (User-ID oder E-Mail)",
+    "notionDatabaseId": "Notion Datenbank-ID",
+    "saveSettings": "Kanäle speichern",
+    "settingsSaved": "Kanal-Konfiguration gespeichert.",
+    "runReminders": "Zertifikat-Erinnerungen senden",
+    "remindersSent": "{{count}} Zertifikat-Erinnerungen ausgelöst.",
+    "historyTitle": "Veröffentlichungs-Historie",
+    "retry": "Wiederholen",
+    "openLink": "Öffnen",
+    "history": {
+      "article": "Inhalt",
+      "by": "Von",
+      "channels": "Kanäle",
+      "when": "Zeitpunkt"
+    },
+    "status": {
+      "pending": "wartet",
+      "sent": "gesendet",
+      "failed": "Fehler"
+    }
   },
   "certificates": {
     "title": "Zertifikatsverwaltung",
