@@ -272,8 +272,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
           message = "Server temporarily unavailable";
         }
       }
-        // ignore parse errors
-      }
       throw new Error(message);
     }
 
