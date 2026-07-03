@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
@@ -7,20 +8,30 @@ import { BrandLogo } from "./BrandLogo";
 import { useAuth } from "../hooks/useAuth";
 import { usePermissions } from "../hooks/usePermissions";
 
-export function TopBar() {
+export function TopBar({ onMenuToggle }: { onMenuToggle: () => void }) {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
 
   return (
     <header className="topbar">
-      <BrandLogo />
+      <div className="topbar-start">
+        <button
+          type="button"
+          className="ghost-button mobile-nav-toggle"
+          onClick={onMenuToggle}
+          aria-label={t("nav.openMenu")}
+        >
+          ☰
+        </button>
+        <BrandLogo size="sm" />
+      </div>
       <div className="topbar-actions">
         <SearchBar />
         <LanguageSwitch />
         {user ? (
           <div className="user-chip">
-            <span>
-              {t("auth.signedInAs")} <strong>{user.name}</strong>
+            <span className="user-chip-text">
+              <strong>{user.name}</strong>
               <span className="role-chip"> · {t(`users.roles.${user.role}`)}</span>
               {user.department_name ? (
                 <span className="role-chip"> · {user.department_name}</span>
@@ -36,7 +47,7 @@ export function TopBar() {
   );
 }
 
-export function Sidebar() {
+export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
   const { t } = useTranslation();
   const { canManageUsers, canApprove, canApproveCertificates } = usePermissions();
 
@@ -53,13 +64,14 @@ export function Sidebar() {
   }
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${open ? " sidebar-open" : ""}`}>
       <nav>
         {items.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             end={item.end}
+            onClick={onNavigate}
             className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
           >
             {item.label}
@@ -70,12 +82,14 @@ export function Sidebar() {
             <div className="nav-section-label">{t("nav.adminSection")}</div>
             <NavLink
               to="/users"
+              onClick={onNavigate}
               className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
             >
               {t("nav.users")}
             </NavLink>
             <NavLink
               to="/audit"
+              onClick={onNavigate}
               className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
             >
               {t("nav.audit")}
@@ -88,11 +102,22 @@ export function Sidebar() {
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
+  const [navOpen, setNavOpen] = useState(false);
+
   return (
     <div className="app-shell">
-      <TopBar />
+      <TopBar onMenuToggle={() => setNavOpen((current) => !current)} />
       <div className="app-body">
-        <Sidebar />
+        {navOpen ? (
+          <button
+            type="button"
+            className="sidebar-backdrop"
+            aria-label={t("nav.closeMenu")}
+            onClick={() => setNavOpen(false)}
+          />
+        ) : null}
+        <Sidebar open={navOpen} onNavigate={() => setNavOpen(false)} />
         <main className="content">{children}</main>
       </div>
     </div>

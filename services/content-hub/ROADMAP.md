@@ -60,6 +60,7 @@ flowchart LR
 | 5 | 2 Wochen | ✅ Abgeschlossen (MVP) | China: Alibaba-Deployment, Datensync EU ↔ CN |
 | 6 | 1 Woche | ✅ Abgeschlossen (MVP) | Workflow, Freigaben, Audit, Go-Live |
 | 7 | 1 Woche | ✅ Abgeschlossen (MVP) | Versionierung: Artikel- & Zertifikat-Historie |
+| UI | 2–3 Tage | ✅ Abgeschlossen | Responsive Navigation, Status-Badges, Polish |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -293,6 +294,28 @@ flowchart LR
 
 ---
 
+## UI Sprint — Responsive & Polish ✅
+
+**Ziel:** Mobile-taugliche Navigation und konsistente visuelle Sprache über alle Kernseiten.
+
+### Deliverables
+
+- [x] Hamburger-Menü + Sidebar-Overlay auf kleinen Bildschirmen
+- [x] Sticky TopBar, verbesserte Nav-Active-States
+- [x] Farbige Workflow-Status-Badges (Artikel)
+- [x] Dashboard-Stat-Karten mit Hover, Seiten-Enter-Animation
+- [x] Toolbar- und Listen-Polish, `:focus-visible` für Tastatur
+- [x] CSS-Bugfix: defekte `@media`-Query (900px) repariert
+- [x] i18n: `nav.openMenu`, `dashboard.platformTip` (DE / EN / 中文)
+
+### Akzeptanzkriterien
+
+- [x] Navigation auf Mobilgeräten ohne horizontales Scrollen nutzbar
+- [x] Artikel-Status auf einen Blick erkennbar
+- [x] Einheitliche Button- und Banner-Stile
+
+---
+
 ## Backlog (Sprint 8+)
 
 | Thema | Beschreibung | Priorität |
@@ -302,7 +325,7 @@ flowchart LR
 | Auto-Import CA | Let's Encrypt / Azure Key Vault Sync | Mittel |
 | KI-Assistenz | Zusammenfassung, Übersetzung DE↔EN↔中文 | Mittel |
 | SharePoint | Zertifikate aus SharePoint-Bibliothek importieren | Mittel |
-| Mobile | Responsive Optimierung / PWA | Niedrig |
+| Mobile | Responsive Optimierung / PWA | ~~Niedrig~~ Teilweise (UI Sprint) |
 | Analytics | Veröffentlichungs- und Zertifikat-Statistiken | Niedrig |
 
 ---

@@ -3,22 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import { deleteArticle, fetchArticles, type Article } from "../api/client";
+import { ArticleStatusBadge } from "../components/ArticleStatusBadge";
 import { usePermissions } from "../hooks/usePermissions";
-
-function statusLabel(article: Article, t: (key: string) => string): string {
-  switch (article.status) {
-    case "published":
-      return t("articles.statusPublished");
-    case "review":
-      return t("articles.statusReview");
-    case "rejected":
-      return t("articles.statusRejected");
-    case "scheduled":
-      return t("articles.statusScheduled");
-    default:
-      return t("articles.statusDraft");
-  }
-}
 
 export function ArticlesPage() {
   const { t } = useTranslation();
@@ -92,10 +78,11 @@ export function ArticlesPage() {
         {articles.map((article) => (
           <article key={article.id} className="list-card">
             <div>
-              <h2>{article.title || t("articles.untitled")}</h2>
-              <p className="muted">
-                {statusLabel(article, t)} · {article.author_name}
-              </p>
+              <div className="list-card-title-row">
+                <h2>{article.title || t("articles.untitled")}</h2>
+                <ArticleStatusBadge status={article.status} />
+              </div>
+              <p className="muted">{article.author_name}</p>
             </div>
             <div className="list-card-actions">
               <Link to={`/articles/${article.id}/edit`} className="ghost-button link-button">

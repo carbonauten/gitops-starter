@@ -150,7 +150,7 @@ export function DashboardPage() {
             ) : null}
           </dl>
           {syncStatus.sync_enabled ? (
-            <button type="button" className="btn-primary" disabled={syncRunning} onClick={() => void handleRunSync()}>
+            <button type="button" className="primary-button" disabled={syncRunning} onClick={() => void handleRunSync()}>
               {syncRunning ? t("dashboard.syncRunning") : t("dashboard.syncRun")}
             </button>
           ) : null}
@@ -169,7 +169,7 @@ export function DashboardPage() {
         </div>
       ) : null}
 
-      <div className="info-banner">{t("dashboard.sprintNote")}</div>
+      <div className="info-banner platform-tip">{t("dashboard.platformTip")}</div>
     </section>
   );
 }

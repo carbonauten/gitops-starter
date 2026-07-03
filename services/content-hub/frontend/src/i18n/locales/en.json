@@ -12,7 +12,9 @@
     "workflow": "Approvals",
     "audit": "Audit log",
     "adminSection": "Administration",
-    "users": "Employee management"
+    "users": "Employee management",
+    "openMenu": "Open menu",
+    "closeMenu": "Close menu"
   },
   "auth": {
     "signIn": "Sign in",
@@ -46,6 +48,7 @@
     "expiring60": "Within 60 days",
     "expiring90": "Within 90 days",
     "sprintNote": "Sprint 6: approval workflow, audit log, and scheduled publishing are live.",
+    "platformTip": "Sprint 7: version history for articles and certificates is available — open an editor and use Versions.",
     "regionTitle": "Deployment region",
     "regionEu": "Europe (EU)",
     "regionCn": "China (CN)",

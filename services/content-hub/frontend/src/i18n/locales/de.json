@@ -12,7 +12,9 @@
     "workflow": "Freigaben",
     "audit": "Audit-Log",
     "adminSection": "Administration",
-    "users": "Mitarbeiterverwaltung"
+    "users": "Mitarbeiterverwaltung",
+    "openMenu": "Menü öffnen",
+    "closeMenu": "Menü schließen"
   },
   "auth": {
     "signIn": "Anmelden",
@@ -46,6 +48,7 @@
     "expiring60": "Innerhalb 60 Tage",
     "expiring90": "Innerhalb 90 Tage",
     "sprintNote": "Sprint 6: Freigabe-Workflow, Audit-Log und Termin-Veröffentlichung sind aktiv.",
+    "platformTip": "Sprint 7: Versionshistorie für Artikel und Zertifikate ist verfügbar — im Editor unter „Versionen“.",
     "regionTitle": "Deployment-Region",
     "regionEu": "Europa (EU)",
     "regionCn": "China (CN)",

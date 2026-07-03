@@ -12,7 +12,9 @@
     "workflow": "审批",
     "audit": "审计日志",
     "adminSection": "管理",
-    "users": "员工管理"
+    "users": "员工管理",
+    "openMenu": "打开菜单",
+    "closeMenu": "关闭菜单"
   },
   "auth": {
     "signIn": "登录",
@@ -46,6 +48,7 @@
     "expiring60": "60 天内",
     "expiring90": "90 天内",
     "sprintNote": "Sprint 6：审批工作流、审计日志和定时发布已上线。",
+    "platformTip": "Sprint 7：文章与证书的版本历史已上线 — 在编辑器中打开「版本」。",
     "regionTitle": "部署区域",
     "regionEu": "欧洲 (EU)",
     "regionCn": "中国 (CN)",
