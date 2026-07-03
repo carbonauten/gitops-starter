@@ -281,6 +281,26 @@ OneDrive zeigt das Laufwerk des **aktuell angemeldeten Users** (E-Mail aus Sessi
 
 ---
 
+## 11. China-Sync (Sprint 5, EU-Seite)
+
+Für den Datenaustausch mit der China-Instanz auf der **EU**-Railway-App:
+
+| Variable | Beispiel | Zweck |
+|----------|----------|-------|
+| `DEPLOYMENT_REGION` | `eu` | Regionskennung |
+| `STORAGE_BACKEND` | `local` | Dateispeicher (EU: lokal/Volume) |
+| `SYNC_PEER_URL` | `https://platform.cn.carbonauten.com` | China-Instanz |
+| `SYNC_PEER_REGION` | `cn` | Partner-Region |
+| `SYNC_API_KEY` | gemeinsames Geheimnis | Sync-Auth (gleicher Wert in CN) |
+
+IT-Master: **Dashboard** → **Regionalsync** → manuell starten.
+
+Details: [DEPLOY-CHINA.md](./DEPLOY-CHINA.md)
+
+`/api/health` → `deployment_region`, `sync_configured`, `sync_peer_region`
+
+---
+
 ## Kosten
 
 | Phase | Kosten |

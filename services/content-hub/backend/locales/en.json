@@ -25,5 +25,10 @@
   "errors.graph_token_failed": "Microsoft Graph sign-in failed.",
   "errors.retry_limit_reached": "Maximum retry count reached.",
   "errors.already_sent": "This delivery was already sent.",
+  "errors.sync_not_configured": "Regional sync is not configured.",
+  "errors.sync_same_region": "Cannot import data from the same region.",
+  "errors.sync_push_failed": "Push to peer region failed.",
+  "errors.sync_pull_failed": "Pull from peer region failed.",
+  "errors.oss_not_configured": "Object storage is not configured.",
   "messages.language_updated": "Language updated."
 }

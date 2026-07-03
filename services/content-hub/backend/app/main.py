@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from .config import get_settings
 from .database import ensure_upload_dir, init_database
 from .i18n import parse_accept_language, translate
-from .routes import articles, auth, certificates, dashboard, departments, files, health, publish, search, user
+from .routes import articles, auth, certificates, dashboard, departments, files, health, publish, search, sync, user
 from .static_assets import media_type_for, resolve_asset_path, resolve_root_file
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title=settings.app_name, version="0.4.0", lifespan=lifespan)
+    app = FastAPI(title=settings.app_name, version="0.5.0", lifespan=lifespan)
 
     @app.middleware("http")
     async def attach_language(request: Request, call_next):
@@ -82,6 +82,7 @@ def create_app() -> FastAPI:
     app.include_router(search.router)
     app.include_router(dashboard.router)
     app.include_router(publish.router)
+    app.include_router(sync.router)
 
     if STATIC_DIR.exists() and os.getenv("SERVE_STATIC", "true").lower() != "false":
 

@@ -41,7 +41,21 @@
     "expiring30": "30 天内",
     "expiring60": "60 天内",
     "expiring90": "90 天内",
-    "sprintNote": "Sprint 3：证书管理与到期跟踪已上线。"
+    "sprintNote": "Sprint 5：中国区部署与 EU ↔ CN 同步及 OSS 存储已上线。",
+    "regionTitle": "部署区域",
+    "regionEu": "欧洲 (EU)",
+    "regionCn": "中国 (CN)",
+    "storageLocal": "本地存储",
+    "storageOss": "阿里云 OSS",
+    "syncTitle": "区域同步",
+    "syncPeer": "对等区域",
+    "syncEnabled": "同步已启用",
+    "syncDisabled": "同步未配置",
+    "syncLastSuccess": "上次成功同步",
+    "syncLastFailure": "上次失败",
+    "syncRun": "运行 EU ↔ CN 同步",
+    "syncRunning": "同步中…",
+    "syncNever": "尚未同步"
   },
   "articles": {
     "title": "文章",

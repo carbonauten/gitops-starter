@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -21,7 +21,7 @@ from ..file_folder_service import (
 )
 from ..graph_files_service import browse_onedrive, browse_sharepoint
 from ..schemas import FileResponse as FileSchema
-from ..storage import delete_upload, save_upload
+from ..storage import delete_upload, read_upload, save_upload
 
 router = APIRouter(prefix="/api/files", tags=["files"])
 
@@ -242,6 +242,13 @@ def download_file(
     file_asset = db.get(FileAsset, file_id)
     if not file_asset:
         raise HTTPException(status_code=404, detail="not_found")
+    if file_asset.storage_path.startswith("oss://"):
+        content = read_upload(file_asset.storage_path)
+        return StreamingResponse(
+            iter([content]),
+            media_type=file_asset.content_type,
+            headers={"Content-Disposition": f'attachment; filename="{file_asset.original_name}"'},
+        )
     path = Path(file_asset.storage_path)
     if not path.exists():
         raise HTTPException(status_code=404, detail="not_found")

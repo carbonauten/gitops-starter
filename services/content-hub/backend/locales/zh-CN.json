@@ -25,5 +25,10 @@
   "errors.graph_token_failed": "Microsoft Graph 登录失败。",
   "errors.retry_limit_reached": "已达到最大重试次数。",
   "errors.already_sent": "此发布已成功发送。",
+  "errors.sync_not_configured": "区域同步未配置。",
+  "errors.sync_same_region": "无法从同一区域导入数据。",
+  "errors.sync_push_failed": "推送到对等区域失败。",
+  "errors.sync_pull_failed": "从对等区域拉取失败。",
+  "errors.oss_not_configured": "对象存储未配置。",
   "messages.language_updated": "语言已更新。"
 }

@@ -57,7 +57,7 @@ flowchart LR
 | 2 | 2 Wochen | ✅ Abgeschlossen | Redaktion: Artikel-Editor, Dateiverwaltung, Suche |
 | 3 | 2 Wochen | ✅ Abgeschlossen | **Zertifikatsverwaltung:** Erfassung, Ablauf, Erinnerungen |
 | 4 | 2 Wochen | ✅ Abgeschlossen | Multichannel: Teams, Notion, Outlook |
-| 5 | 2 Wochen | Geplant | China: Alibaba-Deployment, Datensync EU ↔ CN |
+| 5 | 2 Wochen | ✅ Abgeschlossen (MVP) | China: Alibaba-Deployment, Datensync EU ↔ CN |
 | 6 | 1 Woche | Geplant | Workflow, Freigaben, Audit, Go-Live |
 | 7+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
@@ -215,26 +215,31 @@ flowchart LR
 
 ---
 
-## Sprint 5 — China-Deployment
+## Sprint 5 — China-Deployment ✅ (MVP)
 
 **Ziel:** Mitarbeiter in China arbeiten mit akzeptabler Latenz — inkl. Zertifikatsdaten.
 
-### Geplante Features
+### Deliverables (MVP)
 
-- [ ] Deployment auf Alibaba ECS (China-Region)
-- [ ] Alibaba OSS für Dateispeicher in China
-- [ ] Regionale URL: z. B. `platform.cn.carbonauten.com`
-- [ ] Kafka MirrorMaker 2: Artikel + Zertifikate + Metadaten EU ↔ China
+- [x] `DEPLOYMENT_REGION` (`eu` / `cn`) und Health-Endpoint
+- [x] Alibaba OSS Storage-Backend (`STORAGE_BACKEND=oss`, optional `oss2`)
+- [x] HTTP Sync API: Artikel + Zertifikate EU ↔ CN (`/api/sync/*`)
+- [x] Dashboard: Regions-Badge + IT-Master Sync-Panel
+- [x] `DEPLOY-CHINA.md` + Terraform-Scaffold `deploy/terraform-china/`
+- [ ] Deployment auf Alibaba ECS (China-Region) — Infra bereit, manuelles Rollout
+- [ ] Regionale URL: z. B. `platform.cn.carbonauten.com` — DNS/ICP ausstehend
+- [ ] Kafka MirrorMaker 2 — Backlog für Produktionsskala
 - [ ] Load Balancer / Geo-Routing (EU vs. CN)
 - [ ] 21Vianet M365-Anbindung (falls China-Tenant)
 - [ ] Performance-Tests aus China (Latenz < 3s Seitenaufbau)
-- [ ] Terraform-Erweiterung Alibaba ECS + OSS
 
-### Akzeptanzkriterien
+### Akzeptanzkriterien (MVP)
 
-- China-Nutzer erreichen Plattform ohne VPN
-- Zertifikate und Artikel syncen EU ↔ CN innerhalb definierter Zeit
-- Dateien liegen regional (EU in Azure Blob, CN in OSS)
+- [x] Sync-API für Artikel und Zertifikate mit API-Key-Auth
+- [x] OSS-kompatibler Dateispeicher (Upload/Download)
+- [x] IT-Master kann Sync-Status sehen und manuell anstoßen
+- [ ] China-Nutzer erreichen Plattform ohne VPN (nach ECS-Deploy)
+- [ ] Dateien liegen regional vollständig repliziert (nur Metadaten-Sync im MVP)
 
 ---
 
@@ -328,6 +333,6 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ## Nächster Schritt
 
-**Sprint 5 starten:** China-Deployment mit regionaler URL und EU ↔ CN Sync.
+**Sprint 6 starten:** Workflow, Freigaben, Audit und Go-Live.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.

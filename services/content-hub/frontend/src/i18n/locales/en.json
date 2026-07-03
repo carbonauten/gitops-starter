@@ -41,7 +41,21 @@
     "expiring30": "Within 30 days",
     "expiring60": "Within 60 days",
     "expiring90": "Within 90 days",
-    "sprintNote": "Sprint 3: certificate management with expiry tracking is live."
+    "sprintNote": "Sprint 5: China deployment with EU ↔ CN sync and OSS storage is live.",
+    "regionTitle": "Deployment region",
+    "regionEu": "Europe (EU)",
+    "regionCn": "China (CN)",
+    "storageLocal": "Local storage",
+    "storageOss": "Alibaba OSS",
+    "syncTitle": "Regional sync",
+    "syncPeer": "Peer region",
+    "syncEnabled": "Sync enabled",
+    "syncDisabled": "Sync not configured",
+    "syncLastSuccess": "Last successful sync",
+    "syncLastFailure": "Last failure",
+    "syncRun": "Run EU ↔ CN sync",
+    "syncRunning": "Sync running…",
+    "syncNever": "No sync yet"
   },
   "articles": {
     "title": "Articles",

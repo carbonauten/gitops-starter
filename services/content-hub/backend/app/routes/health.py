@@ -29,6 +29,11 @@ def health() -> dict:
         "notion_configured": settings.notion_configured,
         "sharepoint_configured": settings.sharepoint_configured,
         "files_browse_mock_mode": settings.files_browse_mock_mode,
+        "deployment_region": settings.deployment_region,
+        "storage_backend": settings.storage_backend,
+        "oss_configured": settings.oss_configured,
+        "sync_configured": settings.sync_configured,
+        "sync_peer_region": settings.sync_peer_region,
         "sso_redirect_uri": settings.effective_redirect_uri if settings.entra_configured else None,
         "supported_languages": list(settings.supported_languages),
     }

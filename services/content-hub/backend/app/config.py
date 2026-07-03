@@ -72,6 +72,18 @@ class Settings(BaseSettings):
     upload_dir: str = "./data/uploads"
     max_upload_bytes: int = 25 * 1024 * 1024
 
+    deployment_region: str = "eu"
+    storage_backend: str = "local"
+    oss_endpoint: str = ""
+    oss_bucket: str = ""
+    oss_access_key_id: str = ""
+    oss_access_key_secret: str = ""
+    oss_object_prefix: str = "uploads"
+
+    sync_peer_url: str = ""
+    sync_peer_region: str = "cn"
+    sync_api_key: str = ""
+
     supported_languages: tuple[str, ...] = ("de", "en", "zh-CN")
     default_language: str = "en"
 
@@ -164,6 +176,19 @@ class Settings(BaseSettings):
     @property
     def files_sources_configured(self) -> bool:
         return self.sharepoint_configured or self.graph_publish_configured
+
+    @property
+    def oss_configured(self) -> bool:
+        return bool(
+            self.oss_endpoint.strip()
+            and self.oss_bucket.strip()
+            and self.oss_access_key_id.strip()
+            and self.oss_access_key_secret.strip()
+        )
+
+    @property
+    def sync_configured(self) -> bool:
+        return bool(self.sync_peer_url.strip() and self.sync_api_key.strip())
 
     @property
     def effective_database_url(self) -> str:

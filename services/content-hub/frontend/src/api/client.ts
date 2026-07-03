@@ -164,6 +164,27 @@ export type DashboardStats = {
   expiring_90: number;
 };
 
+export type PlatformInfo = {
+  deployment_region: string;
+  storage_backend: string;
+  oss_configured: boolean;
+  sync_configured: boolean;
+  sync_peer_region: string;
+};
+
+export type SyncStatus = {
+  region: string;
+  peer_region: string;
+  peer_url: string | null;
+  sync_enabled: boolean;
+  storage_backend: string;
+  article_count: number;
+  certificate_count: number;
+  last_success_at: string | null;
+  last_failure_at: string | null;
+  last_failure_message: string | null;
+};
+
 type ApiError = {
   error: string;
   code: string;
@@ -277,6 +298,25 @@ export async function fetchAuthConfig(): Promise<AuthConfig> {
 export async function fetchDashboardStats(): Promise<DashboardStats> {
   const payload = await request<{ stats: DashboardStats }>("/api/dashboard/stats");
   return payload.stats;
+}
+
+export async function fetchPlatformInfo(): Promise<PlatformInfo> {
+  const payload = await request<PlatformInfo & { status: string }>("/api/health");
+  return {
+    deployment_region: payload.deployment_region,
+    storage_backend: payload.storage_backend,
+    oss_configured: payload.oss_configured,
+    sync_configured: payload.sync_configured,
+    sync_peer_region: payload.sync_peer_region,
+  };
+}
+
+export async function fetchSyncStatus(): Promise<SyncStatus> {
+  return request<SyncStatus>("/api/sync/status");
+}
+
+export async function runRegionSync(): Promise<unknown> {
+  return request("/api/sync/run", { method: "POST" });
 }
 
 export async function fetchArticles(q?: string, status?: string): Promise<Article[]> {

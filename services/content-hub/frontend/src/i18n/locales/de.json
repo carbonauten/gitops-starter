@@ -41,7 +41,21 @@
     "expiring30": "Innerhalb 30 Tage",
     "expiring60": "Innerhalb 60 Tage",
     "expiring90": "Innerhalb 90 Tage",
-    "sprintNote": "Sprint 3: Zertifikatsverwaltung mit Ablaufüberwachung ist aktiv."
+    "sprintNote": "Sprint 5: China-Deployment mit EU ↔ CN Sync und OSS-Speicher ist aktiv.",
+    "regionTitle": "Deployment-Region",
+    "regionEu": "Europa (EU)",
+    "regionCn": "China (CN)",
+    "storageLocal": "Lokaler Speicher",
+    "storageOss": "Alibaba OSS",
+    "syncTitle": "Regionalsync",
+    "syncPeer": "Partner-Region",
+    "syncEnabled": "Sync aktiv",
+    "syncDisabled": "Sync nicht konfiguriert",
+    "syncLastSuccess": "Letzter erfolgreicher Sync",
+    "syncLastFailure": "Letzter Fehler",
+    "syncRun": "EU ↔ CN Sync starten",
+    "syncRunning": "Sync läuft…",
+    "syncNever": "Noch kein Sync"
   },
   "articles": {
     "title": "Artikel",

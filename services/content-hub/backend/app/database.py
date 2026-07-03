@@ -169,6 +169,18 @@ class PublicationDelivery(Base):
     )
 
 
+class SyncLog(Base):
+    __tablename__ = "sync_logs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    direction: Mapped[str] = mapped_column(String(20), default="pull")
+    status: Mapped[str] = mapped_column(String(20), default="success")
+    article_count: Mapped[int] = mapped_column(Integer, default=0)
+    certificate_count: Mapped[int] = mapped_column(Integer, default=0)
+    message: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
 class Certificate(Base):
     __tablename__ = "certificates"
 
