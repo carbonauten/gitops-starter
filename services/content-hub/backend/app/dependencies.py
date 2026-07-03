@@ -6,7 +6,7 @@ from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from .database import get_db
-from .roles import ADMIN_ROLES, EDIT_ROLES
+from .roles import ADMIN_ROLES, APPROVAL_ROLES, CERT_APPROVAL_ROLES, EDIT_ROLES
 from .user_service import enrich_user_session, get_user_by_entra_id, sync_master_role_from_env
 
 
@@ -40,5 +40,17 @@ def require_editor(user: dict[str, Any] = Depends(get_current_user)) -> dict[str
 
 def require_it_master(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
     if user.get("role") not in ADMIN_ROLES:
+        raise HTTPException(status_code=403, detail="forbidden")
+    return user
+
+
+def require_approver(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+    if user.get("role") not in APPROVAL_ROLES:
+        raise HTTPException(status_code=403, detail="forbidden")
+    return user
+
+
+def require_cert_approver(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+    if user.get("role") not in CERT_APPROVAL_ROLES:
         raise HTTPException(status_code=403, detail="forbidden")
     return user

@@ -326,6 +326,8 @@ async def publish_article(
     article = db.get(Article, article_id)
     if not article:
         raise HTTPException(status_code=404, detail="not_found")
+    if article.status != "published":
+        raise HTTPException(status_code=400, detail="article_not_published")
     if not channels:
         raise HTTPException(status_code=422, detail="validation")
 

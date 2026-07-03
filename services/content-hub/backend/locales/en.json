@@ -30,5 +30,8 @@
   "errors.sync_push_failed": "Push to peer region failed.",
   "errors.sync_pull_failed": "Pull from peer region failed.",
   "errors.oss_not_configured": "Object storage is not configured.",
+  "errors.invalid_workflow_state": "This action is not allowed in the current workflow state.",
+  "errors.article_not_published": "Only published articles can be sent to external channels.",
+  "errors.renewal_not_requested": "Enable renewal in progress before requesting approval.",
   "messages.language_updated": "Language updated."
 }

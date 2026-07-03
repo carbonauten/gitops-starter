@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import asyncio
+import contextlib
+import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -11,8 +14,10 @@ from fastapi.responses import FileResponse, JSONResponse
 from .config import get_settings
 from .database import ensure_upload_dir, init_database
 from .i18n import parse_accept_language, translate
-from .routes import articles, auth, certificates, dashboard, departments, files, health, publish, search, sync, user
+from .routes import articles, audit, auth, certificates, dashboard, departments, files, health, monitor, publish, search, sync, user, workflow
 from .static_assets import media_type_for, resolve_asset_path, resolve_root_file
+
+logger = logging.getLogger(__name__)
 
 STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 IMMUTABLE_CACHE = "public, max-age=31536000, immutable"
@@ -23,12 +28,35 @@ async def lifespan(app: FastAPI):
     settings = get_settings()
     init_database(settings.effective_database_url)
     ensure_upload_dir(settings.upload_dir)
-    yield
+
+    async def scheduled_publish_loop():
+        from .database import _SessionLocal
+        from .workflow_service import process_due_scheduled_articles
+
+        while True:
+            await asyncio.sleep(60)
+            if _SessionLocal is None:
+                continue
+            db = _SessionLocal()
+            try:
+                process_due_scheduled_articles(db)
+            except Exception:  # noqa: BLE001
+                logger.exception("Scheduled publish loop failed")
+            finally:
+                db.close()
+
+    task = asyncio.create_task(scheduled_publish_loop())
+    try:
+        yield
+    finally:
+        task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await task
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title=settings.app_name, version="0.5.0", lifespan=lifespan)
+    app = FastAPI(title=settings.app_name, version="0.6.0", lifespan=lifespan)
 
     @app.middleware("http")
     async def attach_language(request: Request, call_next):
@@ -83,6 +111,9 @@ def create_app() -> FastAPI:
     app.include_router(dashboard.router)
     app.include_router(publish.router)
     app.include_router(sync.router)
+    app.include_router(workflow.router)
+    app.include_router(audit.router)
+    app.include_router(monitor.router)
 
     if STATIC_DIR.exists() and os.getenv("SERVE_STATIC", "true").lower() != "false":
 

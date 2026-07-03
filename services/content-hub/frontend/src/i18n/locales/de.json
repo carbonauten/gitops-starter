@@ -9,6 +9,8 @@
     "files": "Dateien",
     "certificates": "Zertifikate",
     "publish": "Veröffentlichen",
+    "workflow": "Freigaben",
+    "audit": "Audit-Log",
     "adminSection": "Administration",
     "users": "Mitarbeiterverwaltung"
   },
@@ -34,6 +36,8 @@
     "title": "Dashboard",
     "subtitle": "Überblick über Ihre Inhalte",
     "drafts": "Entwürfe",
+    "inReview": "In Prüfung",
+    "scheduled": "Geplant",
     "published": "Veröffentlicht",
     "files": "Dateien",
     "certificates": "Zertifikate",
@@ -41,7 +45,7 @@
     "expiring30": "Innerhalb 30 Tage",
     "expiring60": "Innerhalb 60 Tage",
     "expiring90": "Innerhalb 90 Tage",
-    "sprintNote": "Sprint 5: China-Deployment mit EU ↔ CN Sync und OSS-Speicher ist aktiv.",
+    "sprintNote": "Sprint 6: Freigabe-Workflow, Audit-Log und Termin-Veröffentlichung sind aktiv.",
     "regionTitle": "Deployment-Region",
     "regionEu": "Europa (EU)",
     "regionCn": "China (CN)",
@@ -55,7 +59,10 @@
     "syncLastFailure": "Letzter Fehler",
     "syncRun": "EU ↔ CN Sync starten",
     "syncRunning": "Sync läuft…",
-    "syncNever": "Noch kein Sync"
+    "syncNever": "Noch kein Sync",
+    "renewalsPending": "Erneuerungen offen",
+    "workflowTitle": "Freigabe-Warteschlange",
+    "workflowLink": "Freigaben öffnen"
   },
   "articles": {
     "title": "Artikel",
@@ -64,12 +71,17 @@
     "new": "Neuer Artikel",
     "edit": "Artikel bearbeiten",
     "back": "Zurück zur Liste",
-    "editorSubtitle": "Schreiben Sie Inhalte und speichern Sie als Entwurf oder veröffentlichen Sie direkt.",
+    "editorSubtitle": "Als Entwurf speichern und zur Prüfung einreichen. IT gibt frei.",
     "templates": "Vorlagen",
     "fieldTitle": "Titel",
     "fieldContent": "Inhalt",
     "saveDraft": "Entwurf speichern",
-    "publish": "Veröffentlichen",
+    "submitReview": "Zur Prüfung einreichen",
+    "statusReview": "In Prüfung",
+    "statusRejected": "Abgelehnt",
+    "statusScheduled": "Geplant",
+    "rejectionComment": "Prüfkommentar",
+    "scheduledAt": "Geplant für",
     "searchPlaceholder": "Artikel durchsuchen…",
     "allStatuses": "Alle Status",
     "statusDraft": "Entwurf",
@@ -225,11 +237,13 @@
     "roles": {
       "it_master": "IT-Master",
       "editor": "Redakteur",
+      "certificate_manager": "Zertifikats-Manager",
       "viewer": "Leser"
     },
     "roleDescriptions": {
-      "it_master": "Vollzugriff inkl. Mitarbeiterverwaltung",
+      "it_master": "Vollzugriff inkl. Mitarbeiterverwaltung und Freigaben",
       "editor": "Inhalte erstellen und bearbeiten",
+      "certificate_manager": "Zertifikate verwalten und Erneuerungen freigeben",
       "viewer": "Nur Lesen, keine Bearbeitung"
     },
     "invites": {
@@ -293,6 +307,41 @@
     "heading": "Überschrift",
     "bulletList": "Liste",
     "orderedList": "Nummeriert"
+  },
+  "workflow": {
+    "title": "Freigaben",
+    "subtitle": "Artikel und Zertifikatserneuerungen prüfen",
+    "articlesInReview": "Artikel in Prüfung",
+    "articlesScheduled": "Geplante Artikel",
+    "renewalsPending": "Zertifikatserneuerungen",
+    "empty": "Keine offenen Freigaben.",
+    "approve": "Freigeben & veröffentlichen",
+    "approveSchedule": "Freigeben & planen",
+    "scheduleAt": "Veröffentlichen am",
+    "reject": "Ablehnen",
+    "rejectComment": "Ablehnungsgrund",
+    "requestRenewal": "Erneuerung zur Freigabe einreichen",
+    "approveRenewal": "Erneuerung freigeben",
+    "rejectRenewal": "Erneuerung ablehnen"
+  },
+  "audit": {
+    "title": "Audit-Log",
+    "subtitle": "Wer hat wann was geändert oder veröffentlicht",
+    "empty": "Noch keine Audit-Einträge.",
+    "columns": {
+      "time": "Zeit",
+      "actor": "Benutzer",
+      "action": "Aktion",
+      "entity": "Ressource",
+      "details": "Details"
+    }
+  },
+  "onboarding": {
+    "title": "Schnellstart",
+    "dismiss": "Verstanden",
+    "step1": "Artikel als Entwurf erstellen und zur Prüfung einreichen.",
+    "step2": "Dateien hochladen und Zertifikate mit Erneuerungsfreigabe verwalten.",
+    "step3": "Freigegebene Artikel an Teams, Outlook oder Notion veröffentlichen."
   },
   "common": {
     "loading": "Laden…",

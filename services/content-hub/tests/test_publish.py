@@ -1,3 +1,11 @@
+def _publishable_article(client, it_auth_client, title: str, content: str) -> str:
+    created = client.post("/api/articles", json={"title": title, "content": content})
+    article_id = created.json()["article"]["id"]
+    client.post(f"/api/workflow/articles/{article_id}/submit")
+    it_auth_client.post(f"/api/workflow/articles/{article_id}/approve", json={})
+    return article_id
+
+
 def test_list_publish_channels(auth_client):
     response = auth_client.get("/api/publish/channels")
     assert response.status_code == 200
@@ -6,12 +14,8 @@ def test_list_publish_channels(auth_client):
     assert {channel["channel"] for channel in channels} == {"teams", "outlook", "notion"}
 
 
-def test_publish_article_in_mock_mode(auth_client):
-    created = auth_client.post(
-        "/api/articles",
-        json={"title": "Launch update", "content": "<p>Hello teams</p>", "status": "published"},
-    )
-    article_id = created.json()["article"]["id"]
+def test_publish_article_in_mock_mode(auth_client, it_auth_client):
+    article_id = _publishable_article(auth_client, it_auth_client, "Launch update", "<p>Hello teams</p>")
 
     response = auth_client.post(
         f"/api/publish/articles/{article_id}",
@@ -24,12 +28,8 @@ def test_publish_article_in_mock_mode(auth_client):
     assert all(delivery["status"] == "sent" for delivery in publication["deliveries"])
 
 
-def test_publish_history(auth_client):
-    created = auth_client.post(
-        "/api/articles",
-        json={"title": "History item", "content": "<p>Track me</p>", "status": "published"},
-    )
-    article_id = created.json()["article"]["id"]
+def test_publish_history(auth_client, it_auth_client):
+    article_id = _publishable_article(auth_client, it_auth_client, "History item", "<p>Track me</p>")
     auth_client.post(
         f"/api/publish/articles/{article_id}",
         json={"channels": ["teams"]},
@@ -64,7 +64,7 @@ def test_viewer_cannot_publish(client):
     _login(client)
     created = client.post(
         "/api/articles",
-        json={"title": "Blocked", "content": "x", "status": "draft"},
+        json={"title": "Blocked", "content": "x"},
     )
     article_id = created.json()["article"]["id"]
 

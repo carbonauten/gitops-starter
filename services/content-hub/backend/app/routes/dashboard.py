@@ -35,14 +35,25 @@ def dashboard_stats(
 ) -> dict:
     today = date.today()
     drafts = db.scalar(select(func.count()).select_from(Article).where(Article.status == "draft")) or 0
+    in_review = db.scalar(select(func.count()).select_from(Article).where(Article.status == "review")) or 0
+    scheduled = db.scalar(select(func.count()).select_from(Article).where(Article.status == "scheduled")) or 0
     published = db.scalar(select(func.count()).select_from(Article).where(Article.status == "published")) or 0
     files = db.scalar(select(func.count()).select_from(FileAsset)) or 0
     certificates = db.scalar(select(func.count()).select_from(Certificate)) or 0
+    renewals_pending = (
+        db.scalar(
+            select(func.count()).select_from(Certificate).where(Certificate.renewal_approval_status == "pending")
+        )
+        or 0
+    )
     stats = DashboardStats(
         drafts=drafts,
+        in_review=in_review,
+        scheduled=scheduled,
         published=published,
         files=files,
         certificates=certificates,
+        renewals_pending=renewals_pending,
         expiring_30=_count_expiring(db, 30, today),
         expiring_60=_count_expiring(db, 60, today),
         expiring_90=_count_expiring(db, 90, today),

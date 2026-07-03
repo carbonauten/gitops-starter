@@ -30,5 +30,8 @@
   "errors.sync_push_failed": "Push zur Partner-Region fehlgeschlagen.",
   "errors.sync_pull_failed": "Pull aus der Partner-Region fehlgeschlagen.",
   "errors.oss_not_configured": "Objektspeicher ist nicht konfiguriert.",
+  "errors.invalid_workflow_state": "Diese Aktion ist im aktuellen Workflow-Status nicht erlaubt.",
+  "errors.article_not_published": "Nur veröffentlichte Artikel können an externe Kanäle gesendet werden.",
+  "errors.renewal_not_requested": "Bitte Erneuerung aktivieren, bevor eine Freigabe angefordert wird.",
   "messages.language_updated": "Sprache wurde aktualisiert."
 }

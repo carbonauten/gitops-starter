@@ -3,7 +3,7 @@ export type User = {
   db_id: string;
   name: string;
   email: string;
-  role: "it_master" | "editor" | "viewer";
+  role: "it_master" | "editor" | "certificate_manager" | "viewer";
   department_id?: string | null;
   department_name?: string | null;
   language: string;
@@ -45,7 +45,15 @@ export type PublicInvite = {
 };
 
 export function canEditContent(role: User["role"]): boolean {
-  return role === "it_master" || role === "editor";
+  return role === "it_master" || role === "editor" || role === "certificate_manager";
+}
+
+export function canApproveContent(role: User["role"]): boolean {
+  return role === "it_master";
+}
+
+export function canApproveCertificates(role: User["role"]): boolean {
+  return role === "it_master" || role === "certificate_manager";
 }
 
 export function canManageUsers(role: User["role"]): boolean {
@@ -56,8 +64,10 @@ export type Article = {
   id: string;
   title: string;
   content: string;
-  status: "draft" | "published";
+  status: "draft" | "review" | "rejected" | "scheduled" | "published";
   template: string | null;
+  scheduled_publish_at?: string | null;
+  review_comment?: string;
   author_id: string;
   author_name: string;
   author_email: string;
@@ -141,6 +151,8 @@ export type Certificate = {
   valid_from: string;
   valid_to: string;
   renewal_in_progress: boolean;
+  renewal_approval_status?: string;
+  renewal_review_comment?: string;
   status: "valid" | "expiring" | "expired" | "renewal";
   days_until_expiry: number;
   responsible_name: string;
@@ -156,12 +168,51 @@ export type Certificate = {
 
 export type DashboardStats = {
   drafts: number;
+  in_review: number;
+  scheduled: number;
   published: number;
   files: number;
   certificates: number;
+  renewals_pending: number;
   expiring_30: number;
   expiring_60: number;
   expiring_90: number;
+};
+
+export type WorkflowPending = {
+  articles_in_review: Array<{
+    id: string;
+    title: string;
+    status: string;
+    author_name: string;
+    updated_at: string;
+  }>;
+  articles_scheduled: Array<{
+    id: string;
+    title: string;
+    status: string;
+    scheduled_publish_at?: string | null;
+    updated_at: string;
+  }>;
+  certificate_renewals_pending: Array<{
+    id: string;
+    name: string;
+    renewal_approval_status: string;
+    responsible_name: string;
+    updated_at: string;
+  }>;
+};
+
+export type AuditEntry = {
+  id: string;
+  entity_type: string;
+  entity_id: string;
+  action: string;
+  actor_id: string;
+  actor_name: string;
+  actor_email: string;
+  details: Record<string, unknown>;
+  created_at: string;
 };
 
 export type PlatformInfo = {
@@ -668,4 +719,54 @@ export async function runCertificateReminders(): Promise<{ reminders_sent: numbe
   return request<{ reminders_sent: number; items: unknown[] }>("/api/publish/certificate-reminders", {
     method: "POST",
   });
+}
+
+export async function fetchWorkflowPending(): Promise<WorkflowPending> {
+  return request<WorkflowPending>("/api/workflow/pending");
+}
+
+export async function submitArticleForReview(articleId: string): Promise<Article> {
+  const payload = await request<{ article: Article }>(`/api/workflow/articles/${articleId}/submit`, {
+    method: "POST",
+  });
+  return payload.article;
+}
+
+export async function approveArticle(
+  articleId: string,
+  scheduledPublishAt?: string | null,
+): Promise<Article> {
+  const payload = await request<{ article: Article }>(`/api/workflow/articles/${articleId}/approve`, {
+    method: "POST",
+    body: JSON.stringify({ scheduled_publish_at: scheduledPublishAt || null }),
+  });
+  return payload.article;
+}
+
+export async function rejectArticle(articleId: string, comment: string): Promise<Article> {
+  const payload = await request<{ article: Article }>(`/api/workflow/articles/${articleId}/reject`, {
+    method: "POST",
+    body: JSON.stringify({ comment }),
+  });
+  return payload.article;
+}
+
+export async function requestCertificateRenewal(certificateId: string): Promise<void> {
+  await request(`/api/workflow/certificates/${certificateId}/request-renewal`, { method: "POST" });
+}
+
+export async function approveCertificateRenewal(certificateId: string): Promise<void> {
+  await request(`/api/workflow/certificates/${certificateId}/approve-renewal`, { method: "POST" });
+}
+
+export async function rejectCertificateRenewal(certificateId: string, comment: string): Promise<void> {
+  await request(`/api/workflow/certificates/${certificateId}/reject-renewal`, {
+    method: "POST",
+    body: JSON.stringify({ comment }),
+  });
+}
+
+export async function fetchAuditLog(limit = 100): Promise<AuditEntry[]> {
+  const payload = await request<{ entries: AuditEntry[] }>(`/api/audit?limit=${limit}`);
+  return payload.entries;
 }

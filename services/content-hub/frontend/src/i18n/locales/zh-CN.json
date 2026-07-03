@@ -9,6 +9,8 @@
     "files": "文件",
     "certificates": "证书",
     "publish": "发布",
+    "workflow": "审批",
+    "audit": "审计日志",
     "adminSection": "管理",
     "users": "员工管理"
   },
@@ -34,6 +36,8 @@
     "title": "仪表盘",
     "subtitle": "内容总览",
     "drafts": "草稿",
+    "inReview": "审核中",
+    "scheduled": "已排期",
     "published": "已发布",
     "files": "文件",
     "certificates": "证书",
@@ -41,7 +45,7 @@
     "expiring30": "30 天内",
     "expiring60": "60 天内",
     "expiring90": "90 天内",
-    "sprintNote": "Sprint 5：中国区部署与 EU ↔ CN 同步及 OSS 存储已上线。",
+    "sprintNote": "Sprint 6：审批工作流、审计日志和定时发布已上线。",
     "regionTitle": "部署区域",
     "regionEu": "欧洲 (EU)",
     "regionCn": "中国 (CN)",
@@ -55,7 +59,10 @@
     "syncLastFailure": "上次失败",
     "syncRun": "运行 EU ↔ CN 同步",
     "syncRunning": "同步中…",
-    "syncNever": "尚未同步"
+    "syncNever": "尚未同步",
+    "renewalsPending": "待审批续期",
+    "workflowTitle": "审批队列",
+    "workflowLink": "打开审批"
   },
   "articles": {
     "title": "文章",
@@ -64,12 +71,17 @@
     "new": "新建文章",
     "edit": "编辑文章",
     "back": "返回列表",
-    "editorSubtitle": "编写内容，可保存草稿或直接发布。",
+    "editorSubtitle": "编写内容，保存草稿后提交审核，由 IT 审批后发布。",
     "templates": "模板",
     "fieldTitle": "标题",
     "fieldContent": "内容",
     "saveDraft": "保存草稿",
-    "publish": "发布",
+    "submitReview": "提交审核",
+    "statusReview": "审核中",
+    "statusRejected": "已拒绝",
+    "statusScheduled": "已排期",
+    "rejectionComment": "审核意见",
+    "scheduledAt": "计划发布时间",
     "searchPlaceholder": "搜索文章…",
     "allStatuses": "全部状态",
     "statusDraft": "草稿",
@@ -225,11 +237,13 @@
     "roles": {
       "it_master": "IT 主管理员",
       "editor": "编辑者",
+      "certificate_manager": "证书管理员",
       "viewer": "只读"
     },
     "roleDescriptions": {
-      "it_master": "完全访问权限，包括员工管理",
+      "it_master": "完全访问权限，包括员工管理和审批",
       "editor": "创建和编辑内容",
+      "certificate_manager": "管理证书并审批续期",
       "viewer": "只读，不可编辑"
     },
     "invites": {
@@ -293,6 +307,41 @@
     "heading": "标题",
     "bulletList": "无序列表",
     "orderedList": "有序列表"
+  },
+  "workflow": {
+    "title": "审批",
+    "subtitle": "审核文章和证书续期",
+    "articlesInReview": "待审文章",
+    "articlesScheduled": "已排期文章",
+    "renewalsPending": "证书续期",
+    "empty": "暂无待审批项。",
+    "approve": "批准并发布",
+    "approveSchedule": "批准并排期",
+    "scheduleAt": "发布时间",
+    "reject": "拒绝",
+    "rejectComment": "拒绝原因",
+    "requestRenewal": "提交续期审批",
+    "approveRenewal": "批准续期",
+    "rejectRenewal": "拒绝续期"
+  },
+  "audit": {
+    "title": "审计日志",
+    "subtitle": "记录谁在何时修改或发布了什么",
+    "empty": "暂无审计记录。",
+    "columns": {
+      "time": "时间",
+      "actor": "用户",
+      "action": "操作",
+      "entity": "资源",
+      "details": "详情"
+    }
+  },
+  "onboarding": {
+    "title": "快速入门",
+    "dismiss": "知道了",
+    "step1": "创建文章草稿并提交审核。",
+    "step2": "上传文件并管理需要审批的证书续期。",
+    "step3": "将已批准的文章发布到 Teams、Outlook 或 Notion。"
   },
   "common": {
     "loading": "加载中…",

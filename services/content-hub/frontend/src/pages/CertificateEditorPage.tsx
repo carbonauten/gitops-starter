@@ -6,6 +6,7 @@ import {
   createCertificate,
   fetchCertificate,
   fileDownloadUrl,
+  requestCertificateRenewal,
   updateCertificate,
   uploadFile,
 } from "../api/client";
@@ -34,6 +35,7 @@ export function CertificateEditorPage() {
   const [validFrom, setValidFrom] = useState(defaultValidFrom());
   const [validTo, setValidTo] = useState(defaultValidTo());
   const [renewalInProgress, setRenewalInProgress] = useState(false);
+  const [renewalApprovalStatus, setRenewalApprovalStatus] = useState("none");
   const [responsibleName, setResponsibleName] = useState("");
   const [responsibleEmail, setResponsibleEmail] = useState("");
   const [notes, setNotes] = useState("");
@@ -54,6 +56,7 @@ export function CertificateEditorPage() {
         setValidFrom(certificate.valid_from);
         setValidTo(certificate.valid_to);
         setRenewalInProgress(certificate.renewal_in_progress);
+        setRenewalApprovalStatus(certificate.renewal_approval_status || "none");
         setResponsibleName(certificate.responsible_name);
         setResponsibleEmail(certificate.responsible_email);
         setNotes(certificate.notes);
@@ -206,6 +209,31 @@ export function CertificateEditorPage() {
         ) : null}
 
         {error ? <p className="error-text">{error}</p> : null}
+
+        {!isNew && renewalInProgress && renewalApprovalStatus !== "pending" && renewalApprovalStatus !== "approved" ? (
+          <div className="form-actions">
+            <button
+              type="button"
+              className="ghost-button"
+              disabled={saving}
+              onClick={() =>
+                void (async () => {
+                  setSaving(true);
+                  try {
+                    await requestCertificateRenewal(id!);
+                    setRenewalApprovalStatus("pending");
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : t("common.error"));
+                  } finally {
+                    setSaving(false);
+                  }
+                })()
+              }
+            >
+              {t("workflow.requestRenewal")}
+            </button>
+          </div>
+        ) : null}
 
         <div className="form-actions">
           <button type="submit" className="primary-button" disabled={saving}>

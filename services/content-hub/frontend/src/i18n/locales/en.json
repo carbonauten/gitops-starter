@@ -9,6 +9,8 @@
     "files": "Files",
     "certificates": "Certificates",
     "publish": "Publish",
+    "workflow": "Approvals",
+    "audit": "Audit log",
     "adminSection": "Administration",
     "users": "Employee management"
   },
@@ -34,6 +36,8 @@
     "title": "Dashboard",
     "subtitle": "Overview of your content",
     "drafts": "Drafts",
+    "inReview": "In review",
+    "scheduled": "Scheduled",
     "published": "Published",
     "files": "Files",
     "certificates": "Certificates",
@@ -41,7 +45,7 @@
     "expiring30": "Within 30 days",
     "expiring60": "Within 60 days",
     "expiring90": "Within 90 days",
-    "sprintNote": "Sprint 5: China deployment with EU ↔ CN sync and OSS storage is live.",
+    "sprintNote": "Sprint 6: approval workflow, audit log, and scheduled publishing are live.",
     "regionTitle": "Deployment region",
     "regionEu": "Europe (EU)",
     "regionCn": "China (CN)",
@@ -55,7 +59,10 @@
     "syncLastFailure": "Last failure",
     "syncRun": "Run EU ↔ CN sync",
     "syncRunning": "Sync running…",
-    "syncNever": "No sync yet"
+    "syncNever": "No sync yet",
+    "renewalsPending": "Renewals pending",
+    "workflowTitle": "Approval queue",
+    "workflowLink": "Open approvals"
   },
   "articles": {
     "title": "Articles",
@@ -64,12 +71,17 @@
     "new": "New article",
     "edit": "Edit article",
     "back": "Back to list",
-    "editorSubtitle": "Write content and save as draft or publish directly.",
+    "editorSubtitle": "Save as draft, then submit for review. IT approves before publishing.",
     "templates": "Templates",
     "fieldTitle": "Title",
     "fieldContent": "Content",
     "saveDraft": "Save draft",
-    "publish": "Publish",
+    "submitReview": "Submit for review",
+    "statusReview": "In review",
+    "statusRejected": "Rejected",
+    "statusScheduled": "Scheduled",
+    "rejectionComment": "Review comment",
+    "scheduledAt": "Scheduled for",
     "searchPlaceholder": "Search articles…",
     "allStatuses": "All statuses",
     "statusDraft": "Draft",
@@ -259,11 +271,13 @@
     "roles": {
       "it_master": "IT master",
       "editor": "Editor",
+      "certificate_manager": "Certificate manager",
       "viewer": "Viewer"
     },
     "roleDescriptions": {
-      "it_master": "Full access including employee management",
+      "it_master": "Full access including employee management and approvals",
       "editor": "Create and edit content",
+      "certificate_manager": "Manage and approve certificate renewals",
       "viewer": "Read-only access"
     },
     "invites": {
@@ -293,6 +307,41 @@
     "invalid": "This invite is invalid or has expired.",
     "passwordTooShort": "Password must be at least 8 characters.",
     "passwordMismatch": "Passwords do not match."
+  },
+  "workflow": {
+    "title": "Approvals",
+    "subtitle": "Review articles and certificate renewals",
+    "articlesInReview": "Articles in review",
+    "articlesScheduled": "Scheduled articles",
+    "renewalsPending": "Certificate renewals",
+    "empty": "Nothing pending approval.",
+    "approve": "Approve & publish",
+    "approveSchedule": "Approve & schedule",
+    "scheduleAt": "Publish at",
+    "reject": "Reject",
+    "rejectComment": "Rejection comment",
+    "requestRenewal": "Request renewal approval",
+    "approveRenewal": "Approve renewal",
+    "rejectRenewal": "Reject renewal"
+  },
+  "audit": {
+    "title": "Audit log",
+    "subtitle": "Who changed or published what and when",
+    "empty": "No audit entries yet.",
+    "columns": {
+      "time": "Time",
+      "actor": "User",
+      "action": "Action",
+      "entity": "Resource",
+      "details": "Details"
+    }
+  },
+  "onboarding": {
+    "title": "Quick start",
+    "dismiss": "Got it",
+    "step1": "Create articles as drafts and submit them for IT review.",
+    "step2": "Upload files and manage certificates with renewal approvals.",
+    "step3": "Publish approved articles to Teams, Outlook, or Notion."
   },
   "common": {
     "loading": "Loading…",

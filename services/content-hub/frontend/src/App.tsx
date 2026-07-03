@@ -13,6 +13,8 @@ import { FilesPage } from "./pages/FilesPage";
 import { LoginPage } from "./pages/LoginPage";
 import { AcceptInvitePage } from "./pages/AcceptInvitePage";
 import { PublishPage } from "./pages/PublishPage";
+import { AuditLogPage } from "./pages/AuditLogPage";
+import { WorkflowPage } from "./pages/WorkflowPage";
 import { UsersAdminPage } from "./pages/UsersAdminPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -117,6 +119,22 @@ export default function App() {
           <ProtectedRoute>
             <PublishPage />
           </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/workflow"
+        element={
+          <ProtectedRoute>
+            <WorkflowPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/audit"
+        element={
+          <MasterRoute>
+            <AuditLogPage />
+          </MasterRoute>
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />

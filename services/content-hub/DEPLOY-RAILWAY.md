@@ -301,6 +301,19 @@ Details: [DEPLOY-CHINA.md](./DEPLOY-CHINA.md)
 
 ---
 
+## 12. Workflow & Audit (Sprint 6)
+
+Artikel-Freigabe und Audit-Log sind ohne Extra-Konfiguration aktiv.
+
+- Redakteure: Entwurf → **Zur Prüfung einreichen**
+- IT-Master: **Freigaben** (`/workflow`) — sofort oder mit Termin veröffentlichen
+- Zertifikatserneuerung: Freigabe durch IT-Master oder Rolle `certificate_manager`
+- Audit-Log: `/audit` (nur IT-Master)
+
+Siehe [WORKFLOW.md](./WORKFLOW.md) und `GET /api/monitor/summary` für IT-Monitoring.
+
+---
+
 ## Kosten
 
 | Phase | Kosten |

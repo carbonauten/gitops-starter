@@ -5,6 +5,21 @@ import { Link } from "react-router-dom";
 import { deleteArticle, fetchArticles, type Article } from "../api/client";
 import { usePermissions } from "../hooks/usePermissions";
 
+function statusLabel(article: Article, t: (key: string) => string): string {
+  switch (article.status) {
+    case "published":
+      return t("articles.statusPublished");
+    case "review":
+      return t("articles.statusReview");
+    case "rejected":
+      return t("articles.statusRejected");
+    case "scheduled":
+      return t("articles.statusScheduled");
+    default:
+      return t("articles.statusDraft");
+  }
+}
+
 export function ArticlesPage() {
   const { t } = useTranslation();
   const { canEdit } = usePermissions();
@@ -61,7 +76,10 @@ export function ArticlesPage() {
         <select value={status} onChange={(event) => setStatus(event.target.value)}>
           <option value="">{t("articles.allStatuses")}</option>
           <option value="draft">{t("articles.statusDraft")}</option>
+          <option value="review">{t("articles.statusReview")}</option>
+          <option value="scheduled">{t("articles.statusScheduled")}</option>
           <option value="published">{t("articles.statusPublished")}</option>
+          <option value="rejected">{t("articles.statusRejected")}</option>
         </select>
       </div>
 
@@ -76,19 +94,17 @@ export function ArticlesPage() {
             <div>
               <h2>{article.title || t("articles.untitled")}</h2>
               <p className="muted">
-                {article.status === "published" ? t("articles.statusPublished") : t("articles.statusDraft")} · {article.author_name}
+                {statusLabel(article, t)} · {article.author_name}
               </p>
             </div>
             <div className="list-card-actions">
+              <Link to={`/articles/${article.id}/edit`} className="ghost-button link-button">
+                {t("articles.edit")}
+              </Link>
               {canEdit ? (
-                <>
-                  <Link to={`/articles/${article.id}/edit`} className="ghost-button link-button">
-                    {t("articles.edit")}
-                  </Link>
-                  <button type="button" className="ghost-button danger" onClick={() => void handleDelete(article.id)}>
-                    {t("articles.delete")}
-                  </button>
-                </>
+                <button type="button" className="ghost-button danger" onClick={() => void handleDelete(article.id)}>
+                  {t("articles.delete")}
+                </button>
               ) : null}
             </div>
           </article>

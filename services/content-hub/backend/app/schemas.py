@@ -9,14 +9,13 @@ from pydantic import BaseModel, Field
 class ArticleCreate(BaseModel):
     title: str = Field(default="", max_length=500)
     content: str = ""
-    status: Literal["draft", "published"] = "draft"
+    status: Literal["draft"] = "draft"
     template: Optional[str] = None
 
 
 class ArticleUpdate(BaseModel):
     title: Optional[str] = Field(default=None, max_length=500)
     content: Optional[str] = None
-    status: Optional[Literal["draft", "published"]] = None
 
 
 class ArticleResponse(BaseModel):
@@ -25,6 +24,8 @@ class ArticleResponse(BaseModel):
     content: str
     status: str
     template: Optional[str]
+    scheduled_publish_at: Optional[datetime] = None
+    review_comment: str = ""
     author_id: str
     author_name: str
     author_email: str
@@ -88,6 +89,8 @@ class CertificateResponse(BaseModel):
     valid_from: date
     valid_to: date
     renewal_in_progress: bool
+    renewal_approval_status: str = "none"
+    renewal_review_comment: str = ""
     status: str
     days_until_expiry: int
     responsible_name: str
@@ -103,9 +106,12 @@ class CertificateResponse(BaseModel):
 
 class DashboardStats(BaseModel):
     drafts: int
+    in_review: int = 0
+    scheduled: int = 0
     published: int
     files: int
     certificates: int
+    renewals_pending: int = 0
     expiring_30: int = 0
     expiring_60: int = 0
     expiring_90: int = 0

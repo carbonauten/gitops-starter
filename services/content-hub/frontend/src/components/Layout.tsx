@@ -38,7 +38,7 @@ export function TopBar() {
 
 export function Sidebar() {
   const { t } = useTranslation();
-  const { canManageUsers } = usePermissions();
+  const { canManageUsers, canApprove, canApproveCertificates } = usePermissions();
 
   const items = [
     { to: "/", label: t("nav.dashboard"), end: true },
@@ -47,6 +47,10 @@ export function Sidebar() {
     { to: "/certificates", label: t("nav.certificates") },
     { to: "/publish", label: t("nav.publish") },
   ];
+
+  if (canApprove || canApproveCertificates) {
+    items.push({ to: "/workflow", label: t("nav.workflow") });
+  }
 
   return (
     <aside className="sidebar">
@@ -69,6 +73,12 @@ export function Sidebar() {
               className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
             >
               {t("nav.users")}
+            </NavLink>
+            <NavLink
+              to="/audit"
+              className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+            >
+              {t("nav.audit")}
             </NavLink>
           </>
         ) : null}

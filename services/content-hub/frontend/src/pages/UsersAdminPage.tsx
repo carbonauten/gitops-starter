@@ -21,7 +21,7 @@ import {
   type UserInvite,
 } from "../api/client";
 
-const ROLES: User["role"][] = ["it_master", "editor", "viewer"];
+const ROLES: User["role"][] = ["it_master", "editor", "certificate_manager", "viewer"];
 
 function slugifyDepartmentCode(name: string): string {
   return name

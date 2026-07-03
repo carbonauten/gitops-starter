@@ -6,10 +6,13 @@ import {
   createArticle,
   fetchArticle,
   fetchArticleTemplates,
+  submitArticleForReview,
   updateArticle,
   type ArticleTemplate,
 } from "../api/client";
 import { ArticleEditor } from "../components/ArticleEditor";
+
+const EDITABLE_STATUSES = new Set(["draft", "rejected"]);
 
 export function ArticleEditorPage() {
   const { t } = useTranslation();
@@ -20,7 +23,9 @@ export function ArticleEditorPage() {
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("<p></p>");
-  const [status, setStatus] = useState<"draft" | "published">("draft");
+  const [status, setStatus] = useState<"draft" | "review" | "rejected" | "scheduled" | "published">("draft");
+  const [reviewComment, setReviewComment] = useState("");
+  const [scheduledAt, setScheduledAt] = useState<string | null>(null);
   const [templates, setTemplates] = useState<ArticleTemplate[]>([]);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
@@ -46,6 +51,8 @@ export function ArticleEditorPage() {
           setTitle(article.title);
           setContent(article.content || "<p></p>");
           setStatus(article.status);
+          setReviewComment(article.review_comment || "");
+          setScheduledAt(article.scheduled_publish_at || null);
         } catch (err) {
           setError(err instanceof Error ? err.message : t("common.error"));
         } finally {
@@ -55,22 +62,62 @@ export function ArticleEditorPage() {
     })();
   }, [id, isNew, searchParams, t]);
 
-  async function handleSubmit(event: FormEvent, nextStatus: "draft" | "published") {
+  const canEditContent = isNew || EDITABLE_STATUSES.has(status);
+
+  async function handleSaveDraft(event: FormEvent) {
     event.preventDefault();
     setSaving(true);
     setError("");
     try {
       if (isNew) {
-        const article = await createArticle({ title, content, status: nextStatus });
+        const article = await createArticle({ title, content });
         navigate(`/articles/${article.id}/edit`, { replace: true });
         return;
       }
-      await updateArticle(id!, { title, content, status: nextStatus });
-      setStatus(nextStatus);
+      await updateArticle(id!, { title, content });
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleSubmitReview(event: FormEvent) {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      let articleId = id;
+      if (isNew) {
+        const article = await createArticle({ title, content });
+        articleId = article.id;
+        navigate(`/articles/${article.id}/edit`, { replace: true });
+      } else {
+        await updateArticle(id!, { title, content });
+      }
+      if (articleId) {
+        const article = await submitArticleForReview(articleId);
+        setStatus(article.status);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function statusLabel(value: typeof status): string {
+    switch (value) {
+      case "review":
+        return t("articles.statusReview");
+      case "rejected":
+        return t("articles.statusRejected");
+      case "scheduled":
+        return t("articles.statusScheduled");
+      case "published":
+        return t("articles.statusPublished");
+      default:
+        return t("articles.statusDraft");
     }
   }
 
@@ -84,6 +131,13 @@ export function ArticleEditorPage() {
         <div>
           <h1>{isNew ? t("articles.new") : t("articles.edit")}</h1>
           <p className="muted">{t("articles.editorSubtitle")}</p>
+          {!isNew ? (
+            <p className="inline-meta">
+              <span className="badge">{statusLabel(status)}</span>
+              {reviewComment ? <span className="muted">{t("articles.rejectionComment")}: {reviewComment}</span> : null}
+              {scheduledAt ? <span className="muted">{t("articles.scheduledAt")}: {scheduledAt}</span> : null}
+            </p>
+          ) : null}
         </div>
         <Link to="/articles" className="ghost-button link-button">
           {t("articles.back")}
@@ -101,10 +155,10 @@ export function ArticleEditorPage() {
         </div>
       ) : null}
 
-      <form className="editor-form" onSubmit={(event) => void handleSubmit(event, status)}>
+      <form className="editor-form" onSubmit={(event) => void handleSaveDraft(event)}>
         <label>
           {t("articles.fieldTitle")}
-          <input value={title} onChange={(event) => setTitle(event.target.value)} required />
+          <input value={title} onChange={(event) => setTitle(event.target.value)} required disabled={!canEditContent} />
         </label>
 
         <label>
@@ -114,14 +168,16 @@ export function ArticleEditorPage() {
 
         {error ? <p className="error-text">{error}</p> : null}
 
-        <div className="form-actions">
-          <button type="button" className="ghost-button" disabled={saving} onClick={(event) => void handleSubmit(event, "draft")}>
-            {t("articles.saveDraft")}
-          </button>
-          <button type="button" className="primary-button" disabled={saving} onClick={(event) => void handleSubmit(event, "published")}>
-            {t("articles.publish")}
-          </button>
-        </div>
+        {canEditContent ? (
+          <div className="form-actions">
+            <button type="submit" className="ghost-button" disabled={saving}>
+              {t("articles.saveDraft")}
+            </button>
+            <button type="button" className="primary-button" disabled={saving} onClick={(event) => void handleSubmitReview(event)}>
+              {t("articles.submitReview")}
+            </button>
+          </div>
+        ) : null}
       </form>
     </section>
   );

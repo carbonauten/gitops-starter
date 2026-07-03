@@ -38,7 +38,7 @@ class LanguageUpdate(BaseModel):
 
 
 class RoleUpdate(BaseModel):
-    role: str = Field(..., description="it_master, editor, or viewer")
+    role: str = Field(..., description="it_master, editor, certificate_manager, or viewer")
 
 
 class ActiveUpdate(BaseModel):
@@ -53,7 +53,7 @@ class UserCreate(BaseModel):
     email: str = Field(..., min_length=3, max_length=200)
     name: str = Field(..., min_length=1, max_length=200)
     password: str = Field(..., min_length=8, max_length=200)
-    role: str = Field(..., description="it_master, editor, or viewer")
+    role: str = Field(..., description="it_master, editor, certificate_manager, or viewer")
     department_id: Optional[str] = None
 
 
@@ -63,7 +63,7 @@ class PasswordUpdate(BaseModel):
 
 class InviteCreate(BaseModel):
     email: str = Field(..., min_length=3, max_length=200)
-    role: str = Field(..., description="it_master, editor, or viewer")
+    role: str = Field(..., description="it_master, editor, certificate_manager, or viewer")
     department_id: Optional[str] = None
 
 

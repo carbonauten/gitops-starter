@@ -1,10 +1,11 @@
 def test_create_list_and_update_article(auth_client):
     create = auth_client.post(
         "/api/articles",
-        json={"title": "Weekly update", "content": "<p>Hello team</p>", "status": "draft"},
+        json={"title": "Weekly update", "content": "<p>Hello team</p>"},
     )
     assert create.status_code == 201
     article_id = create.json()["article"]["id"]
+    assert create.json()["article"]["status"] == "draft"
 
     listing = auth_client.get("/api/articles")
     assert listing.status_code == 200
@@ -12,10 +13,10 @@ def test_create_list_and_update_article(auth_client):
 
     update = auth_client.patch(
         f"/api/articles/{article_id}",
-        json={"status": "published", "title": "Weekly update published"},
+        json={"title": "Weekly update revised"},
     )
     assert update.status_code == 200
-    assert update.json()["article"]["status"] == "published"
+    assert update.json()["article"]["title"] == "Weekly update revised"
 
     search = auth_client.get("/api/search", params={"q": "Weekly"})
     assert search.status_code == 200
@@ -31,7 +32,7 @@ def test_article_templates(auth_client):
 
 
 def test_delete_article(auth_client):
-    create = auth_client.post("/api/articles", json={"title": "Temp", "content": "", "status": "draft"})
+    create = auth_client.post("/api/articles", json={"title": "Temp", "content": ""})
     article_id = create.json()["article"]["id"]
     delete = auth_client.delete(f"/api/articles/{article_id}")
     assert delete.status_code == 204

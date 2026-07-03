@@ -29,6 +29,8 @@ class Article(Base):
     content: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(20), default="draft")
     template: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    scheduled_publish_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    review_comment: Mapped[str] = mapped_column(Text, default="")
     author_id: Mapped[str] = mapped_column(String(100))
     author_name: Mapped[str] = mapped_column(String(200))
     author_email: Mapped[str] = mapped_column(String(200), default="")
@@ -169,18 +171,6 @@ class PublicationDelivery(Base):
     )
 
 
-class SyncLog(Base):
-    __tablename__ = "sync_logs"
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
-    direction: Mapped[str] = mapped_column(String(20), default="pull")
-    status: Mapped[str] = mapped_column(String(20), default="success")
-    article_count: Mapped[int] = mapped_column(Integer, default=0)
-    certificate_count: Mapped[int] = mapped_column(Integer, default=0)
-    message: Mapped[str] = mapped_column(Text, default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
-
-
 class Certificate(Base):
     __tablename__ = "certificates"
 
@@ -191,6 +181,8 @@ class Certificate(Base):
     valid_from: Mapped[date] = mapped_column(Date)
     valid_to: Mapped[date] = mapped_column(Date)
     renewal_in_progress: Mapped[bool] = mapped_column(Boolean, default=False)
+    renewal_approval_status: Mapped[str] = mapped_column(String(30), default="none")
+    renewal_review_comment: Mapped[str] = mapped_column(Text, default="")
     responsible_name: Mapped[str] = mapped_column(String(200), default="")
     responsible_email: Mapped[str] = mapped_column(String(200), default="")
     file_asset_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
@@ -203,6 +195,32 @@ class Certificate(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
+
+
+class SyncLog(Base):
+    __tablename__ = "sync_logs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    direction: Mapped[str] = mapped_column(String(20), default="pull")
+    status: Mapped[str] = mapped_column(String(20), default="success")
+    article_count: Mapped[int] = mapped_column(Integer, default=0)
+    certificate_count: Mapped[int] = mapped_column(Integer, default=0)
+    message: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    entity_type: Mapped[str] = mapped_column(String(50), index=True)
+    entity_id: Mapped[str] = mapped_column(String(36), index=True)
+    action: Mapped[str] = mapped_column(String(50), index=True)
+    actor_id: Mapped[str] = mapped_column(String(100))
+    actor_name: Mapped[str] = mapped_column(String(200))
+    actor_email: Mapped[str] = mapped_column(String(200), default="")
+    details: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 def ensure_schema_updates(engine, is_sqlite: bool) -> None:
@@ -220,6 +238,22 @@ def ensure_schema_updates(engine, is_sqlite: bool) -> None:
         if "folder_id" not in columns:
             with engine.begin() as connection:
                 connection.execute(text("ALTER TABLE file_assets ADD COLUMN folder_id VARCHAR(36)"))
+    if inspector.has_table("articles"):
+        columns = {column["name"] for column in inspector.get_columns("articles")}
+        if "scheduled_publish_at" not in columns:
+            with engine.begin() as connection:
+                connection.execute(text("ALTER TABLE articles ADD COLUMN scheduled_publish_at DATETIME"))
+        if "review_comment" not in columns:
+            with engine.begin() as connection:
+                connection.execute(text("ALTER TABLE articles ADD COLUMN review_comment TEXT DEFAULT ''"))
+    if inspector.has_table("certificates"):
+        columns = {column["name"] for column in inspector.get_columns("certificates")}
+        if "renewal_approval_status" not in columns:
+            with engine.begin() as connection:
+                connection.execute(text("ALTER TABLE certificates ADD COLUMN renewal_approval_status VARCHAR(30) DEFAULT 'none'"))
+        if "renewal_review_comment" not in columns:
+            with engine.begin() as connection:
+                connection.execute(text("ALTER TABLE certificates ADD COLUMN renewal_review_comment TEXT DEFAULT ''"))
 
 
 DEFAULT_DEPARTMENTS: tuple[tuple[str, str, int], ...] = (

@@ -10,6 +10,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
+from ..audit_service import log_audit
 from ..dependencies import get_current_user, require_editor
 from ..certificates import compute_certificate_status, days_until_expiry, expiry_window_end
 from ..database import Certificate, FileAsset, get_db
@@ -45,6 +46,8 @@ def _to_response(certificate: Certificate, db: Session, today: Optional[date] = 
         valid_from=certificate.valid_from,
         valid_to=certificate.valid_to,
         renewal_in_progress=certificate.renewal_in_progress,
+        renewal_approval_status=certificate.renewal_approval_status,
+        renewal_review_comment=certificate.renewal_review_comment,
         status=compute_certificate_status(certificate.valid_to, certificate.renewal_in_progress, today),
         days_until_expiry=days_until_expiry(certificate.valid_to, today),
         responsible_name=certificate.responsible_name,
@@ -166,6 +169,14 @@ def create_certificate(
     db.add(certificate)
     db.commit()
     db.refresh(certificate)
+    log_audit(
+        db,
+        entity_type="certificate",
+        entity_id=certificate.id,
+        action="create",
+        actor=user,
+        details={"name": certificate.name},
+    )
     return {"certificate": _to_response(certificate, db)}
 
 
@@ -186,7 +197,7 @@ def update_certificate(
     certificate_id: str,
     payload: CertificateUpdate,
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_editor),
+    user: dict = Depends(require_editor),
 ) -> dict:
     certificate = db.get(Certificate, certificate_id)
     if not certificate:
@@ -204,6 +215,9 @@ def update_certificate(
         certificate.valid_to = payload.valid_to
     if payload.renewal_in_progress is not None:
         certificate.renewal_in_progress = payload.renewal_in_progress
+        if not payload.renewal_in_progress:
+            certificate.renewal_approval_status = "none"
+            certificate.renewal_review_comment = ""
     if payload.responsible_name is not None:
         certificate.responsible_name = payload.responsible_name
     if payload.responsible_email is not None:
@@ -217,6 +231,14 @@ def update_certificate(
     _validate_dates(certificate.valid_from, certificate.valid_to)
     db.commit()
     db.refresh(certificate)
+    log_audit(
+        db,
+        entity_type="certificate",
+        entity_id=certificate.id,
+        action="update",
+        actor=user,
+        details={"name": certificate.name, "renewal_in_progress": certificate.renewal_in_progress},
+    )
     return {"certificate": _to_response(certificate, db)}
 
 
@@ -224,11 +246,19 @@ def update_certificate(
 def delete_certificate(
     certificate_id: str,
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_editor),
+    user: dict = Depends(require_editor),
 ):
     certificate = db.get(Certificate, certificate_id)
     if not certificate:
         raise HTTPException(status_code=404, detail="not_found")
+    log_audit(
+        db,
+        entity_type="certificate",
+        entity_id=certificate.id,
+        action="delete",
+        actor=user,
+        details={"name": certificate.name},
+    )
     db.delete(certificate)
     db.commit()
     return Response(status_code=204)

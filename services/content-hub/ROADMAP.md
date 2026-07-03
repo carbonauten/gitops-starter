@@ -58,7 +58,7 @@ flowchart LR
 | 3 | 2 Wochen | ✅ Abgeschlossen | **Zertifikatsverwaltung:** Erfassung, Ablauf, Erinnerungen |
 | 4 | 2 Wochen | ✅ Abgeschlossen | Multichannel: Teams, Notion, Outlook |
 | 5 | 2 Wochen | ✅ Abgeschlossen (MVP) | China: Alibaba-Deployment, Datensync EU ↔ CN |
-| 6 | 1 Woche | Geplant | Workflow, Freigaben, Audit, Go-Live |
+| 6 | 1 Woche | ✅ Abgeschlossen (MVP) | Workflow, Freigaben, Audit, Go-Live |
 | 7+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -243,26 +243,30 @@ flowchart LR
 
 ---
 
-## Sprint 6 — Workflow & Go-Live
+## Sprint 6 — Workflow & Go-Live ✅ (MVP)
 
 **Ziel:** Produktionsreifer Betrieb mit Freigaben und Nachvollziehbarkeit.
 
-### Geplante Features
+### Deliverables (MVP)
 
-- [ ] Freigabe-Workflow: Entwurf → Review → Veröffentlichen (Artikel + Zertifikate)
-- [ ] Rollen: Admin, Redakteur, Zertifikats-Manager, Leser (Entra-Gruppen)
-- [ ] Termin-Veröffentlichung (scheduled publish)
-- [ ] Audit-Log: Wer hat wann was geändert / veröffentlicht
-- [ ] Onboarding-Hilfe in der UI (Tooltips, Kurzanleitung pro Sprache)
-- [ ] Produktions-Deployment EU
-- [ ] Monitoring (Health, Fehlerrate, Sync-Status, Zertifikat-Abläufe)
-- [ ] Dokumentation für Admins und Redakteure
+- [x] Freigabe-Workflow: Entwurf → Review → Veröffentlichen (Artikel)
+- [x] Zertifikat-Erneuerung: Freigabe durch IT-Master oder Zertifikats-Manager
+- [x] Rolle `certificate_manager` (Zertifikats-Manager)
+- [x] Termin-Veröffentlichung (`scheduled` + Hintergrund-Scheduler)
+- [x] Audit-Log (`/api/audit`) für Artikel, Zertifikate, Workflow-Aktionen
+- [x] Monitoring-Summary (`/api/monitor/summary`) für IT-Master
+- [x] Onboarding-Hilfe im Dashboard (DE / EN / 中文)
+- [x] UI: Freigaben-Seite, Audit-Log, aktualisierter Artikel-Editor
+- [ ] Entra-Gruppen-Mapping für Rollen — Backlog
+- [ ] Produktions-Deployment EU — läuft auf Railway
+- [ ] Pilot mit 10+ Nutzern — organisatorisch
 
-### Akzeptanzkriterien
+### Akzeptanzkriterien (MVP)
 
-- Zertifikat-Erneuerung erfordert Freigabe durch definierte Rolle
-- Vollständiges Audit für Compliance-Anfragen
-- 10+ Pilotnutzer arbeiten 1 Woche produktiv
+- [x] Direktes Veröffentlichen durch Redakteure blockiert
+- [x] Multichannel-Publish nur für `published`-Artikel
+- [x] Vollständiges Audit für Compliance-Anfragen (IT-Master)
+- [x] Zertifikat-Erneuerung erfordert Freigabe
 
 ---
 
@@ -333,6 +337,6 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ## Nächster Schritt
 
-**Sprint 6 starten:** Workflow, Freigaben, Audit und Go-Live.
+**Sprint 7+:** Siehe Backlog unten — Versionierung, KI-Assistenz, Analytics.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.

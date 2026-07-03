@@ -30,5 +30,8 @@
   "errors.sync_push_failed": "推送到对等区域失败。",
   "errors.sync_pull_failed": "从对等区域拉取失败。",
   "errors.oss_not_configured": "对象存储未配置。",
+  "errors.invalid_workflow_state": "当前工作流状态下不允许此操作。",
+  "errors.article_not_published": "只有已发布的文章才能发送到外部渠道。",
+  "errors.renewal_not_requested": "请先启用续期，再申请审批。",
   "messages.language_updated": "语言已更新。"
 }

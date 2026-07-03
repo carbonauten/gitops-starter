@@ -11,16 +11,20 @@ import {
   type PlatformInfo,
   type SyncStatus,
 } from "../api/client";
+import { OnboardingTips } from "../components/OnboardingTips";
 import { usePermissions } from "../hooks/usePermissions";
 
 export function DashboardPage() {
   const { t } = useTranslation();
-  const { isItMaster } = usePermissions();
+  const { isItMaster, canApprove, canApproveCertificates } = usePermissions();
   const [stats, setStats] = useState<DashboardStats>({
     drafts: 0,
+    in_review: 0,
+    scheduled: 0,
     published: 0,
     files: 0,
     certificates: 0,
+    renewals_pending: 0,
     expiring_30: 0,
     expiring_60: 0,
     expiring_90: 0,
@@ -55,6 +59,8 @@ export function DashboardPage() {
 
   const cards = [
     { label: t("dashboard.drafts"), value: stats.drafts, to: "/articles" },
+    { label: t("dashboard.inReview"), value: stats.in_review, to: "/workflow" },
+    { label: t("dashboard.scheduled"), value: stats.scheduled, to: "/workflow" },
     { label: t("dashboard.published"), value: stats.published, to: "/articles" },
     { label: t("dashboard.files"), value: stats.files, to: "/files" },
     { label: t("dashboard.certificates"), value: stats.certificates, to: "/certificates" },
@@ -90,6 +96,8 @@ export function DashboardPage() {
       </header>
 
       {loading ? <p>{t("common.loading")}</p> : null}
+
+      <OnboardingTips />
 
       {platform ? (
         <div className="section-block">
@@ -146,6 +154,18 @@ export function DashboardPage() {
               {syncRunning ? t("dashboard.syncRunning") : t("dashboard.syncRun")}
             </button>
           ) : null}
+        </div>
+      ) : null}
+
+      {(canApprove || canApproveCertificates) && (stats.in_review > 0 || stats.renewals_pending > 0) ? (
+        <div className="section-block">
+          <h2>{t("dashboard.workflowTitle")}</h2>
+          <p className="muted">
+            {stats.in_review} {t("dashboard.inReview")} · {stats.renewals_pending} {t("dashboard.renewalsPending")}
+          </p>
+          <Link to="/workflow" className="primary-button link-button">
+            {t("dashboard.workflowLink")}
+          </Link>
         </div>
       ) : null}
 
