@@ -24,6 +24,9 @@ import {
   type PublishChannel,
   type PublishSettings,
 } from "../api/client";
+import { DeliveryStatusBadge } from "../components/DeliveryStatusBadge";
+import { EmptyState } from "../components/EmptyState";
+import { LoadingState } from "../components/LoadingState";
 import { usePermissions } from "../hooks/usePermissions";
 
 const CHANNELS: PublishChannel["channel"][] = ["teams", "outlook", "notion"];
@@ -236,7 +239,7 @@ export function PublishPage() {
         <p className="muted">{t("publish.subtitle")}</p>
       </header>
 
-      {loading ? <p>{t("common.loading")}</p> : null}
+      {loading ? <LoadingState /> : null}
       {error ? <p className="error-text">{error}</p> : null}
       {notice ? <p className="invite-notice">{notice}</p> : null}
 
@@ -451,7 +454,7 @@ export function PublishPage() {
           <div className="admin-table-wrap">
             <h2>{t("publish.historyTitle")}</h2>
             {history.length === 0 ? (
-              <p className="muted">{t("publish.empty")}</p>
+              <EmptyState message={t("publish.empty")} icon="↗" />
             ) : (
               <table className="admin-table">
                 <thead>
@@ -476,9 +479,7 @@ export function PublishPage() {
                           {publication.deliveries.map((delivery) => (
                             <div key={delivery.id} className="publish-delivery-item">
                               <span>{t(`publish.channels.${delivery.channel}`)}</span>
-                              <span className={`publish-status publish-status-${delivery.status}`}>
-                                {t(`publish.status.${delivery.status}`)}
-                              </span>
+                              <DeliveryStatusBadge status={delivery.status} />
                               {delivery.external_url ? (
                                 <a href={delivery.external_url} target="_blank" rel="noreferrer">
                                   {t("publish.openLink")}

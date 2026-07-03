@@ -11,6 +11,8 @@ import {
   type FileBrowseResult,
   type FileSource,
 } from "../api/client";
+import { EmptyState } from "../components/EmptyState";
+import { LoadingState } from "../components/LoadingState";
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -194,10 +196,10 @@ export function FilesPage() {
             />
           </div>
 
-          {loading ? <p>{t("common.loading")}</p> : null}
+          {loading ? <LoadingState /> : null}
           {error ? <p className="error-text">{error}</p> : null}
           {!loading && files.length === 0 && folders.length === 0 ? (
-            <div className="empty-state">{t("files.empty")}</div>
+            <EmptyState message={t("files.empty")} icon="▣" />
           ) : null}
 
           <div className="list-stack">

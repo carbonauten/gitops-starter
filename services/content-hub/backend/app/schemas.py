@@ -53,6 +53,13 @@ class SearchResult(BaseModel):
     status: Optional[str] = None
     folder: Optional[str] = None
     updated_at: datetime
+    relevance: Optional[float] = None
+
+
+class SearchAskRequest(BaseModel):
+    question: str = Field(min_length=2, max_length=2000)
+    language: str = "de"
+    type: Optional[Literal["article", "file", "certificate"]] = None
 
 
 class CertificateCreate(BaseModel):

@@ -4,6 +4,7 @@
     "tagline": "FuckCo2 goes international"
   },
   "nav": {
+    "search": "搜索",
     "dashboard": "仪表盘",
     "articles": "文章",
     "files": "文件",
@@ -48,7 +49,7 @@
     "expiring60": "60 天内",
     "expiring90": "90 天内",
     "sprintNote": "Sprint 6：审批工作流、审计日志和定时发布已上线。",
-    "platformTip": "Sprint 7：文章与证书的版本历史已上线 — 在编辑器中打开「版本」。",
+    "platformTip": "新功能：中央搜索与 AI 问答 — 顶部栏、「搜索」页面或按 ⌘K。",
     "regionTitle": "部署区域",
     "regionEu": "欧洲 (EU)",
     "regionCn": "中国 (CN)",
@@ -319,9 +320,38 @@
     }
   },
   "search": {
-    "placeholder": "搜索文章、文件和证书…",
+    "eyebrow": "中央搜索",
+    "title": "查找一切 — 支持 AI",
+    "subtitle": "搜索文章、文件和证书。用自然语言提问。",
+    "placeholder": "搜索内容或提问…",
     "action": "搜索",
-    "noResults": "未找到结果。"
+    "noResults": "未找到结果。",
+    "resultsTitle": "搜索结果",
+    "viewAll": "查看全部结果",
+    "suggestions": "建议",
+    "startTyping": "至少输入 2 个字符开始搜索。",
+    "modeLabel": "搜索模式",
+    "modeSearch": "搜索",
+    "modeAsk": "提问",
+    "modeAskAi": "AI 提问",
+    "askAi": "问 AI",
+    "askFallback": "从内容生成答案",
+    "askPlaceholder": "例如：本季度哪些证书即将到期？",
+    "askSubmit": "获取答案",
+    "askLoading": "AI 正在分析您的内容…",
+    "answerTitle": "答案",
+    "sourcesTitle": "来源",
+    "followUp": "后续问题",
+    "aiBadge": "AI 答案",
+    "keywordBadge": "文本搜索",
+    "expandedQuery": "搜索词",
+    "aiUnavailable": "配置 Azure OpenAI 或 OpenAI 后可使用 AI 答案。在此之前将显示匹配内容的摘要。",
+    "types": {
+      "all": "全部",
+      "article": "文章",
+      "file": "文件",
+      "certificate": "证书"
+    }
   },
   "editor": {
     "bold": "粗体",

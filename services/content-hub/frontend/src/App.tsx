@@ -16,6 +16,7 @@ import { PublishPage } from "./pages/PublishPage";
 import { AuditLogPage } from "./pages/AuditLogPage";
 import { WorkflowPage } from "./pages/WorkflowPage";
 import { UsersAdminPage } from "./pages/UsersAdminPage";
+import { SearchPage } from "./pages/SearchPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
@@ -46,6 +47,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/search"
+        element={
+          <ProtectedRoute>
+            <SearchPage />
           </ProtectedRoute>
         }
       />

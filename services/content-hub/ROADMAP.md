@@ -61,6 +61,8 @@ flowchart LR
 | 6 | 1 Woche | ✅ Abgeschlossen (MVP) | Workflow, Freigaben, Audit, Go-Live |
 | 7 | 1 Woche | ✅ Abgeschlossen (MVP) | Versionierung: Artikel- & Zertifikat-Historie |
 | UI | 2–3 Tage | ✅ Abgeschlossen | Responsive Navigation, Status-Badges, Polish |
+| UI 2 | 2–3 Tage | ✅ Abgeschlossen | Loading/Empty States, Badges, Audit-Mobile |
+| Search + AI | 3–5 Tage | ✅ Abgeschlossen (MVP) | Zentrale Suche, KI-Fragen, ⌘K |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -313,6 +315,50 @@ flowchart LR
 - [x] Navigation auf Mobilgeräten ohne horizontales Scrollen nutzbar
 - [x] Artikel-Status auf einen Blick erkennbar
 - [x] Einheitliche Button- und Banner-Stile
+
+---
+
+## UI Sprint 2 — Components & Consistency ✅
+
+**Ziel:** Wiederverwendbare UI-Bausteine und konsistente Darstellung auf allen Listen- und Admin-Seiten.
+
+### Deliverables
+
+- [x] `LoadingState` und `EmptyState` als gemeinsame Komponenten
+- [x] `CertificateStatusBadge` und `DeliveryStatusBadge` (Publish-Historie)
+- [x] Sidebar-Navigation mit Icons
+- [x] Workflow-Seite: Status-Badges für Artikel und Zertifikat-Erneuerungen
+- [x] Audit-Log: Aktions-Badges + Kartenansicht auf Mobilgeräten
+- [x] Mobile: Workflow-Aktionen und Listen-Buttons volle Breite
+- [x] i18n: aktualisierter `dashboard.platformTip` (DE / EN / 中文)
+
+### Akzeptanzkriterien
+
+- [x] Alle Kernlisten zeigen Spinner statt Plain-Text „Laden…“
+- [x] Leere Zustände sind visuell einheitlich
+- [x] Zertifikats- und Publish-Status nutzen dasselbe Badge-System wie Artikel
+
+---
+
+## Search + AI Sprint — Zentrale Suche ✅ (MVP)
+
+**Ziel:** Suche als wichtigstes Feature — inkl. KI-gestützter Fragen.
+
+### Deliverables
+
+- [x] Dedizierte `/search`-Seite mit Filter (Artikel / Dateien / Zertifikate)
+- [x] Globale Suche in TopBar + Dashboard-Hero + Sidebar-Eintrag
+- [x] Live-Suche mit Vorschlägen, `⌘K` / `Ctrl+K`
+- [x] API: `/api/search/ask`, `/api/search/suggestions`, Relevanz-Scoring
+- [x] KI-Modus: Azure OpenAI oder OpenAI (RAG über Treffer)
+- [x] Fallback ohne KI: Keyword-Extraktion + Treffer-Zusammenfassung
+- [x] Health: `ai_search_configured`
+
+### Akzeptanzkriterien
+
+- [x] Nutzer findet Inhalte von jeder Seite aus (TopBar / Dashboard)
+- [x] Natürliche Fragen liefern Antwort + Quellen
+- [x] DE / EN / 中文 für alle neuen UI-Texte
 
 ---
 

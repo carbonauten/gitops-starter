@@ -10,6 +10,10 @@ import {
   rejectCertificateRenewal,
   type WorkflowPending,
 } from "../api/client";
+import { ArticleStatusBadge } from "../components/ArticleStatusBadge";
+import { CertificateStatusBadge } from "../components/CertificateStatusBadge";
+import { EmptyState } from "../components/EmptyState";
+import { LoadingState } from "../components/LoadingState";
 import { usePermissions } from "../hooks/usePermissions";
 
 export function WorkflowPage() {
@@ -46,8 +50,8 @@ export function WorkflowPage() {
         <p className="muted">{t("workflow.subtitle")}</p>
       </header>
 
-      {loading ? <p>{t("common.loading")}</p> : null}
-      {!loading && isEmpty ? <div className="empty-state">{t("workflow.empty")}</div> : null}
+      {loading ? <LoadingState /> : null}
+      {!loading && isEmpty ? <EmptyState message={t("workflow.empty")} icon="✓" /> : null}
 
       {pending && pending.articles_in_review.length > 0 ? (
         <div className="section-block">
@@ -56,7 +60,10 @@ export function WorkflowPage() {
             {pending.articles_in_review.map((article) => (
               <article key={article.id} className="list-card">
                 <div>
-                  <h3>{article.title || t("articles.untitled")}</h3>
+                  <div className="list-card-title-row">
+                    <h3>{article.title || t("articles.untitled")}</h3>
+                    <ArticleStatusBadge status="review" />
+                  </div>
                   <p className="muted">
                     {article.author_name} · {article.updated_at}
                   </p>
@@ -122,7 +129,10 @@ export function WorkflowPage() {
             {pending.articles_scheduled.map((article) => (
               <article key={article.id} className="list-card">
                 <div>
-                  <h3>{article.title || t("articles.untitled")}</h3>
+                  <div className="list-card-title-row">
+                    <h3>{article.title || t("articles.untitled")}</h3>
+                    <ArticleStatusBadge status="scheduled" />
+                  </div>
                   <p className="muted">
                     {t("articles.scheduledAt")}: {article.scheduled_publish_at}
                   </p>
@@ -140,7 +150,10 @@ export function WorkflowPage() {
             {pending.certificate_renewals_pending.map((certificate) => (
               <article key={certificate.id} className="list-card">
                 <div>
-                  <h3>{certificate.name}</h3>
+                  <div className="list-card-title-row">
+                    <h3>{certificate.name}</h3>
+                    <CertificateStatusBadge status="renewal" />
+                  </div>
                   <p className="muted">
                     {certificate.responsible_name} · {certificate.updated_at}
                   </p>

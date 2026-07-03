@@ -4,6 +4,7 @@
     "tagline": "FuckCo2 goes international"
   },
   "nav": {
+    "search": "Search",
     "dashboard": "Dashboard",
     "articles": "Articles",
     "files": "Files",
@@ -48,7 +49,7 @@
     "expiring60": "Within 60 days",
     "expiring90": "Within 90 days",
     "sprintNote": "Sprint 6: approval workflow, audit log, and scheduled publishing are live.",
-    "platformTip": "Sprint 7: version history for articles and certificates is available — open an editor and use Versions.",
+    "platformTip": "New: central search with AI Q&A — top bar, Search page, or press ⌘K.",
     "regionTitle": "Deployment region",
     "regionEu": "Europe (EU)",
     "regionCn": "China (CN)",
@@ -244,9 +245,38 @@
     }
   },
   "search": {
-    "placeholder": "Search articles, files, and certificates…",
+    "eyebrow": "Central search",
+    "title": "Find anything — with AI assistance",
+    "subtitle": "Search articles, files, and certificates. Ask questions in natural language.",
+    "placeholder": "Search content or ask a question…",
     "action": "Search",
-    "noResults": "No results found."
+    "noResults": "No results found.",
+    "resultsTitle": "Search results",
+    "viewAll": "View all results",
+    "suggestions": "Suggestions",
+    "startTyping": "Type at least 2 characters to search.",
+    "modeLabel": "Search mode",
+    "modeSearch": "Search",
+    "modeAsk": "Ask",
+    "modeAskAi": "AI question",
+    "askAi": "Ask AI",
+    "askFallback": "Answer from content",
+    "askPlaceholder": "e.g. Which certificates expire this quarter?",
+    "askSubmit": "Get answer",
+    "askLoading": "AI is analyzing your content…",
+    "answerTitle": "Answer",
+    "sourcesTitle": "Sources",
+    "followUp": "Follow-up questions",
+    "aiBadge": "AI answer",
+    "keywordBadge": "Text search",
+    "expandedQuery": "Search terms",
+    "aiUnavailable": "AI answers are available once Azure OpenAI or OpenAI is configured. Until then you get a summary from matching content.",
+    "types": {
+      "all": "All",
+      "article": "Articles",
+      "file": "Files",
+      "certificate": "Certificates"
+    }
   },
   "editor": {
     "bold": "Bold",

@@ -4,6 +4,7 @@
     "tagline": "FuckCo2 goes international"
   },
   "nav": {
+    "search": "Suche",
     "dashboard": "Dashboard",
     "articles": "Artikel",
     "files": "Dateien",
@@ -48,7 +49,7 @@
     "expiring60": "Innerhalb 60 Tage",
     "expiring90": "Innerhalb 90 Tage",
     "sprintNote": "Sprint 6: Freigabe-Workflow, Audit-Log und Termin-Veröffentlichung sind aktiv.",
-    "platformTip": "Sprint 7: Versionshistorie für Artikel und Zertifikate ist verfügbar — im Editor unter „Versionen“.",
+    "platformTip": "Neu: Zentrale Suche mit KI-Fragen — oben in der Leiste, unter „Suche“ oder per ⌘K.",
     "regionTitle": "Deployment-Region",
     "regionEu": "Europa (EU)",
     "regionCn": "China (CN)",
@@ -319,9 +320,38 @@
     }
   },
   "search": {
-    "placeholder": "Artikel, Dateien und Zertifikate suchen…",
+    "eyebrow": "Zentrale Suche",
+    "title": "Alles finden — mit KI-Unterstützung",
+    "subtitle": "Durchsuchen Sie Artikel, Dateien und Zertifikate. Stellen Sie Fragen in natürlicher Sprache.",
+    "placeholder": "Artikel, Dateien, Zertifikate oder Frage eingeben…",
     "action": "Suchen",
-    "noResults": "Keine Treffer gefunden."
+    "noResults": "Keine Treffer gefunden.",
+    "resultsTitle": "Suchergebnisse",
+    "viewAll": "Alle Ergebnisse anzeigen",
+    "suggestions": "Vorschläge",
+    "startTyping": "Geben Sie mindestens 2 Zeichen ein, um zu suchen.",
+    "modeLabel": "Suchmodus",
+    "modeSearch": "Suche",
+    "modeAsk": "Frage stellen",
+    "modeAskAi": "KI-Frage",
+    "askAi": "KI fragen",
+    "askFallback": "Antwort aus Inhalten",
+    "askPlaceholder": "z. B. Welche Zertifikate laufen dieses Quartal ab?",
+    "askSubmit": "Antwort erhalten",
+    "askLoading": "KI analysiert Ihre Inhalte…",
+    "answerTitle": "Antwort",
+    "sourcesTitle": "Quellen",
+    "followUp": "Weitere Fragen",
+    "aiBadge": "KI-Antwort",
+    "keywordBadge": "Textsuche",
+    "expandedQuery": "Suchbegriffe",
+    "aiUnavailable": "KI-Antworten sind verfügbar, sobald Azure OpenAI oder OpenAI konfiguriert ist. Bis dahin erhalten Sie eine Zusammenfassung aus Treffern.",
+    "types": {
+      "all": "Alle",
+      "article": "Artikel",
+      "file": "Dateien",
+      "certificate": "Zertifikate"
+    }
   },
   "editor": {
     "bold": "Fett",

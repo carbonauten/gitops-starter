@@ -34,6 +34,7 @@ def health() -> dict:
         "oss_configured": settings.oss_configured,
         "sync_configured": settings.sync_configured,
         "sync_peer_region": settings.sync_peer_region,
+        "ai_search_configured": settings.ai_search_configured,
         "sso_redirect_uri": settings.effective_redirect_uri if settings.entra_configured else None,
         "supported_languages": list(settings.supported_languages),
     }

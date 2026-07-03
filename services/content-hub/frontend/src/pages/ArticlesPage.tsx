@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 
 import { deleteArticle, fetchArticles, type Article } from "../api/client";
 import { ArticleStatusBadge } from "../components/ArticleStatusBadge";
+import { EmptyState } from "../components/EmptyState";
+import { LoadingState } from "../components/LoadingState";
 import { usePermissions } from "../hooks/usePermissions";
 
 export function ArticlesPage() {
@@ -69,10 +71,10 @@ export function ArticlesPage() {
         </select>
       </div>
 
-      {loading ? <p>{t("common.loading")}</p> : null}
+      {loading ? <LoadingState /> : null}
       {error ? <p className="error-text">{error}</p> : null}
 
-      {!loading && articles.length === 0 ? <div className="empty-state">{t("articles.empty")}</div> : null}
+      {!loading && articles.length === 0 ? <EmptyState message={t("articles.empty")} icon="📝" /> : null}
 
       <div className="list-stack">
         {articles.map((article) => (

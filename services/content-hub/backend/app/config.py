@@ -86,6 +86,12 @@ class Settings(BaseSettings):
     sync_peer_region: str = "cn"
     sync_api_key: str = ""
 
+    azure_openai_endpoint: str = ""
+    azure_openai_api_key: str = ""
+    azure_openai_deployment: str = ""
+    openai_api_key: str = ""
+    openai_model: str = "gpt-4o-mini"
+
     supported_languages: tuple[str, ...] = ("de", "en", "zh-CN")
     default_language: str = "en"
 
@@ -195,6 +201,12 @@ class Settings(BaseSettings):
     @property
     def sync_configured(self) -> bool:
         return bool(self.sync_peer_url.strip() and self.sync_api_key.strip())
+
+    @property
+    def ai_search_configured(self) -> bool:
+        if self.azure_openai_endpoint.strip() and self.azure_openai_api_key.strip():
+            return bool(self.azure_openai_deployment.strip())
+        return bool(self.openai_api_key.strip())
 
     @property
     def effective_database_url(self) -> str:

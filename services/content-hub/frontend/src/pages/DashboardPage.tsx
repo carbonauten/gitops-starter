@@ -12,6 +12,8 @@ import {
   type SyncStatus,
 } from "../api/client";
 import { OnboardingTips } from "../components/OnboardingTips";
+import { GlobalSearch } from "../components/GlobalSearch";
+import { LoadingState } from "../components/LoadingState";
 import { usePermissions } from "../hooks/usePermissions";
 
 export function DashboardPage() {
@@ -90,12 +92,15 @@ export function DashboardPage() {
 
   return (
     <section className="page">
-      <header className="page-header">
-        <h1>{t("dashboard.title")}</h1>
-        <p className="muted">{t("dashboard.subtitle")}</p>
+      <header className="page-header dashboard-search-hero">
+        <div>
+          <h1>{t("dashboard.title")}</h1>
+          <p className="muted">{t("dashboard.subtitle")}</p>
+        </div>
+        <GlobalSearch variant="hero" />
       </header>
 
-      {loading ? <p>{t("common.loading")}</p> : null}
+      {loading ? <LoadingState /> : null}
 
       <OnboardingTips />
 

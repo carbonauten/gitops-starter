@@ -25,8 +25,10 @@ export function TopBar({ onMenuToggle }: { onMenuToggle: () => void }) {
         </button>
         <BrandLogo size="sm" />
       </div>
-      <div className="topbar-actions">
+      <div className="topbar-search">
         <SearchBar />
+      </div>
+      <div className="topbar-actions">
         <LanguageSwitch />
         {user ? (
           <div className="user-chip">
@@ -52,15 +54,16 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
   const { canManageUsers, canApprove, canApproveCertificates } = usePermissions();
 
   const items = [
-    { to: "/", label: t("nav.dashboard"), end: true },
-    { to: "/articles", label: t("nav.articles") },
-    { to: "/files", label: t("nav.files") },
-    { to: "/certificates", label: t("nav.certificates") },
-    { to: "/publish", label: t("nav.publish") },
+    { to: "/search", label: t("nav.search"), icon: "⌕" },
+    { to: "/", label: t("nav.dashboard"), end: true, icon: "◆" },
+    { to: "/articles", label: t("nav.articles"), icon: "✎" },
+    { to: "/files", label: t("nav.files"), icon: "▣" },
+    { to: "/certificates", label: t("nav.certificates"), icon: "◎" },
+    { to: "/publish", label: t("nav.publish"), icon: "↗" },
   ];
 
   if (canApprove || canApproveCertificates) {
-    items.push({ to: "/workflow", label: t("nav.workflow") });
+    items.push({ to: "/workflow", label: t("nav.workflow"), icon: "✓" });
   }
 
   return (
@@ -74,6 +77,9 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
             onClick={onNavigate}
             className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
           >
+            <span className="nav-link-icon" aria-hidden="true">
+              {item.icon}
+            </span>
             {item.label}
           </NavLink>
         ))}
@@ -85,6 +91,9 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
               onClick={onNavigate}
               className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
             >
+              <span className="nav-link-icon" aria-hidden="true">
+                ☰
+              </span>
               {t("nav.users")}
             </NavLink>
             <NavLink
@@ -92,6 +101,9 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
               onClick={onNavigate}
               className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
             >
+              <span className="nav-link-icon" aria-hidden="true">
+                ≡
+              </span>
               {t("nav.audit")}
             </NavLink>
           </>

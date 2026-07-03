@@ -101,6 +101,25 @@ Prüfen: `https://app.carbonauten.com/api/health` → `"password_auth": true`, `
 4. `SMTP_FROM_EMAIL` = verifizierte Absender-Adresse (z. B. `noreply@carbonauten.com`)
 5. Redeploy → `/api/health` sollte `"email_provider": "resend"` zeigen
 
+### KI-Suche (optional, empfohlen)
+
+Die zentrale Suche funktioniert auch ohne KI (Textsuche + Zusammenfassung). Für **KI-Antworten** und **intelligente Suchbegriffe**:
+
+| Variable | Wert | Beschreibung |
+|----------|------|--------------|
+| `AZURE_OPENAI_ENDPOINT` | z. B. `https://<resource>.openai.azure.com` | Azure OpenAI Endpoint |
+| `AZURE_OPENAI_API_KEY` | API-Key | Azure OpenAI |
+| `AZURE_OPENAI_DEPLOYMENT` | z. B. `gpt-4o-mini` | Deployment-Name |
+
+**Alternative (OpenAI direkt):**
+
+| Variable | Wert |
+|----------|------|
+| `OPENAI_API_KEY` | sk-… |
+| `OPENAI_MODEL` | `gpt-4o-mini` (optional) |
+
+`/api/health` → `"ai_search_configured": true` wenn gesetzt.
+
 **SMTP (nur Railway Pro oder anderer Host):**
 
 | Variable | Wert |

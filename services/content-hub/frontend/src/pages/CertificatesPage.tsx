@@ -8,14 +8,13 @@ import {
   fetchCertificates,
   type Certificate,
 } from "../api/client";
+import { CertificateStatusBadge } from "../components/CertificateStatusBadge";
+import { EmptyState } from "../components/EmptyState";
+import { LoadingState } from "../components/LoadingState";
 import { usePermissions } from "../hooks/usePermissions";
 
 const CATEGORIES = ["compliance", "product", "training", "ssl"] as const;
 const STATUSES = ["valid", "expiring", "expired", "renewal"] as const;
-
-function statusClass(status: Certificate["status"]): string {
-  return `status-badge status-${status}`;
-}
 
 export function CertificatesPage() {
   const { t } = useTranslation();
@@ -113,9 +112,11 @@ export function CertificatesPage() {
         </select>
       </div>
 
-      {loading ? <p>{t("common.loading")}</p> : null}
+      {loading ? <LoadingState /> : null}
       {error ? <p className="error-text">{error}</p> : null}
-      {!loading && certificates.length === 0 ? <div className="empty-state">{t("certificates.empty")}</div> : null}
+      {!loading && certificates.length === 0 ? (
+        <EmptyState message={t("certificates.empty")} icon="◎" />
+      ) : null}
 
       <div className="list-stack">
         {certificates.map((certificate) => (
@@ -123,7 +124,7 @@ export function CertificatesPage() {
             <div>
               <div className="list-card-title-row">
                 <h2>{certificate.name}</h2>
-                <span className={statusClass(certificate.status)}>{t(`certificates.status.${certificate.status}`)}</span>
+                <CertificateStatusBadge status={certificate.status} />
               </div>
               <p className="muted">
                 {t(`certificates.categories.${certificate.category}`)} · {certificate.issuer || t("certificates.noIssuer")}

@@ -141,6 +141,27 @@ export type SearchResult = {
   status?: string | null;
   folder?: string | null;
   updated_at: string;
+  relevance?: number | null;
+};
+
+export type SearchResultType = SearchResult["type"];
+
+export type SearchResponse = {
+  query: string;
+  results: SearchResult[];
+  counts: Record<SearchResultType, number>;
+  ai_available: boolean;
+};
+
+export type SearchAskResponse = {
+  question: string;
+  search_query: string;
+  answer: string;
+  mode: "ai" | "keyword";
+  results: SearchResult[];
+  counts: Record<SearchResultType, number>;
+  suggested_queries: string[];
+  ai_available: boolean;
 };
 
 export type Certificate = {
@@ -470,9 +491,26 @@ export function fileDownloadUrl(id: string): string {
   return `/api/files/${id}/download`;
 }
 
-export async function searchContent(q: string): Promise<SearchResult[]> {
-  const payload = await request<{ results: SearchResult[] }>(`/api/search?q=${encodeURIComponent(q)}`);
-  return payload.results;
+export async function searchContent(q: string, type?: SearchResultType): Promise<SearchResponse> {
+  const params = new URLSearchParams({ q });
+  if (type) params.set("type", type);
+  return request<SearchResponse>(`/api/search?${params.toString()}`);
+}
+
+export async function askSearch(
+  question: string,
+  language?: string,
+  type?: SearchResultType,
+): Promise<SearchAskResponse> {
+  return request<SearchAskResponse>("/api/search/ask", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ question, language, type: type || null }),
+  });
+}
+
+export async function fetchSearchSuggestions(): Promise<{ suggestions: string[]; ai_available: boolean }> {
+  return request<{ suggestions: string[]; ai_available: boolean }>("/api/search/suggestions");
 }
 
 export async function fetchCertificates(
