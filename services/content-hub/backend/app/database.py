@@ -49,9 +49,21 @@ class FileAsset(Base):
     content_type: Mapped[str] = mapped_column(String(200), default="application/octet-stream")
     size_bytes: Mapped[int] = mapped_column(Integer, default=0)
     folder: Mapped[str] = mapped_column(String(200), default="general")
+    folder_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
     storage_path: Mapped[str] = mapped_column(String(1000))
     uploaded_by_id: Mapped[str] = mapped_column(String(100))
     uploaded_by_name: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class FileFolder(Base):
+    __tablename__ = "file_folders"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    name: Mapped[str] = mapped_column(String(200))
+    slug: Mapped[str] = mapped_column(String(100))
+    parent_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
@@ -191,6 +203,11 @@ def ensure_schema_updates(engine, is_sqlite: bool) -> None:
         if "password_hash" not in columns:
             with engine.begin() as connection:
                 connection.execute(text("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255)"))
+    if inspector.has_table("file_assets"):
+        columns = {column["name"] for column in inspector.get_columns("file_assets")}
+        if "folder_id" not in columns:
+            with engine.begin() as connection:
+                connection.execute(text("ALTER TABLE file_assets ADD COLUMN folder_id VARCHAR(36)"))
 
 
 DEFAULT_DEPARTMENTS: tuple[tuple[str, str, int], ...] = (
@@ -243,6 +260,10 @@ def init_database(database_url: str, max_attempts: int = 10, retry_delay: float 
                 from .user_service import ensure_initial_admin
 
                 ensure_initial_admin(db)
+                from .file_folder_service import migrate_legacy_file_folders, seed_default_folders
+
+                seed_default_folders(db)
+                migrate_legacy_file_folders(db)
             logger.info("Database initialized")
             return
         except Exception as exc:  # noqa: BLE001

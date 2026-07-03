@@ -71,9 +71,50 @@ export type FileAsset = {
   content_type: string;
   size_bytes: number;
   folder: string;
+  folder_id?: string | null;
   uploaded_by_id: string;
   uploaded_by_name: string;
   created_at: string;
+};
+
+export type FileFolderNode = {
+  id: string;
+  name: string;
+  slug: string;
+  parent_id?: string | null;
+  path: string;
+  children: FileFolderNode[];
+};
+
+export type FileBrowseFolder = {
+  id: string;
+  name: string;
+  source: "platform" | "sharepoint" | "onedrive";
+  path?: string;
+  child_count?: number;
+};
+
+export type FileBrowseItem = FileAsset & {
+  web_url?: string;
+  source?: "platform" | "sharepoint" | "onedrive";
+};
+
+export type FileBrowseResult = {
+  source: "platform" | "sharepoint" | "onedrive";
+  current_item_id: string;
+  parent_item_id?: string | null;
+  breadcrumbs: Array<{ id: string; name: string }>;
+  folders: FileBrowseFolder[];
+  files: FileBrowseItem[];
+  folder_tree?: FileFolderNode[];
+  mock?: boolean;
+};
+
+export type FileSource = {
+  id: "platform" | "sharepoint" | "onedrive";
+  label: string;
+  configured: boolean;
+  mock: boolean;
 };
 
 export type ArticleTemplate = {
@@ -277,18 +318,47 @@ export async function deleteArticle(id: string): Promise<void> {
   await request<void>(`/api/articles/${id}`, { method: "DELETE" });
 }
 
-export async function fetchFiles(q?: string, folder?: string): Promise<{ files: FileAsset[]; folders: string[] }> {
+export async function fetchFiles(
+  q?: string,
+  folder?: string,
+  folderId?: string,
+): Promise<{ files: FileAsset[]; folders: string[]; folder_tree?: FileFolderNode[] }> {
   const params = new URLSearchParams();
   if (q) params.set("q", q);
   if (folder) params.set("folder", folder);
+  if (folderId) params.set("folder_id", folderId);
   const query = params.toString();
-  return request<{ files: FileAsset[]; folders: string[] }>(`/api/files${query ? `?${query}` : ""}`);
+  return request<{ files: FileAsset[]; folders: string[]; folder_tree?: FileFolderNode[] }>(
+    `/api/files${query ? `?${query}` : ""}`,
+  );
 }
 
-export async function uploadFile(file: File, folder: string): Promise<FileAsset> {
+export async function fetchFileSources(): Promise<FileSource[]> {
+  const payload = await request<{ sources: FileSource[] }>("/api/files/sources");
+  return payload.sources;
+}
+
+export async function fetchFileFolderTree(): Promise<FileFolderNode[]> {
+  const payload = await request<{ folders: FileFolderNode[] }>("/api/files/folders/tree");
+  return payload.folders;
+}
+
+export async function browseFiles(
+  source: FileSource["id"],
+  itemId?: string,
+  q?: string,
+): Promise<FileBrowseResult> {
+  const params = new URLSearchParams({ source });
+  if (itemId) params.set("item_id", itemId);
+  if (q) params.set("q", q);
+  return request<FileBrowseResult>(`/api/files/browse?${params.toString()}`);
+}
+
+export async function uploadFile(file: File, folder: string, folderId?: string): Promise<FileAsset> {
   const body = new FormData();
   body.append("upload", file);
   body.append("folder", folder);
+  if (folderId) body.append("folder_id", folderId);
   const payload = await request<{ file: FileAsset }>("/api/files/upload", {
     method: "POST",
     body,

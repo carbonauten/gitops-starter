@@ -66,11 +66,20 @@
   },
   "files": {
     "title": "文件",
-    "subtitle": "管理附件和文档",
+    "subtitle": "平台、SharePoint 和 OneDrive 一站式浏览",
     "empty": "此文件夹中暂无文件。",
     "upload": "选择文件",
     "dropHint": "将文件拖到此处或点击按钮",
     "searchPlaceholder": "搜索文件…",
+    "foldersTitle": "文件夹",
+    "up": "上一级",
+    "openExternal": "在 Microsoft 365 中打开",
+    "mockHint": "预览模式：配置 Graph 后将显示真实的 SharePoint/OneDrive 数据。",
+    "sources": {
+      "platform": "平台",
+      "sharepoint": "SharePoint",
+      "onedrive": "OneDrive"
+    },
     "folderGeneral": "通用",
     "folderCompliance": "合规",
     "folderMarketing": "市场",

@@ -27,6 +27,8 @@ def health() -> dict:
         "publish_mock_mode": settings.publish_mock_mode,
         "graph_publish_configured": settings.graph_publish_configured,
         "notion_configured": settings.notion_configured,
+        "sharepoint_configured": settings.sharepoint_configured,
+        "files_browse_mock_mode": settings.files_browse_mock_mode,
         "sso_redirect_uri": settings.effective_redirect_uri if settings.entra_configured else None,
         "supported_languages": list(settings.supported_languages),
     }

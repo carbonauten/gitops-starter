@@ -247,6 +247,40 @@ Kanäle können zusätzlich in der App unter **Veröffentlichen** (IT-Master) ko
 
 ---
 
+## 10. Dateien: SharePoint + OneDrive
+
+Unter `/files` gibt es drei Quellen: **Plattform**, **SharePoint**, **OneDrive**.
+
+### Mock-Modus (Standard)
+
+| Variable | Wert |
+|----------|------|
+| `FILES_BROWSE_MOCK_MODE` | `true` |
+
+Zeigt Beispiel-Ordner für SharePoint/OneDrive zum UI-Test.
+
+### Produktion
+
+**Graph Application Permissions** (zusätzlich zu Publish):
+
+| Permission | Zweck |
+|------------|-------|
+| `Files.Read.All` | SharePoint + OneDrive lesen |
+
+| Variable | Wert |
+|----------|------|
+| `FILES_BROWSE_MOCK_MODE` | `false` |
+| `SHAREPOINT_SITE_URL` | z. B. `https://carbonauten.sharepoint.com/sites/Firmendokumente` |
+| `SHAREPOINT_DISPLAY_NAME` | `Firmendokumente` |
+| `SHAREPOINT_DRIVE_ID` | optional, falls mehrere Libraries |
+| `AZURE_*` | wie SSO |
+
+OneDrive zeigt das Laufwerk des **aktuell angemeldeten Users** (E-Mail aus Session).
+
+`/api/health` → `sharepoint_configured`, `files_browse_mock_mode`
+
+---
+
 ## Kosten
 
 | Phase | Kosten |

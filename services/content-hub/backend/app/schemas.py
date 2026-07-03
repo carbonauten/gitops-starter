@@ -38,6 +38,7 @@ class FileResponse(BaseModel):
     content_type: str
     size_bytes: int
     folder: str
+    folder_id: Optional[str] = None
     uploaded_by_id: str
     uploaded_by_name: str
     created_at: datetime

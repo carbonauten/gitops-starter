@@ -66,11 +66,20 @@
   },
   "files": {
     "title": "Dateien",
-    "subtitle": "Verwalten Sie Anhänge und Dokumente",
+    "subtitle": "Plattform, SharePoint und OneDrive an einem Ort",
     "empty": "Noch keine Dateien in diesem Ordner.",
     "upload": "Dateien auswählen",
     "dropHint": "Dateien hierher ziehen oder Button klicken",
     "searchPlaceholder": "Dateien durchsuchen…",
+    "foldersTitle": "Ordner",
+    "up": "Eine Ebene höher",
+    "openExternal": "In Microsoft 365 öffnen",
+    "mockHint": "Vorschau-Modus: echte SharePoint/OneDrive-Daten erscheinen nach Graph-Konfiguration.",
+    "sources": {
+      "platform": "Plattform",
+      "sharepoint": "SharePoint",
+      "onedrive": "OneDrive"
+    },
     "folderGeneral": "Allgemein",
     "folderCompliance": "Compliance",
     "folderMarketing": "Marketing",

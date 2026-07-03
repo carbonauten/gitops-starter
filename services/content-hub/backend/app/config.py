@@ -63,6 +63,10 @@ class Settings(BaseSettings):
     teams_channel_id: str = ""
     outlook_sender_id: str = ""
     publish_mock_mode: bool = True
+    files_browse_mock_mode: bool = True
+    sharepoint_site_url: str = ""
+    sharepoint_drive_id: str = ""
+    sharepoint_display_name: str = "SharePoint"
 
     database_url: str = "sqlite:///./data/content_hub.db"
     upload_dir: str = "./data/uploads"
@@ -152,6 +156,14 @@ class Settings(BaseSettings):
     @property
     def graph_publish_configured(self) -> bool:
         return self.entra_configured
+
+    @property
+    def sharepoint_configured(self) -> bool:
+        return bool(self.sharepoint_site_url.strip() or self.sharepoint_drive_id.strip())
+
+    @property
+    def files_sources_configured(self) -> bool:
+        return self.sharepoint_configured or self.graph_publish_configured
 
     @property
     def effective_database_url(self) -> str:

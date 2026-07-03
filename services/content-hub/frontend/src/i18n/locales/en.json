@@ -66,11 +66,20 @@
   },
   "files": {
     "title": "Files",
-    "subtitle": "Manage attachments and documents",
+    "subtitle": "Platform, SharePoint, and OneDrive in one place",
     "empty": "No files in this folder yet.",
     "upload": "Choose files",
     "dropHint": "Drag files here or click the button",
     "searchPlaceholder": "Search files…",
+    "foldersTitle": "Folders",
+    "up": "Up one level",
+    "openExternal": "Open in Microsoft 365",
+    "mockHint": "Preview mode: real SharePoint/OneDrive data appears after Graph configuration.",
+    "sources": {
+      "platform": "Platform",
+      "sharepoint": "SharePoint",
+      "onedrive": "OneDrive"
+    },
     "folderGeneral": "General",
     "folderCompliance": "Compliance",
     "folderMarketing": "Marketing",
