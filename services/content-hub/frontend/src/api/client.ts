@@ -726,6 +726,52 @@ export async function runCertificateReminders(): Promise<{ reminders_sent: numbe
   });
 }
 
+export type IntegrationProviderStatus = {
+  connected: boolean;
+  account: string;
+  connected_at?: string | null;
+  oauth_available: boolean;
+};
+
+export type IntegrationStatus = {
+  microsoft: IntegrationProviderStatus;
+  notion: IntegrationProviderStatus;
+};
+
+export type IntegrationPickerItem = {
+  id: string;
+  name: string;
+};
+
+export async function fetchIntegrationStatus(): Promise<IntegrationStatus> {
+  return request<IntegrationStatus>("/api/integrations/status");
+}
+
+export async function fetchMicrosoftTeams(): Promise<IntegrationPickerItem[]> {
+  const payload = await request<{ teams: IntegrationPickerItem[] }>("/api/integrations/microsoft/teams");
+  return payload.teams;
+}
+
+export async function fetchMicrosoftChannels(teamId: string): Promise<IntegrationPickerItem[]> {
+  const payload = await request<{ channels: IntegrationPickerItem[] }>(
+    `/api/integrations/microsoft/teams/${encodeURIComponent(teamId)}/channels`,
+  );
+  return payload.channels;
+}
+
+export async function fetchNotionDatabases(): Promise<IntegrationPickerItem[]> {
+  const payload = await request<{ databases: IntegrationPickerItem[] }>("/api/integrations/notion/databases");
+  return payload.databases;
+}
+
+export async function disconnectIntegration(provider: "microsoft" | "notion"): Promise<void> {
+  await request<void>(`/api/integrations/${provider}`, { method: "DELETE" });
+}
+
+export function integrationConnectUrl(provider: "microsoft" | "notion"): string {
+  return `/api/integrations/${provider}/connect`;
+}
+
 export async function fetchWorkflowPending(): Promise<WorkflowPending> {
   return request<WorkflowPending>("/api/workflow/pending");
 }

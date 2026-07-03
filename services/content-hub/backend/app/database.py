@@ -139,6 +139,23 @@ class PublishSettings(Base):
     )
 
 
+class IntegrationConnection(Base):
+    __tablename__ = "integration_connections"
+
+    provider: Mapped[str] = mapped_column(String(50), primary_key=True)
+    access_token_enc: Mapped[str] = mapped_column(Text, default="")
+    refresh_token_enc: Mapped[str] = mapped_column(Text, default="")
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    account_label: Mapped[str] = mapped_column(String(300), default="")
+    connected_by_id: Mapped[str] = mapped_column(String(100), default="")
+    connected_by_name: Mapped[str] = mapped_column(String(200), default="")
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
 class Publication(Base):
     __tablename__ = "publications"
 

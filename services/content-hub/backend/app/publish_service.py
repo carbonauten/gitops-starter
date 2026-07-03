@@ -12,6 +12,8 @@ from sqlalchemy.orm import Session
 from .config import Settings, get_settings
 from .database import Article, Certificate, Publication, PublicationDelivery, PublishSettings
 from .graph_client import get_app_access_token
+from .integration_store import get_integration
+from .integrations_service import get_microsoft_access_token, get_notion_access_token
 
 logger = logging.getLogger(__name__)
 
@@ -66,14 +68,23 @@ def settings_to_dict(row: PublishSettings, app_settings: Settings | None = None)
     }
 
 
-def channel_status(row: PublishSettings, channel: str, app_settings: Settings | None = None) -> dict:
+def channel_status(
+    row: PublishSettings,
+    channel: str,
+    app_settings: Settings | None = None,
+    *,
+    microsoft_connected: bool = False,
+    notion_connected: bool = False,
+) -> dict:
     app_settings = app_settings or get_settings()
+    graph_ready = app_settings.graph_publish_configured or microsoft_connected
+    notion_ready = app_settings.notion_configured or notion_connected
     if channel == "teams":
-        ready = row.teams_enabled and row.teams_team_id and row.teams_channel_id and app_settings.graph_publish_configured
+        ready = row.teams_enabled and row.teams_team_id and row.teams_channel_id and graph_ready
     elif channel == "outlook":
-        ready = row.outlook_enabled and row.outlook_sender_id and app_settings.graph_publish_configured
+        ready = row.outlook_enabled and row.outlook_sender_id and graph_ready
     elif channel == "notion":
-        ready = row.notion_enabled and row.notion_database_id and app_settings.notion_configured
+        ready = row.notion_enabled and row.notion_database_id and notion_ready
     else:
         ready = False
     return {
@@ -86,7 +97,17 @@ def channel_status(row: PublishSettings, channel: str, app_settings: Settings | 
 
 def list_channels(db: Session) -> list[dict]:
     row = ensure_publish_settings(db)
-    return [channel_status(row, channel) for channel in CHANNELS]
+    microsoft_connected = get_integration(db, "microsoft") is not None
+    notion_connected = get_integration(db, "notion") is not None
+    return [
+        channel_status(
+            row,
+            channel,
+            microsoft_connected=microsoft_connected,
+            notion_connected=notion_connected,
+        )
+        for channel in CHANNELS
+    ]
 
 
 def update_publish_settings(db: Session, payload: dict) -> dict:
@@ -156,14 +177,22 @@ def list_publications(db: Session, *, resource_id: str | None = None, limit: int
     return [publication_to_dict(publication, grouped.get(publication.id, [])) for publication in publications]
 
 
-async def _send_teams_message(*, title: str, body_html: str, settings_row: PublishSettings) -> dict:
+async def _send_teams_message(
+    *,
+    title: str,
+    body_html: str,
+    settings_row: PublishSettings,
+    db: Session,
+) -> dict:
     app_settings = get_settings()
+    microsoft_connected = get_integration(db, "microsoft") is not None
+    graph_ready = app_settings.graph_publish_configured or microsoft_connected
     if app_settings.publish_mock_mode and not (
-        settings_row.teams_enabled and app_settings.graph_publish_configured
+        settings_row.teams_enabled and settings_row.teams_team_id and settings_row.teams_channel_id and graph_ready
     ):
         return {"external_id": "mock-teams", "external_url": "mock://teams/message"}
 
-    token = await get_app_access_token()
+    token = await get_microsoft_access_token(db) or await get_app_access_token()
     url = (
         f"https://graph.microsoft.com/v1.0/teams/{settings_row.teams_team_id}"
         f"/channels/{settings_row.teams_channel_id}/messages"
@@ -188,16 +217,21 @@ async def _send_outlook_draft(
     subject: str,
     body_html: str,
     settings_row: PublishSettings,
+    db: Session,
     to_email: str | None = None,
 ) -> dict:
     app_settings = get_settings()
-    if app_settings.publish_mock_mode and not (
-        settings_row.outlook_enabled and app_settings.graph_publish_configured
-    ):
+    microsoft_connected = get_integration(db, "microsoft") is not None
+    graph_ready = app_settings.graph_publish_configured or microsoft_connected
+    if app_settings.publish_mock_mode and not (settings_row.outlook_enabled and graph_ready):
         return {"external_id": "mock-outlook", "external_url": "mock://outlook/draft"}
 
-    token = await get_app_access_token()
-    url = f"https://graph.microsoft.com/v1.0/users/{settings_row.outlook_sender_id}/messages"
+    delegated = await get_microsoft_access_token(db)
+    token = delegated or await get_app_access_token()
+    if delegated:
+        url = "https://graph.microsoft.com/v1.0/me/messages"
+    else:
+        url = f"https://graph.microsoft.com/v1.0/users/{settings_row.outlook_sender_id}/messages"
     message = {
         "subject": subject,
         "body": {"contentType": "HTML", "content": body_html},
@@ -215,12 +249,23 @@ async def _send_outlook_draft(
         }
 
 
-async def _send_notion_page(*, title: str, summary: str, settings_row: PublishSettings) -> dict:
+async def _send_notion_page(
+    *,
+    title: str,
+    summary: str,
+    settings_row: PublishSettings,
+    db: Session,
+) -> dict:
     app_settings = get_settings()
+    notion_connected = get_integration(db, "notion") is not None
+    notion_ready = app_settings.notion_configured or notion_connected
     if app_settings.publish_mock_mode and not (
-        settings_row.notion_enabled and app_settings.notion_configured
+        settings_row.notion_enabled and settings_row.notion_database_id and notion_ready
     ):
         return {"external_id": "mock-notion", "external_url": "mock://notion/page"}
+
+    oauth_token = get_notion_access_token(db)
+    notion_token = oauth_token or app_settings.notion_api_key.strip()
 
     payload = {
         "parent": {"database_id": settings_row.notion_database_id},
@@ -241,7 +286,7 @@ async def _send_notion_page(*, title: str, summary: str, settings_row: PublishSe
         response = await client.post(
             "https://api.notion.com/v1/pages",
             headers={
-                "Authorization": f"Bearer {app_settings.notion_api_key.strip()}",
+                "Authorization": f"Bearer {notion_token}",
                 "Notion-Version": "2022-06-28",
                 "Content-Type": "application/json",
             },
@@ -263,20 +308,24 @@ async def _dispatch_delivery(
     body_html: str,
     summary: str,
     settings_row: PublishSettings,
+    db: Session,
     to_email: str | None = None,
 ) -> None:
     try:
         if delivery.channel == "teams":
-            result = await _send_teams_message(title=title, body_html=body_html, settings_row=settings_row)
+            result = await _send_teams_message(
+                title=title, body_html=body_html, settings_row=settings_row, db=db
+            )
         elif delivery.channel == "outlook":
             result = await _send_outlook_draft(
                 subject=title,
                 body_html=body_html,
                 settings_row=settings_row,
+                db=db,
                 to_email=to_email,
             )
         elif delivery.channel == "notion":
-            result = await _send_notion_page(title=title, summary=summary, settings_row=settings_row)
+            result = await _send_notion_page(title=title, summary=summary, settings_row=settings_row, db=db)
         else:
             raise RuntimeError(f"unsupported_channel:{delivery.channel}")
 
@@ -310,6 +359,7 @@ async def _run_deliveries(
             body_html=body_html,
             summary=summary,
             settings_row=settings_row,
+            db=db,
             to_email=to_email,
         )
         delivery.updated_at = datetime.now(timezone.utc)
@@ -407,6 +457,7 @@ async def retry_delivery(db: Session, delivery_id: str) -> dict:
         body_html=body_html,
         summary=publication.summary,
         settings_row=settings_row,
+        db=db,
         to_email=to_email,
     )
     delivery.updated_at = datetime.now(timezone.utc)

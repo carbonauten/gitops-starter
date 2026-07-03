@@ -1,16 +1,25 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import {
+  disconnectIntegration,
   fetchArticles,
+  fetchIntegrationStatus,
+  fetchMicrosoftChannels,
+  fetchMicrosoftTeams,
+  fetchNotionDatabases,
   fetchPublishChannels,
   fetchPublishHistory,
   fetchPublishSettings,
+  integrationConnectUrl,
   publishArticle,
   retryPublicationDelivery,
   runCertificateReminders,
   updatePublishSettings,
   type Article,
+  type IntegrationPickerItem,
+  type IntegrationStatus,
   type Publication,
   type PublishChannel,
   type PublishSettings,
@@ -22,10 +31,16 @@ const CHANNELS: PublishChannel["channel"][] = ["teams", "outlook", "notion"];
 export function PublishPage() {
   const { t } = useTranslation();
   const { isItMaster } = usePermissions();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [articles, setArticles] = useState<Article[]>([]);
   const [channels, setChannels] = useState<PublishChannel[]>([]);
   const [history, setHistory] = useState<Publication[]>([]);
   const [settings, setSettings] = useState<PublishSettings | null>(null);
+  const [integrationStatus, setIntegrationStatus] = useState<IntegrationStatus | null>(null);
+  const [teams, setTeams] = useState<IntegrationPickerItem[]>([]);
+  const [teamChannels, setTeamChannels] = useState<IntegrationPickerItem[]>([]);
+  const [notionDatabases, setNotionDatabases] = useState<IntegrationPickerItem[]>([]);
+  const [selectedTeamId, setSelectedTeamId] = useState("");
   const [selectedArticleId, setSelectedArticleId] = useState("");
   const [selectedChannels, setSelectedChannels] = useState<PublishChannel["channel"][]>([
     "teams",
@@ -49,11 +64,35 @@ export function PublishPage() {
       setArticles(nextArticles);
       setChannels(nextChannels);
       setHistory(nextHistory);
+
+      let nextSettings: PublishSettings | null = null;
+      let nextIntegrationStatus: IntegrationStatus | null = null;
       if (isItMaster) {
-        setSettings(await fetchPublishSettings());
+        [nextSettings, nextIntegrationStatus] = await Promise.all([
+          fetchPublishSettings(),
+          fetchIntegrationStatus(),
+        ]);
+        setSettings(nextSettings);
+        setIntegrationStatus(nextIntegrationStatus);
       }
+
       if (!selectedArticleId && nextArticles[0]) {
         setSelectedArticleId(nextArticles[0].id);
+      }
+
+      if (isItMaster && nextIntegrationStatus) {
+        if (nextIntegrationStatus.microsoft.connected) {
+          const nextTeams = await fetchMicrosoftTeams();
+          setTeams(nextTeams);
+          const teamId = nextSettings?.teams_team_id || nextTeams[0]?.id || "";
+          setSelectedTeamId(teamId);
+          if (teamId) {
+            setTeamChannels(await fetchMicrosoftChannels(teamId));
+          }
+        }
+        if (nextIntegrationStatus.notion.connected) {
+          setNotionDatabases(await fetchNotionDatabases());
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
@@ -65,6 +104,25 @@ export function PublishPage() {
   useEffect(() => {
     void load();
   }, [isItMaster]);
+
+  useEffect(() => {
+    const provider = searchParams.get("integration");
+    const status = searchParams.get("status");
+    if (!provider || !status) {
+      return;
+    }
+    if (status === "success") {
+      const providerLabel =
+        provider === "microsoft" ? t("publish.microsoftBlockTitle") : t("publish.notionBlockTitle");
+      setNotice(t("publish.integrationConnected", { provider: providerLabel }));
+    } else {
+      const providerLabel =
+        provider === "microsoft" ? t("publish.microsoftBlockTitle") : t("publish.notionBlockTitle");
+      setError(t("publish.integrationFailed", { provider: providerLabel }));
+    }
+    setSearchParams({}, { replace: true });
+    void load();
+  }, [searchParams, setSearchParams, t]);
 
   function toggleChannel(channel: PublishChannel["channel"]) {
     setSelectedChannels((current) =>
@@ -118,6 +176,19 @@ export function PublishPage() {
     }
   }
 
+  async function handleTeamChange(teamId: string) {
+    setSelectedTeamId(teamId);
+    if (!settings) {
+      return;
+    }
+    setSettings({ ...settings, teams_team_id: teamId, teams_channel_id: "" });
+    if (teamId) {
+      setTeamChannels(await fetchMicrosoftChannels(teamId));
+    } else {
+      setTeamChannels([]);
+    }
+  }
+
   async function handleSettingsSave(event: React.FormEvent) {
     event.preventDefault();
     if (!settings) {
@@ -126,9 +197,30 @@ export function PublishPage() {
     setBusy(true);
     setError("");
     try {
-      const updated = await updatePublishSettings(settings);
+      const updated = await updatePublishSettings({
+        ...settings,
+        teams_enabled: Boolean(settings.teams_team_id && settings.teams_channel_id),
+        outlook_enabled: integrationStatus?.microsoft.connected || Boolean(settings.outlook_sender_id),
+        notion_enabled: integrationStatus?.notion.connected || Boolean(settings.notion_database_id),
+      });
       setSettings(updated);
       setNotice(t("publish.settingsSaved"));
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDisconnect(provider: "microsoft" | "notion") {
+    setBusy(true);
+    setError("");
+    try {
+      await disconnectIntegration(provider);
+      setNotice(t("publish.integrationDisconnected", {
+        provider: provider === "microsoft" ? t("publish.microsoftBlockTitle") : t("publish.notionBlockTitle"),
+      }));
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
@@ -206,69 +298,141 @@ export function PublishPage() {
             {isItMaster ? (
               <form className="employee-create-form" onSubmit={(event) => void handleSettingsSave(event)}>
                 <h2>{t("publish.settingsTitle")}</h2>
-                <p className="muted">{t("publish.settingsHint")}</p>
-                {settings ? (
-                  <div className="publish-settings-grid">
-                    <label className="access-toggle">
-                      <input
-                        type="checkbox"
-                        checked={settings.teams_enabled}
-                        onChange={(event) =>
-                          setSettings({ ...settings, teams_enabled: event.target.checked })
-                        }
-                      />
-                      <span>{t("publish.channels.teams")}</span>
-                    </label>
-                    <input
-                      value={settings.teams_team_id}
-                      placeholder={t("publish.teamsTeamId")}
-                      onChange={(event) =>
-                        setSettings({ ...settings, teams_team_id: event.target.value })
-                      }
-                    />
-                    <input
-                      value={settings.teams_channel_id}
-                      placeholder={t("publish.teamsChannelId")}
-                      onChange={(event) =>
-                        setSettings({ ...settings, teams_channel_id: event.target.value })
-                      }
-                    />
-                    <label className="access-toggle">
-                      <input
-                        type="checkbox"
-                        checked={settings.outlook_enabled}
-                        onChange={(event) =>
-                          setSettings({ ...settings, outlook_enabled: event.target.checked })
-                        }
-                      />
-                      <span>{t("publish.channels.outlook")}</span>
-                    </label>
-                    <input
-                      value={settings.outlook_sender_id}
-                      placeholder={t("publish.outlookSenderId")}
-                      onChange={(event) =>
-                        setSettings({ ...settings, outlook_sender_id: event.target.value })
-                      }
-                    />
-                    <label className="access-toggle">
-                      <input
-                        type="checkbox"
-                        checked={settings.notion_enabled}
-                        onChange={(event) =>
-                          setSettings({ ...settings, notion_enabled: event.target.checked })
-                        }
-                      />
-                      <span>{t("publish.channels.notion")}</span>
-                    </label>
-                    <input
-                      value={settings.notion_database_id}
-                      placeholder={t("publish.notionDatabaseId")}
-                      onChange={(event) =>
-                        setSettings({ ...settings, notion_database_id: event.target.value })
-                      }
-                    />
+                <p className="muted">{t("publish.settingsHintOAuth")}</p>
+
+                <div className="integration-connect-block">
+                  <div className="integration-connect-header">
+                    <strong>{t("publish.microsoftBlockTitle")}</strong>
+                    {integrationStatus?.microsoft.connected ? (
+                      <span className="integration-badge integration-badge-connected">
+                        {integrationStatus.microsoft.account || t("publish.connected")}
+                      </span>
+                    ) : (
+                      <span className="integration-badge">{t("publish.notConnected")}</span>
+                    )}
                   </div>
-                ) : null}
+                  <p className="muted">{t("publish.microsoftBlockHint")}</p>
+                  {integrationStatus?.microsoft.oauth_available ? (
+                    integrationStatus.microsoft.connected ? (
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        disabled={busy}
+                        onClick={() => void handleDisconnect("microsoft")}
+                      >
+                        {t("publish.disconnect")}
+                      </button>
+                    ) : (
+                      <a className="primary-button integration-connect-button" href={integrationConnectUrl("microsoft")}>
+                        {t("publish.connectMicrosoft")}
+                      </a>
+                    )
+                  ) : (
+                    <p className="muted">{t("publish.microsoftEnvMissing")}</p>
+                  )}
+
+                  {integrationStatus?.microsoft.connected && settings ? (
+                    <div className="publish-settings-grid">
+                      <label className="access-toggle">
+                        <input type="checkbox" checked={settings.outlook_enabled} readOnly />
+                        <span>{t("publish.channels.outlook")}</span>
+                      </label>
+                      <p className="muted">{t("publish.outlookAutoConfigured")}</p>
+                      <label className="access-toggle">
+                        <input
+                          type="checkbox"
+                          checked={settings.teams_enabled}
+                          onChange={(event) =>
+                            setSettings({ ...settings, teams_enabled: event.target.checked })
+                          }
+                        />
+                        <span>{t("publish.channels.teams")}</span>
+                      </label>
+                      <select
+                        className="admin-select"
+                        value={selectedTeamId}
+                        onChange={(event) => void handleTeamChange(event.target.value)}
+                      >
+                        <option value="">{t("publish.selectTeam")}</option>
+                        {teams.map((team) => (
+                          <option key={team.id} value={team.id}>
+                            {team.name}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        className="admin-select"
+                        value={settings.teams_channel_id}
+                        onChange={(event) =>
+                          setSettings({ ...settings, teams_channel_id: event.target.value })
+                        }
+                      >
+                        <option value="">{t("publish.selectChannel")}</option>
+                        {teamChannels.map((channel) => (
+                          <option key={channel.id} value={channel.id}>
+                            {channel.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="integration-connect-block">
+                  <div className="integration-connect-header">
+                    <strong>{t("publish.notionBlockTitle")}</strong>
+                    {integrationStatus?.notion.connected ? (
+                      <span className="integration-badge integration-badge-connected">
+                        {integrationStatus.notion.account || t("publish.connected")}
+                      </span>
+                    ) : (
+                      <span className="integration-badge">{t("publish.notConnected")}</span>
+                    )}
+                  </div>
+                  <p className="muted">{t("publish.notionBlockHint")}</p>
+                  {integrationStatus?.notion.oauth_available ? (
+                    integrationStatus.notion.connected ? (
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        disabled={busy}
+                        onClick={() => void handleDisconnect("notion")}
+                      >
+                        {t("publish.disconnect")}
+                      </button>
+                    ) : (
+                      <a className="primary-button integration-connect-button" href={integrationConnectUrl("notion")}>
+                        {t("publish.connectNotion")}
+                      </a>
+                    )
+                  ) : (
+                    <p className="muted">{t("publish.notionEnvMissing")}</p>
+                  )}
+
+                  {integrationStatus?.notion.connected && settings ? (
+                    <div className="publish-settings-grid">
+                      <select
+                        className="admin-select"
+                        value={settings.notion_database_id}
+                        onChange={(event) =>
+                          setSettings({
+                            ...settings,
+                            notion_database_id: event.target.value,
+                            notion_enabled: Boolean(event.target.value),
+                          })
+                        }
+                      >
+                        <option value="">{t("publish.selectDatabase")}</option>
+                        {notionDatabases.map((database) => (
+                          <option key={database.id} value={database.id}>
+                            {database.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
+                </div>
+
                 <button type="submit" className="ghost-button" disabled={busy || !settings}>
                   {t("publish.saveSettings")}
                 </button>

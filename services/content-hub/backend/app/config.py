@@ -59,6 +59,8 @@ class Settings(BaseSettings):
 
     notion_api_key: str = ""
     notion_database_id: str = ""
+    notion_client_id: str = ""
+    notion_client_secret: str = ""
     teams_team_id: str = ""
     teams_channel_id: str = ""
     outlook_sender_id: str = ""
@@ -164,6 +166,10 @@ class Settings(BaseSettings):
     @property
     def notion_configured(self) -> bool:
         return bool(self.notion_api_key.strip() and self.notion_database_id.strip())
+
+    @property
+    def notion_oauth_configured(self) -> bool:
+        return bool(self.notion_client_id.strip() and self.notion_client_secret.strip())
 
     @property
     def graph_publish_configured(self) -> bool:
