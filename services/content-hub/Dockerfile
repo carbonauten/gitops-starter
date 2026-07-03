@@ -24,8 +24,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY ${SERVICE_DIR}backend/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir psycopg2-binary==2.9.10
+RUN pip install --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
 
 COPY ${SERVICE_DIR}backend/ ./
 COPY --from=frontend /frontend/dist ./static
