@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from .config import get_settings
 from .database import ensure_upload_dir, init_database
 from .i18n import parse_accept_language, translate
-from .routes import articles, audit, auth, certificates, dashboard, departments, files, health, integrations, monitor, publish, search, sync, user, workflow
+from .routes import articles, audit, auth, certificates, dashboard, departments, files, health, integrations, monitor, publish, search, sync, user, versions, workflow
 from .static_assets import media_type_for, resolve_asset_path, resolve_root_file
 
 logger = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title=settings.app_name, version="0.6.0", lifespan=lifespan)
+    app = FastAPI(title=settings.app_name, version="0.7.0", lifespan=lifespan)
 
     @app.middleware("http")
     async def attach_language(request: Request, call_next):
@@ -111,6 +111,7 @@ def create_app() -> FastAPI:
     app.include_router(dashboard.router)
     app.include_router(publish.router)
     app.include_router(integrations.router)
+    app.include_router(versions.router)
     app.include_router(sync.router)
     app.include_router(workflow.router)
     app.include_router(audit.router)

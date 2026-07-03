@@ -772,6 +772,63 @@ export function integrationConnectUrl(provider: "microsoft" | "notion"): string 
   return `/api/integrations/${provider}/connect`;
 }
 
+export type ContentRevision = {
+  id: string;
+  entity_type: "article" | "certificate";
+  entity_id: string;
+  version_number: number;
+  changed_by_id: string;
+  changed_by_name: string;
+  created_at: string;
+  snapshot?: Record<string, unknown>;
+};
+
+export type VersionChange = {
+  field: string;
+  from: unknown;
+  to: unknown;
+};
+
+export type VersionCompareResult = {
+  entity_type: string;
+  entity_id: string;
+  from_version: number;
+  to_version: string | number;
+  changes: VersionChange[];
+};
+
+export async function fetchContentVersions(
+  entityType: "article" | "certificate",
+  entityId: string,
+): Promise<ContentRevision[]> {
+  const payload = await request<{ versions: ContentRevision[] }>(
+    `/api/versions/${entityType}/${encodeURIComponent(entityId)}`,
+  );
+  return payload.versions;
+}
+
+export async function fetchVersionDetail(versionId: string): Promise<ContentRevision> {
+  const payload = await request<{ version: ContentRevision }>(
+    `/api/versions/revision/${encodeURIComponent(versionId)}`,
+  );
+  return payload.version;
+}
+
+export async function compareVersions(
+  entityType: "article" | "certificate",
+  entityId: string,
+  fromVersion: number,
+  toVersion?: number,
+): Promise<VersionCompareResult> {
+  const params = new URLSearchParams({ from_version: String(fromVersion) });
+  if (toVersion !== undefined) {
+    params.set("to_version", String(toVersion));
+  }
+  return request<VersionCompareResult>(
+    `/api/versions/${entityType}/${encodeURIComponent(entityId)}/compare?${params.toString()}`,
+  );
+}
+
 export async function fetchWorkflowPending(): Promise<WorkflowPending> {
   return request<WorkflowPending>("/api/workflow/pending");
 }

@@ -364,6 +364,43 @@
   },
   "common": {
     "loading": "Laden…",
-    "error": "Etwas ist schiefgelaufen."
+    "error": "Etwas ist schiefgelaufen.",
+    "yes": "Ja",
+    "no": "Nein"
+  },
+  "versions": {
+    "title": "Versionshistorie",
+    "subtitle": "Frühere Stände ansehen und mit der aktuellen Version vergleichen.",
+    "empty": "Noch keine gespeicherten Versionen.",
+    "versionNumber": "Version {{number}}",
+    "view": "Ansehen",
+    "compareCurrent": "Mit aktuell vergleichen",
+    "compareLabel": "Version {{from}} → {{to}}",
+    "snapshotLabel": "Version {{version}}",
+    "current": "Aktuell",
+    "noChanges": "Keine Unterschiede.",
+    "before": "Vorher",
+    "after": "Nachher",
+    "value": "Wert",
+    "fields": {
+      "title": "Titel",
+      "content": "Inhalt",
+      "status": "Status",
+      "template": "Vorlage",
+      "scheduled_publish_at": "Geplante Veröffentlichung",
+      "review_comment": "Review-Kommentar",
+      "name": "Name",
+      "category": "Kategorie",
+      "issuer": "Aussteller",
+      "valid_from": "Gültig ab",
+      "valid_to": "Gültig bis",
+      "renewal_in_progress": "Erneuerung läuft",
+      "renewal_approval_status": "Freigabe-Status",
+      "renewal_review_comment": "Freigabe-Kommentar",
+      "responsible_name": "Verantwortlich",
+      "responsible_email": "E-Mail Verantwortlich",
+      "file_asset_id": "Datei",
+      "notes": "Notizen"
+    }
   }
 }

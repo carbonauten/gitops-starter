@@ -364,6 +364,43 @@
   },
   "common": {
     "loading": "Loading…",
-    "error": "Something went wrong."
+    "error": "Something went wrong.",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "versions": {
+    "title": "Version history",
+    "subtitle": "View previous snapshots and compare them with the current version.",
+    "empty": "No saved versions yet.",
+    "versionNumber": "Version {{number}}",
+    "view": "View",
+    "compareCurrent": "Compare with current",
+    "compareLabel": "Version {{from}} → {{to}}",
+    "snapshotLabel": "Version {{version}}",
+    "current": "Current",
+    "noChanges": "No differences.",
+    "before": "Before",
+    "after": "After",
+    "value": "Value",
+    "fields": {
+      "title": "Title",
+      "content": "Content",
+      "status": "Status",
+      "template": "Template",
+      "scheduled_publish_at": "Scheduled publish",
+      "review_comment": "Review comment",
+      "name": "Name",
+      "category": "Category",
+      "issuer": "Issuer",
+      "valid_from": "Valid from",
+      "valid_to": "Valid to",
+      "renewal_in_progress": "Renewal in progress",
+      "renewal_approval_status": "Approval status",
+      "renewal_review_comment": "Approval comment",
+      "responsible_name": "Responsible person",
+      "responsible_email": "Responsible email",
+      "file_asset_id": "File",
+      "notes": "Notes"
+    }
   }
 }

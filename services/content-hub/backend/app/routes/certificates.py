@@ -11,6 +11,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from ..audit_service import log_audit
+from ..version_service import certificate_snapshot, record_revision
 from ..dependencies import get_current_user, require_editor
 from ..certificates import compute_certificate_status, days_until_expiry, expiry_window_end
 from ..database import Certificate, FileAsset, get_db
@@ -202,6 +203,15 @@ def update_certificate(
     certificate = db.get(Certificate, certificate_id)
     if not certificate:
         raise HTTPException(status_code=404, detail="not_found")
+
+    if payload.model_dump(exclude_unset=True):
+        record_revision(
+            db,
+            entity_type="certificate",
+            entity_id=certificate.id,
+            snapshot=certificate_snapshot(certificate),
+            actor=user,
+        )
 
     if payload.name is not None:
         certificate.name = payload.name

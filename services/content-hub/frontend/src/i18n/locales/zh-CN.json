@@ -364,6 +364,43 @@
   },
   "common": {
     "loading": "加载中…",
-    "error": "出现错误。"
+    "error": "出现错误。",
+    "yes": "是",
+    "no": "否"
+  },
+  "versions": {
+    "title": "版本历史",
+    "subtitle": "查看历史快照并与当前版本比较。",
+    "empty": "尚无保存的版本。",
+    "versionNumber": "版本 {{number}}",
+    "view": "查看",
+    "compareCurrent": "与当前比较",
+    "compareLabel": "版本 {{from}} → {{to}}",
+    "snapshotLabel": "版本 {{version}}",
+    "current": "当前",
+    "noChanges": "无差异。",
+    "before": "之前",
+    "after": "之后",
+    "value": "值",
+    "fields": {
+      "title": "标题",
+      "content": "内容",
+      "status": "状态",
+      "template": "模板",
+      "scheduled_publish_at": "计划发布时间",
+      "review_comment": "审核意见",
+      "name": "名称",
+      "category": "类别",
+      "issuer": "颁发机构",
+      "valid_from": "生效日期",
+      "valid_to": "到期日期",
+      "renewal_in_progress": "续期中",
+      "renewal_approval_status": "审批状态",
+      "renewal_review_comment": "审批意见",
+      "responsible_name": "负责人",
+      "responsible_email": "负责人邮箱",
+      "file_asset_id": "文件",
+      "notes": "备注"
+    }
   }
 }

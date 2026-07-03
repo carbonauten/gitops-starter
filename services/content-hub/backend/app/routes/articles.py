@@ -7,6 +7,7 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from ..audit_service import log_audit
+from ..version_service import article_snapshot, record_revision
 from ..dependencies import get_current_user, require_editor
 from ..database import Article, get_db
 from ..i18n import normalize_language
@@ -119,6 +120,15 @@ def update_article(
         raise HTTPException(status_code=404, detail="not_found")
     if article.status not in EDITABLE_ARTICLE_STATUSES:
         raise HTTPException(status_code=400, detail="invalid_workflow_state")
+
+    if payload.title is not None or payload.content is not None:
+        record_revision(
+            db,
+            entity_type="article",
+            entity_id=article.id,
+            snapshot=article_snapshot(article),
+            actor=user,
+        )
 
     if payload.title is not None:
         article.title = payload.title

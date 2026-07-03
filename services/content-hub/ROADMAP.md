@@ -59,7 +59,8 @@ flowchart LR
 | 4 | 2 Wochen | ✅ Abgeschlossen | Multichannel: Teams, Notion, Outlook |
 | 5 | 2 Wochen | ✅ Abgeschlossen (MVP) | China: Alibaba-Deployment, Datensync EU ↔ CN |
 | 6 | 1 Woche | ✅ Abgeschlossen (MVP) | Workflow, Freigaben, Audit, Go-Live |
-| 7+ | laufend | Backlog | Erweiterungen (siehe unten) |
+| 7 | 1 Woche | ✅ Abgeschlossen (MVP) | Versionierung: Artikel- & Zertifikat-Historie |
+| 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
 
@@ -270,13 +271,35 @@ flowchart LR
 
 ---
 
-## Backlog (Sprint 7+)
+## Sprint 7 — Versionierung ✅ (MVP)
+
+**Ziel:** Änderungen an Artikeln und Zertifikaten nachvollziehen und vergleichen.
+
+### Deliverables (MVP)
+
+- [x] `ContentRevision`-Modell mit Snapshot pro Speichern
+- [x] Automatische Version bei Artikel-Update (Titel/Inhalt)
+- [x] Automatische Version bei Zertifikat-Update
+- [x] API: `/api/versions/{article|certificate}/{id}`, Compare, Revision-Detail
+- [x] UI: Versionshistorie im Artikel- und Zertifikat-Editor
+- [x] Feldweise Diff gegen aktuelle Version
+- [ ] Volltext-Diff / Wiederherstellen alter Version — Backlog
+
+### Akzeptanzkriterien (MVP)
+
+- [x] Jede Speicherung erzeugt eine nummerierte Version
+- [x] Nutzer sieht Autor und Zeitstempel pro Version
+- [x] Vergleich zeigt geänderte Felder (Titel, Inhalt, Zertifikatsdaten)
+
+---
+
+## Backlog (Sprint 8+)
 
 | Thema | Beschreibung | Priorität |
 |-------|--------------|-----------|
 | Zertifikat-Ketten | Abhängigkeiten zwischen Zertifikaten (Parent/Child) | Hoch |
+| Version Restore | Alte Version wiederherstellen | Mittel |
 | Auto-Import CA | Let's Encrypt / Azure Key Vault Sync | Mittel |
-| Versionierung | Artikel- und Zertifikat-Historie, Diff | Hoch |
 | KI-Assistenz | Zusammenfassung, Übersetzung DE↔EN↔中文 | Mittel |
 | SharePoint | Zertifikate aus SharePoint-Bibliothek importieren | Mittel |
 | Mobile | Responsive Optimierung / PWA | Niedrig |
@@ -337,6 +360,6 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ## Nächster Schritt
 
-**Sprint 7+:** Siehe Backlog unten — Versionierung, KI-Assistenz, Analytics.
+**Sprint 8+:** Siehe Backlog unten — Zertifikat-Ketten, KI-Assistenz, Analytics.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.

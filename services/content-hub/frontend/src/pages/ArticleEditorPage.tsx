@@ -11,6 +11,7 @@ import {
   type ArticleTemplate,
 } from "../api/client";
 import { ArticleEditor } from "../components/ArticleEditor";
+import { VersionHistoryPanel } from "../components/VersionHistoryPanel";
 
 const EDITABLE_STATUSES = new Set(["draft", "rejected"]);
 
@@ -179,6 +180,7 @@ export function ArticleEditorPage() {
           </div>
         ) : null}
       </form>
+      {!isNew && id ? <VersionHistoryPanel entityType="article" entityId={id} /> : null}
     </section>
   );
 }

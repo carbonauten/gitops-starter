@@ -10,6 +10,7 @@ import {
   updateCertificate,
   uploadFile,
 } from "../api/client";
+import { VersionHistoryPanel } from "../components/VersionHistoryPanel";
 
 const CATEGORIES = ["compliance", "product", "training", "ssl"] as const;
 
@@ -241,6 +242,7 @@ export function CertificateEditorPage() {
           </button>
         </div>
       </form>
+      {!isNew && id ? <VersionHistoryPanel entityType="certificate" entityId={id} /> : null}
     </section>
   );
 }

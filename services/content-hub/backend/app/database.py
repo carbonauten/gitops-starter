@@ -240,6 +240,19 @@ class AuditLog(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class ContentRevision(Base):
+    __tablename__ = "content_revisions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    entity_type: Mapped[str] = mapped_column(String(30), index=True)
+    entity_id: Mapped[str] = mapped_column(String(36), index=True)
+    version_number: Mapped[int] = mapped_column(Integer)
+    snapshot_json: Mapped[str] = mapped_column(Text, default="{}")
+    changed_by_id: Mapped[str] = mapped_column(String(100), default="")
+    changed_by_name: Mapped[str] = mapped_column(String(200), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
 def scheduled_publish_column_type(is_sqlite: bool) -> str:
     return "DATETIME" if is_sqlite else "TIMESTAMP WITH TIME ZONE"
 
