@@ -261,10 +261,17 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
     if (!response.ok) {
       let message = "Request failed";
+      if (response.status === 502 || response.status === 503) {
+        message = "Server temporarily unavailable";
+      }
       try {
         const payload = (await response.json()) as ApiError;
         message = payload.error ?? message;
       } catch {
+        if (response.status >= 500) {
+          message = "Server temporarily unavailable";
+        }
+      }
         // ignore parse errors
       }
       throw new Error(message);

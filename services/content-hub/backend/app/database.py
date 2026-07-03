@@ -223,6 +223,10 @@ class AuditLog(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+def scheduled_publish_column_type(is_sqlite: bool) -> str:
+    return "DATETIME" if is_sqlite else "TIMESTAMP WITH TIME ZONE"
+
+
 def ensure_schema_updates(engine, is_sqlite: bool) -> None:
     inspector = sa_inspect(engine)
     if inspector.has_table("users"):
@@ -240,20 +244,48 @@ def ensure_schema_updates(engine, is_sqlite: bool) -> None:
                 connection.execute(text("ALTER TABLE file_assets ADD COLUMN folder_id VARCHAR(36)"))
     if inspector.has_table("articles"):
         columns = {column["name"] for column in inspector.get_columns("articles")}
+        scheduled_type = scheduled_publish_column_type(is_sqlite)
         if "scheduled_publish_at" not in columns:
             with engine.begin() as connection:
-                connection.execute(text("ALTER TABLE articles ADD COLUMN scheduled_publish_at DATETIME"))
+                connection.execute(
+                    text(f"ALTER TABLE articles ADD COLUMN scheduled_publish_at {scheduled_type}")
+                )
         if "review_comment" not in columns:
             with engine.begin() as connection:
-                connection.execute(text("ALTER TABLE articles ADD COLUMN review_comment TEXT DEFAULT ''"))
+                if is_sqlite:
+                    connection.execute(text("ALTER TABLE articles ADD COLUMN review_comment TEXT DEFAULT ''"))
+                else:
+                    connection.execute(
+                        text("ALTER TABLE articles ADD COLUMN review_comment TEXT NOT NULL DEFAULT ''")
+                    )
     if inspector.has_table("certificates"):
         columns = {column["name"] for column in inspector.get_columns("certificates")}
         if "renewal_approval_status" not in columns:
             with engine.begin() as connection:
-                connection.execute(text("ALTER TABLE certificates ADD COLUMN renewal_approval_status VARCHAR(30) DEFAULT 'none'"))
+                if is_sqlite:
+                    connection.execute(
+                        text(
+                            "ALTER TABLE certificates ADD COLUMN renewal_approval_status VARCHAR(30) DEFAULT 'none'"
+                        )
+                    )
+                else:
+                    connection.execute(
+                        text(
+                            "ALTER TABLE certificates ADD COLUMN renewal_approval_status VARCHAR(30) NOT NULL DEFAULT 'none'"
+                        )
+                    )
         if "renewal_review_comment" not in columns:
             with engine.begin() as connection:
-                connection.execute(text("ALTER TABLE certificates ADD COLUMN renewal_review_comment TEXT DEFAULT ''"))
+                if is_sqlite:
+                    connection.execute(
+                        text("ALTER TABLE certificates ADD COLUMN renewal_review_comment TEXT DEFAULT ''")
+                    )
+                else:
+                    connection.execute(
+                        text(
+                            "ALTER TABLE certificates ADD COLUMN renewal_review_comment TEXT NOT NULL DEFAULT ''"
+                        )
+                    )
 
 
 DEFAULT_DEPARTMENTS: tuple[tuple[str, str, int], ...] = (
