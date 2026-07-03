@@ -9,12 +9,42 @@ mkdir -p /tmp/client_temp /tmp/proxy_temp /tmp/fastcgi_temp /tmp/uwsgi_temp /tmp
 envsubst '${PORT}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 nginx -t
 
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+UVICORN_PID=$!
+
+ready=0
+for _ in $(seq 1 45); do
+  if curl -sf http://127.0.0.1:8000/api/health >/dev/null; then
+    ready=1
+    break
+  fi
+  if ! kill -0 "$UVICORN_PID" 2>/dev/null; then
+    echo "uvicorn exited before becoming ready" >&2
+    wait "$UVICORN_PID" || true
+    exit 1
+  fi
+  sleep 2
+done
+
+if [ "$ready" -ne 1 ]; then
+  echo "uvicorn did not become ready in time" >&2
+  kill "$UVICORN_PID" 2>/dev/null || true
+  exit 1
+fi
+
 (
-  while true; do
-    echo "Starting uvicorn..." >&2
-    python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --timeout-keep-alive 75 || true
+  while kill -0 "$UVICORN_PID" 2>/dev/null; do
+    wait "$UVICORN_PID" || true
     echo "uvicorn exited, restarting in 2s..." >&2
     sleep 2
+    python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 &
+    UVICORN_PID=$!
+    for _ in $(seq 1 30); do
+      if curl -sf http://127.0.0.1:8000/api/health >/dev/null; then
+        break
+      fi
+      sleep 2
+    done
   done
 ) &
 

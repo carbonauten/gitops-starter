@@ -246,18 +246,24 @@ def ensure_schema_updates(engine, is_sqlite: bool) -> None:
         columns = {column["name"] for column in inspector.get_columns("articles")}
         scheduled_type = scheduled_publish_column_type(is_sqlite)
         if "scheduled_publish_at" not in columns:
-            with engine.begin() as connection:
-                connection.execute(
-                    text(f"ALTER TABLE articles ADD COLUMN scheduled_publish_at {scheduled_type}")
-                )
-        if "review_comment" not in columns:
-            with engine.begin() as connection:
-                if is_sqlite:
-                    connection.execute(text("ALTER TABLE articles ADD COLUMN review_comment TEXT DEFAULT ''"))
-                else:
+            try:
+                with engine.begin() as connection:
                     connection.execute(
-                        text("ALTER TABLE articles ADD COLUMN review_comment TEXT NOT NULL DEFAULT ''")
+                        text(f"ALTER TABLE articles ADD COLUMN scheduled_publish_at {scheduled_type}")
                     )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Could not add articles.scheduled_publish_at: %s", exc)
+        if "review_comment" not in columns:
+            try:
+                with engine.begin() as connection:
+                    if is_sqlite:
+                        connection.execute(text("ALTER TABLE articles ADD COLUMN review_comment TEXT DEFAULT ''"))
+                    else:
+                        connection.execute(
+                            text("ALTER TABLE articles ADD COLUMN review_comment TEXT NOT NULL DEFAULT ''")
+                        )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Could not add articles.review_comment: %s", exc)
     if inspector.has_table("certificates"):
         columns = {column["name"] for column in inspector.get_columns("certificates")}
         if "renewal_approval_status" not in columns:

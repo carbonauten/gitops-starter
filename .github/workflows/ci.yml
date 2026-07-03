@@ -53,6 +53,7 @@ jobs:
           pip install -r services/example-service/requirements.txt
           pip install -r services/datapipeline-consumer/requirements.txt
           pip install -r services/content-hub/backend/requirements.txt
+          pip install pytest==8.3.3 pytest-asyncio==0.24.0
 
       - name: Run example-service tests
         working-directory: services/example-service
