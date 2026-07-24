@@ -10,6 +10,7 @@
     "files": "Dateien",
     "certificates": "Zertifikate",
     "publish": "Veröffentlichen",
+    "calendar": "Kalender",
     "workflow": "Freigaben",
     "audit": "Audit-Log",
     "adminSection": "Administration",
@@ -37,7 +38,19 @@
   },
   "dashboard": {
     "title": "Dashboard",
+    "myHome": "Mein Arbeitsplatz",
+    "greeting": "Hallo {{name}}",
     "subtitle": "Überblick über Ihre Inhalte",
+    "subtitleHome": "Ihre Entwürfe, Freigaben, Zertifikate und der Veröffentlichungskalender — an einem Ort.",
+    "myDrafts": "Meine Entwürfe",
+    "myApprovals": "Meine Freigaben",
+    "myExpiring": "Meine ablaufenden Zertifikate",
+    "whatsNew": "Was ist neu?",
+    "viewAll": "Alle anzeigen",
+    "emptyDrafts": "Keine offenen Entwürfe.",
+    "emptyApprovals": "Keine wartenden Freigaben für Sie.",
+    "emptyExpiring": "Keine Ihrer Zertifikate laufen in 90 Tagen ab.",
+    "emptyWhatsNew": "Noch keine Veröffentlichungen.",
     "drafts": "Entwürfe",
     "inReview": "In Prüfung",
     "scheduled": "Geplant",
@@ -49,7 +62,7 @@
     "expiring60": "Innerhalb 60 Tage",
     "expiring90": "Innerhalb 90 Tage",
     "sprintNote": "Sprint 6: Freigabe-Workflow, Audit-Log und Termin-Veröffentlichung sind aktiv.",
-    "platformTip": "Neu: Zertifikat-Ketten, Eskalations-Erinnerungen und Audit-ZIP-Export.",
+    "platformTip": "Neu: Persönliches Dashboard und Veröffentlichungskalender.",
     "regionTitle": "Deployment-Region",
     "regionEu": "Europa (EU)",
     "regionCn": "China (CN)",
@@ -359,6 +372,21 @@
       "article": "Artikel",
       "file": "Dateien",
       "certificate": "Zertifikate"
+    }
+  },
+  "calendar": {
+    "eyebrow": "Planung",
+    "title": "Veröffentlichungskalender",
+    "pageTitle": "Kalender",
+    "pageSubtitle": "Geplante Artikel, Veröffentlichungen und Zertifikatsabläufe auf einen Blick.",
+    "empty": "Noch keine Kalendereinträge im Zeitraum.",
+    "openPublish": "Zur Veröffentlichung",
+    "openFull": "Kalender öffnen",
+    "types": {
+      "scheduled": "Geplant",
+      "publication": "Veröffentlicht",
+      "reminder": "Erinnerung",
+      "expiry": "Ablauf"
     }
   },
   "ai": {

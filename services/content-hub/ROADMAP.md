@@ -65,6 +65,7 @@ flowchart LR
 | Search + AI | 3–5 Tage | ✅ Abgeschlossen (MVP) | Zentrale Suche, KI-Fragen, ⌘K |
 | A | 3–5 Tage | ✅ Abgeschlossen | Ask Carbonauten live: Translate, Summarize, richer RAG |
 | B | 3–5 Tage | ✅ Abgeschlossen | Zertifikat-Ketten, Erinnerungen, Audit-Export |
+| C | 3–5 Tage | ✅ Abgeschlossen | Mein Dashboard + Veröffentlichungskalender |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -405,6 +406,26 @@ flowchart LR
 - [x] Löschen eines Parents mit Kindern wird blockiert
 - [x] Erinnerungen feuern nicht doppelt für dasselbe Fenster
 - [x] Auditoren können ein ZIP-Paket herunterladen
+
+---
+
+## Sprint C — Mein Dashboard & Publish-Kalender ✅
+
+**Ziel:** Tägliche Nutzung: persönlicher Einstieg + Kalender für Veröffentlichungen und Abläufe.
+
+### Deliverables
+
+- [x] API `/api/dashboard/home` — meine Entwürfe, Freigaben, ablaufende Zertifikate, Neuigkeiten
+- [x] API `/api/dashboard/calendar` — geplante Artikel, Publikationen, Zertifikatsabläufe
+- [x] Dashboard: persönliches Home-Grid + Kalender-Widget
+- [x] Seite `/publish/calendar` + Nav-Eintrag „Kalender“
+- [x] DE / EN / 中文
+
+### Akzeptanzkriterien
+
+- [x] Nutzer sieht morgens zuerst die eigene Arbeit
+- [x] Geplante Veröffentlichungen und Abläufe sind im Kalender sichtbar
+- [x] Klick führt direkt zum Editor / Publish
 
 ---
 

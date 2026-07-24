@@ -3,17 +3,20 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import {
+  fetchDashboardHome,
   fetchDashboardStats,
   fetchPlatformInfo,
   fetchSyncStatus,
   runRegionSync,
+  type DashboardHome,
   type DashboardStats,
   type PlatformInfo,
   type SyncStatus,
 } from "../api/client";
-import { OnboardingTips } from "../components/OnboardingTips";
 import { GlobalSearch } from "../components/GlobalSearch";
 import { LoadingState } from "../components/LoadingState";
+import { OnboardingTips } from "../components/OnboardingTips";
+import { PublishCalendarPanel } from "../components/PublishCalendarPanel";
 import { usePermissions } from "../hooks/usePermissions";
 
 export function DashboardPage() {
@@ -31,6 +34,7 @@ export function DashboardPage() {
     expiring_60: 0,
     expiring_90: 0,
   });
+  const [home, setHome] = useState<DashboardHome | null>(null);
   const [platform, setPlatform] = useState<PlatformInfo | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [syncRunning, setSyncRunning] = useState(false);
@@ -39,16 +43,17 @@ export function DashboardPage() {
   useEffect(() => {
     void (async () => {
       try {
-        const [statsPayload, platformPayload] = await Promise.all([
+        const [statsPayload, platformPayload, homePayload] = await Promise.all([
           fetchDashboardStats(),
           fetchPlatformInfo(),
+          fetchDashboardHome(),
         ]);
         setStats(statsPayload);
         setPlatform(platformPayload);
+        setHome(homePayload);
         if (isItMaster) {
           try {
-            const syncPayload = await fetchSyncStatus();
-            setSyncStatus(syncPayload);
+            setSyncStatus(await fetchSyncStatus());
           } catch {
             setSyncStatus(null);
           }
@@ -60,9 +65,9 @@ export function DashboardPage() {
   }, [isItMaster]);
 
   const cards = [
-    { label: t("dashboard.drafts"), value: stats.drafts, to: "/articles" },
+    { label: t("dashboard.drafts"), value: stats.drafts, to: "/articles?status=draft" },
     { label: t("dashboard.inReview"), value: stats.in_review, to: "/workflow" },
-    { label: t("dashboard.scheduled"), value: stats.scheduled, to: "/workflow" },
+    { label: t("dashboard.scheduled"), value: stats.scheduled, to: "/publish/calendar" },
     { label: t("dashboard.published"), value: stats.published, to: "/articles" },
     { label: t("dashboard.files"), value: stats.files, to: "/files" },
     { label: t("dashboard.certificates"), value: stats.certificates, to: "/certificates" },
@@ -83,8 +88,7 @@ export function DashboardPage() {
     setSyncRunning(true);
     try {
       await runRegionSync();
-      const syncPayload = await fetchSyncStatus();
-      setSyncStatus(syncPayload);
+      setSyncStatus(await fetchSyncStatus());
     } finally {
       setSyncRunning(false);
     }
@@ -94,8 +98,13 @@ export function DashboardPage() {
     <section className="page">
       <header className="page-header dashboard-search-hero">
         <div>
-          <h1>{t("dashboard.title")}</h1>
-          <p className="muted">{t("dashboard.subtitle")}</p>
+          <p className="eyebrow">{t("dashboard.myHome")}</p>
+          <h1>
+            {home?.greeting_name
+              ? t("dashboard.greeting", { name: home.greeting_name })
+              : t("dashboard.title")}
+          </h1>
+          <p className="muted">{t("dashboard.subtitleHome")}</p>
         </div>
         <GlobalSearch variant="hero" />
       </header>
@@ -103,6 +112,113 @@ export function DashboardPage() {
       {loading ? <LoadingState /> : null}
 
       <OnboardingTips />
+
+      {home ? (
+        <div className="home-grid">
+          <section className="home-panel">
+            <div className="home-panel-head">
+              <h2>{t("dashboard.myDrafts")}</h2>
+              <Link to="/articles" className="muted">
+                {t("dashboard.viewAll")}
+              </Link>
+            </div>
+            {home.my_drafts.length === 0 ? (
+              <p className="muted">{t("dashboard.emptyDrafts")}</p>
+            ) : (
+              <div className="list-stack">
+                {home.my_drafts.map((item) => (
+                  <Link key={item.id} to={`/articles/${item.id}/edit`} className="home-item">
+                    <strong>{item.title}</strong>
+                    <span className="muted">{item.status}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="home-panel">
+            <div className="home-panel-head">
+              <h2>{t("dashboard.myApprovals")}</h2>
+              {(canApprove || canApproveCertificates) ? (
+                <Link to="/workflow" className="muted">
+                  {t("dashboard.workflowLink")}
+                </Link>
+              ) : null}
+            </div>
+            {home.my_approvals.length === 0 ? (
+              <p className="muted">{t("dashboard.emptyApprovals")}</p>
+            ) : (
+              <div className="list-stack">
+                {home.my_approvals.map((item) => (
+                  <Link
+                    key={`${item.kind}-${item.id}`}
+                    to={
+                      item.kind === "certificate_renewal"
+                        ? `/certificates/${item.id}/edit`
+                        : `/articles/${item.id}/edit`
+                    }
+                    className="home-item"
+                  >
+                    <strong>{item.title || item.name}</strong>
+                    <span className="muted">{item.kind}</span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="home-panel">
+            <div className="home-panel-head">
+              <h2>{t("dashboard.myExpiring")}</h2>
+              <Link to="/certificates" className="muted">
+                {t("dashboard.viewAll")}
+              </Link>
+            </div>
+            {home.my_expiring_certificates.length === 0 ? (
+              <p className="muted">{t("dashboard.emptyExpiring")}</p>
+            ) : (
+              <div className="list-stack">
+                {home.my_expiring_certificates.map((item) => (
+                  <Link key={item.id} to={`/certificates/${item.id}/edit`} className="home-item">
+                    <strong>{item.name}</strong>
+                    <span className="muted">
+                      {item.valid_to} · {item.days_until_expiry}d
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="home-panel">
+            <div className="home-panel-head">
+              <h2>{t("dashboard.whatsNew")}</h2>
+              <Link to="/publish" className="muted">
+                {t("dashboard.viewAll")}
+              </Link>
+            </div>
+            {home.recent_publications.length === 0 ? (
+              <p className="muted">{t("dashboard.emptyWhatsNew")}</p>
+            ) : (
+              <div className="list-stack">
+                {home.recent_publications.map((item) => (
+                  <div key={item.id} className="home-item">
+                    <strong>{item.title}</strong>
+                    <span className="muted">
+                      {item.published_by_name}
+                      {item.created_at ? ` · ${new Date(item.created_at).toLocaleString()}` : ""}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      ) : null}
+
+      <div className="section-block">
+        <PublishCalendarPanel compact />
+      </div>
 
       {platform ? (
         <div className="section-block">
@@ -159,18 +275,6 @@ export function DashboardPage() {
               {syncRunning ? t("dashboard.syncRunning") : t("dashboard.syncRun")}
             </button>
           ) : null}
-        </div>
-      ) : null}
-
-      {(canApprove || canApproveCertificates) && (stats.in_review > 0 || stats.renewals_pending > 0) ? (
-        <div className="section-block">
-          <h2>{t("dashboard.workflowTitle")}</h2>
-          <p className="muted">
-            {stats.in_review} {t("dashboard.inReview")} · {stats.renewals_pending} {t("dashboard.renewalsPending")}
-          </p>
-          <Link to="/workflow" className="primary-button link-button">
-            {t("dashboard.workflowLink")}
-          </Link>
         </div>
       ) : null}
 

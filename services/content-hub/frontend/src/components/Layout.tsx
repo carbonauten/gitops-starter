@@ -60,6 +60,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
     { to: "/files", label: t("nav.files"), icon: "▣" },
     { to: "/certificates", label: t("nav.certificates"), icon: "◎" },
     { to: "/publish", label: t("nav.publish"), icon: "↗" },
+    { to: "/publish/calendar", label: t("nav.calendar"), icon: "▦" },
   ];
 
   if (canApprove || canApproveCertificates) {

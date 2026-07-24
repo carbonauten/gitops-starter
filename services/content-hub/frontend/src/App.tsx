@@ -17,6 +17,7 @@ import { AuditLogPage } from "./pages/AuditLogPage";
 import { WorkflowPage } from "./pages/WorkflowPage";
 import { UsersAdminPage } from "./pages/UsersAdminPage";
 import { SearchPage } from "./pages/SearchPage";
+import { PublishCalendarPage } from "./pages/PublishCalendarPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
@@ -120,6 +121,14 @@ export default function App() {
           <MasterRoute>
             <UsersAdminPage />
           </MasterRoute>
+        }
+      />
+      <Route
+        path="/publish/calendar"
+        element={
+          <ProtectedRoute>
+            <PublishCalendarPage />
+          </ProtectedRoute>
         }
       />
       <Route

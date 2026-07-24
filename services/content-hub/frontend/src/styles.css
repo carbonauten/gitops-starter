@@ -1721,3 +1721,122 @@ a {
   flex-wrap: wrap;
   align-items: center;
 }
+
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0 1.75rem;
+}
+
+.home-panel {
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow);
+}
+
+.home-panel-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: baseline;
+  margin-bottom: 0.75rem;
+}
+
+.home-panel-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.home-item {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.7rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: var(--surface-muted);
+}
+
+.home-item:hover {
+  border-color: rgba(37, 99, 235, 0.25);
+  background: #fff;
+}
+
+.publish-calendar {
+  padding: 1.1rem 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 55%);
+}
+
+.publish-calendar-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: 0.9rem;
+}
+
+.publish-calendar-head h2 {
+  margin: 0;
+}
+
+.calendar-day-strip {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.calendar-day-chip {
+  min-width: 74px;
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 12px;
+  padding: 0.55rem 0.65rem;
+  display: grid;
+  gap: 0.2rem;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.calendar-day-chip.active {
+  border-color: rgba(37, 99, 235, 0.45);
+  background: rgba(37, 99, 235, 0.08);
+  color: var(--primary-dark);
+}
+
+.calendar-event {
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+
+.calendar-event-scheduled_publish {
+  border-left: 4px solid #5925dc;
+}
+
+.calendar-event-publication {
+  border-left: 4px solid #027a48;
+}
+
+.calendar-event-certificate_expiry {
+  border-left: 4px solid #b54708;
+}
+
+.calendar-event-certificate_reminder {
+  border-left: 4px solid #175cd3;
+}
+
+@media (max-width: 900px) {
+  .home-grid {
+    grid-template-columns: 1fr;
+  }
+}

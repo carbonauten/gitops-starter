@@ -10,6 +10,7 @@
     "files": "Files",
     "certificates": "Certificates",
     "publish": "Publish",
+    "calendar": "Calendar",
     "workflow": "Approvals",
     "audit": "Audit log",
     "adminSection": "Administration",
@@ -37,7 +38,19 @@
   },
   "dashboard": {
     "title": "Dashboard",
+    "myHome": "My workspace",
+    "greeting": "Hello {{name}}",
     "subtitle": "Overview of your content",
+    "subtitleHome": "Your drafts, approvals, certificates, and the publish calendar — in one place.",
+    "myDrafts": "My drafts",
+    "myApprovals": "My approvals",
+    "myExpiring": "My expiring certificates",
+    "whatsNew": "What's new?",
+    "viewAll": "View all",
+    "emptyDrafts": "No open drafts.",
+    "emptyApprovals": "No approvals waiting for you.",
+    "emptyExpiring": "None of your certificates expire within 90 days.",
+    "emptyWhatsNew": "No publications yet.",
     "drafts": "Drafts",
     "inReview": "In review",
     "scheduled": "Scheduled",
@@ -49,7 +62,7 @@
     "expiring60": "Within 60 days",
     "expiring90": "Within 90 days",
     "sprintNote": "Sprint 6: approval workflow, audit log, and scheduled publishing are live.",
-    "platformTip": "New: certificate chains, escalation reminders, and audit ZIP export.",
+    "platformTip": "New: personal dashboard and publish calendar.",
     "regionTitle": "Deployment region",
     "regionEu": "Europe (EU)",
     "regionCn": "China (CN)",
@@ -284,6 +297,21 @@
       "article": "Articles",
       "file": "Files",
       "certificate": "Certificates"
+    }
+  },
+  "calendar": {
+    "eyebrow": "Planning",
+    "title": "Publish calendar",
+    "pageTitle": "Calendar",
+    "pageSubtitle": "Scheduled articles, publications, and certificate expiries at a glance.",
+    "empty": "No calendar events in this range yet.",
+    "openPublish": "Go to publish",
+    "openFull": "Open calendar",
+    "types": {
+      "scheduled": "Scheduled",
+      "publication": "Published",
+      "reminder": "Reminder",
+      "expiry": "Expiry"
     }
   },
   "ai": {

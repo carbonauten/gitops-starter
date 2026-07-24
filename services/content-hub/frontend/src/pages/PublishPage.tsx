@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -234,9 +234,14 @@ export function PublishPage() {
 
   return (
     <section className="page">
-      <header className="page-header">
-        <h1>{t("publish.title")}</h1>
-        <p className="muted">{t("publish.subtitle")}</p>
+      <header className="page-header row-header">
+        <div>
+          <h1>{t("publish.title")}</h1>
+          <p className="muted">{t("publish.subtitle")}</p>
+        </div>
+        <Link to="/publish/calendar" className="ghost-button link-button">
+          {t("calendar.openFull")}
+        </Link>
       </header>
 
       {loading ? <LoadingState /> : null}

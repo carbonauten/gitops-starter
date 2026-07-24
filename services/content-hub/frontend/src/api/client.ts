@@ -382,9 +382,94 @@ export async function fetchAuthConfig(): Promise<AuthConfig> {
   };
 }
 
+export type DashboardHome = {
+  greeting_name: string;
+  my_drafts: Array<{
+    id: string;
+    title: string;
+    status: string;
+    scheduled_publish_at?: string | null;
+    updated_at?: string | null;
+    author_name?: string;
+  }>;
+  my_in_review: Array<{
+    id: string;
+    title: string;
+    status: string;
+    updated_at?: string | null;
+  }>;
+  my_approvals: Array<{
+    kind: string;
+    id: string;
+    title?: string;
+    name?: string;
+    status?: string;
+    valid_to?: string;
+    days_until_expiry?: number;
+  }>;
+  my_expiring_certificates: Array<{
+    id: string;
+    name: string;
+    status: string;
+    valid_to: string;
+    days_until_expiry: number;
+  }>;
+  upcoming_scheduled: Array<{
+    id: string;
+    title: string;
+    scheduled_publish_at?: string | null;
+  }>;
+  recent_publications: Array<{
+    id: string;
+    title: string;
+    resource_type: string;
+    resource_id: string;
+    published_by_name: string;
+    created_at?: string | null;
+  }>;
+  counts: {
+    my_drafts: number;
+    my_in_review: number;
+    my_approvals: number;
+    my_expiring: number;
+    upcoming_scheduled: number;
+  };
+};
+
+export type CalendarEvent = {
+  id: string;
+  type: "scheduled_publish" | "publication" | "certificate_reminder" | "certificate_expiry" | string;
+  title: string;
+  date: string;
+  datetime?: string | null;
+  resource_type: string;
+  resource_id: string;
+  status?: string;
+};
+
+export type PublishCalendar = {
+  range: { start: string; end: string };
+  events: CalendarEvent[];
+  by_date: Record<string, CalendarEvent[]>;
+};
+
 export async function fetchDashboardStats(): Promise<DashboardStats> {
   const payload = await request<{ stats: DashboardStats }>("/api/dashboard/stats");
   return payload.stats;
+}
+
+export async function fetchDashboardHome(): Promise<DashboardHome> {
+  const payload = await request<{ home: DashboardHome }>("/api/dashboard/home");
+  return payload.home;
+}
+
+export async function fetchPublishCalendar(daysAhead = 90, daysBack = 14): Promise<PublishCalendar> {
+  const params = new URLSearchParams({
+    days_ahead: String(daysAhead),
+    days_back: String(daysBack),
+  });
+  const payload = await request<{ calendar: PublishCalendar }>(`/api/dashboard/calendar?${params}`);
+  return payload.calendar;
 }
 
 export async function fetchPlatformInfo(): Promise<PlatformInfo> {

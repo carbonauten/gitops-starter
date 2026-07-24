@@ -10,6 +10,7 @@
     "files": "文件",
     "certificates": "证书",
     "publish": "发布",
+    "calendar": "日历",
     "workflow": "审批",
     "audit": "审计日志",
     "adminSection": "管理",
@@ -37,7 +38,19 @@
   },
   "dashboard": {
     "title": "仪表盘",
+    "myHome": "我的工作台",
+    "greeting": "你好，{{name}}",
     "subtitle": "内容总览",
+    "subtitleHome": "你的草稿、审批、证书与发布日历 — 集中在一处。",
+    "myDrafts": "我的草稿",
+    "myApprovals": "我的审批",
+    "myExpiring": "即将到期的我的证书",
+    "whatsNew": "最新动态",
+    "viewAll": "查看全部",
+    "emptyDrafts": "暂无草稿。",
+    "emptyApprovals": "暂无待你处理的审批。",
+    "emptyExpiring": "你的证书在 90 天内均无到期。",
+    "emptyWhatsNew": "暂无发布记录。",
     "drafts": "草稿",
     "inReview": "审核中",
     "scheduled": "已排期",
@@ -49,7 +62,7 @@
     "expiring60": "60 天内",
     "expiring90": "90 天内",
     "sprintNote": "Sprint 6：审批工作流、审计日志和定时发布已上线。",
-    "platformTip": "新功能：证书链、升级提醒与审计 ZIP 导出。",
+    "platformTip": "新功能：个人仪表盘与发布日历。",
     "regionTitle": "部署区域",
     "regionEu": "欧洲 (EU)",
     "regionCn": "中国 (CN)",
@@ -359,6 +372,21 @@
       "article": "文章",
       "file": "文件",
       "certificate": "证书"
+    }
+  },
+  "calendar": {
+    "eyebrow": "计划",
+    "title": "发布日历",
+    "pageTitle": "日历",
+    "pageSubtitle": "一览已排期文章、发布记录与证书到期。",
+    "empty": "该时间范围内暂无日历事件。",
+    "openPublish": "前往发布",
+    "openFull": "打开日历",
+    "types": {
+      "scheduled": "已排期",
+      "publication": "已发布",
+      "reminder": "提醒",
+      "expiry": "到期"
     }
   },
   "ai": {
