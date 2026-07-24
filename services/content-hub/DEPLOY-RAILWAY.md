@@ -184,6 +184,8 @@ E-Mail/Passwort und Microsoft-Login funktionieren **parallel**. Bestehende Konte
 
 ```text
 https://app.carbonauten.com/api/auth/callback
+https://app.carbonauten.com/api/integrations/microsoft/callback
+https://app.carbonauten.com/api/integrations/outlook/callback
 ```
 
 5. **Register** klicken und notieren:
@@ -253,7 +255,8 @@ Kanäle werden simuliert — gut zum Testen der UI und Historie.
 | Permission | Zweck |
 |------------|-------|
 | `ChannelMessage.Send` | Teams-Kanal-Nachrichten |
-| `Mail.ReadWrite` | Outlook-Entwürfe |
+| `Mail.ReadWrite` | Outlook-Entwürfe / persönliches Postfach |
+| `Calendars.ReadWrite` | Persönlicher Outlook-Kalender (Kalender-Tab) |
 
 | Variable | Wert |
 |----------|------|

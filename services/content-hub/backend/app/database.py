@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Generator, Optional
 from uuid import uuid4
 
-from sqlalchemy import Boolean, Date, DateTime, Integer, String, Text, create_engine, event, func, select, text
+from sqlalchemy import Boolean, Date, DateTime, Integer, String, Text, UniqueConstraint, create_engine, event, func, select, text
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
@@ -149,6 +149,28 @@ class IntegrationConnection(Base):
     account_label: Mapped[str] = mapped_column(String(300), default="")
     connected_by_id: Mapped[str] = mapped_column(String(100), default="")
     connected_by_name: Mapped[str] = mapped_column(String(200), default="")
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class UserIntegration(Base):
+    """Per-user OAuth connections (e.g. personal Outlook calendar + mail)."""
+
+    __tablename__ = "user_integrations"
+    __table_args__ = (UniqueConstraint("user_id", "provider", name="uq_user_integrations_user_provider"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    user_id: Mapped[str] = mapped_column(String(100), index=True)
+    provider: Mapped[str] = mapped_column(String(50), index=True)
+    access_token_enc: Mapped[str] = mapped_column(Text, default="")
+    refresh_token_enc: Mapped[str] = mapped_column(Text, default="")
+    expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    account_label: Mapped[str] = mapped_column(String(300), default="")
+    calendar_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    mail_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

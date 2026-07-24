@@ -124,13 +124,14 @@ export default function App() {
         }
       />
       <Route
-        path="/publish/calendar"
+        path="/calendar"
         element={
           <ProtectedRoute>
             <PublishCalendarPage />
           </ProtectedRoute>
         }
       />
+      <Route path="/publish/calendar" element={<Navigate to="/calendar" replace />} />
       <Route
         path="/publish"
         element={

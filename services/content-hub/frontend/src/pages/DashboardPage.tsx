@@ -67,7 +67,7 @@ export function DashboardPage() {
   const cards = [
     { label: t("dashboard.drafts"), value: stats.drafts, to: "/articles?status=draft" },
     { label: t("dashboard.inReview"), value: stats.in_review, to: "/workflow" },
-    { label: t("dashboard.scheduled"), value: stats.scheduled, to: "/publish/calendar" },
+    { label: t("dashboard.scheduled"), value: stats.scheduled, to: "/calendar" },
     { label: t("dashboard.published"), value: stats.published, to: "/articles" },
     { label: t("dashboard.files"), value: stats.files, to: "/files" },
     { label: t("dashboard.certificates"), value: stats.certificates, to: "/certificates" },

@@ -14,19 +14,21 @@ Auf **Veröffentlichen → Kanal-Konfiguration** (IT-Master) können Microsoft 3
 
 ---
 
-## 1. Microsoft 365 (Teams + Outlook)
+## 1. Microsoft 365 (Teams + Outlook Publish)
 
 ### Azure App Registration
 
 1. [Entra Admin Center](https://entra.microsoft.com) → **App registrations** → bestehende App (oder neue)
-2. **Authentication** → Redirect URI hinzufügen:
+2. **Authentication** → Redirect URIs hinzufügen:
    - `https://app.carbonauten.com/api/integrations/microsoft/callback`
+   - `https://app.carbonauten.com/api/integrations/outlook/callback`
 3. **API permissions** → Microsoft Graph → **Delegated**:
    - `User.Read`
    - `Team.ReadBasic.All`
    - `Channel.ReadBasic.All`
    - `ChannelMessage.Send`
    - `Mail.ReadWrite`
+   - `Calendars.ReadWrite` (persönlicher Kalender im Kalender-Tab)
 4. **Grant admin consent** (empfohlen für alle Nutzer)
 
 ### Railway Variablen
@@ -39,10 +41,17 @@ Auf **Veröffentlichen → Kanal-Konfiguration** (IT-Master) können Microsoft 3
 
 ### In der App
 
+**Veröffentlichen (IT-Master):**
 1. **Mit Microsoft 365 verbinden** klicken
 2. Mit IT-Admin-Konto anmelden und Berechtigungen bestätigen
 3. **Team** und **Kanal** wählen → **Kanäle speichern**
 4. Optional: `PUBLISH_MOCK_MODE=false` setzen für Live-Versand
+
+**Kalender-Tab (jeder User):**
+1. Unter **Kalender** → **Outlook-Kalender & E-Mail verbinden**
+2. Mit dem eigenen Microsoft-Konto anmelden
+3. Outlook-Termine erscheinen im Kalender; E-Mail-Zugriff ist für persönliche Erinnerungen freigeschaltet
+4. Die Verbindung ist nutzerbezogen und unabhängig von der IT-Publish-Integration
 
 ---
 

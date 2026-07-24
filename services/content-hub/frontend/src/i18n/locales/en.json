@@ -303,15 +303,28 @@
     "eyebrow": "Planning",
     "title": "Publish calendar",
     "pageTitle": "Calendar",
-    "pageSubtitle": "Scheduled articles, publications, and certificate expiries at a glance.",
+    "pageSubtitle": "Scheduled articles, publications, certificate expiries, and your personal Outlook calendar.",
     "empty": "No calendar events in this range yet.",
     "openPublish": "Go to publish",
     "openFull": "Open calendar",
+    "outlookTitle": "Connect Outlook",
+    "outlookHint": "Connect your personal Outlook calendar and mailbox with one click. This connection is only for you.",
+    "outlookFeatureCalendar": "Calendar: Outlook events appear in this calendar tab",
+    "outlookFeatureMail": "Email: Access to your Outlook mailbox for personal reminders",
+    "outlookConnect": "Connect Outlook calendar & email",
+    "outlookDisconnect": "Disconnect Outlook",
+    "outlookConnected": "Outlook connected successfully.",
+    "outlookDisconnected": "Outlook disconnected.",
+    "outlookFailed": "Outlook connection failed. Please try again.",
+    "outlookEnvMissing": "Microsoft sign-in is not configured yet (AZURE_* on Railway).",
+    "connected": "Connected",
+    "notConnected": "Not connected",
     "types": {
       "scheduled": "Scheduled",
       "publication": "Published",
       "reminder": "Reminder",
-      "expiry": "Expiry"
+      "expiry": "Expiry",
+      "outlook": "Outlook"
     }
   },
   "ai": {

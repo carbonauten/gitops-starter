@@ -32,7 +32,10 @@ def test_dashboard_calendar_includes_scheduled_and_expiry(auth_client):
 
     calendar = auth_client.get("/api/dashboard/calendar")
     assert calendar.status_code == 200
-    payload = calendar.json()["calendar"]
+    body = calendar.json()
+    payload = body["calendar"]
     assert "events" in payload
     assert "by_date" in payload
+    assert "outlook" in body
+    assert body["outlook"]["connected"] is False
     assert any(event["type"] == "certificate_expiry" and event["title"] == "Calendar Cert" for event in payload["events"])

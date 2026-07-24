@@ -10,6 +10,7 @@ from ..certificates import expiry_window_end
 from ..dashboard_service import build_home_dashboard, build_publish_calendar
 from ..database import Article, Certificate, FileAsset, get_db
 from ..dependencies import get_current_user
+from ..outlook_service import fetch_outlook_calendar_events, outlook_status
 from ..schemas import DashboardStats
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
@@ -71,10 +72,27 @@ def dashboard_home(
 
 
 @router.get("/calendar")
-def dashboard_calendar(
+async def dashboard_calendar(
     days_ahead: int = Query(default=90, ge=7, le=180),
     days_back: int = Query(default=14, ge=0, le=60),
     db: Session = Depends(get_db),
-    _user: dict = Depends(get_current_user),
+    user: dict = Depends(get_current_user),
 ) -> dict:
-    return {"calendar": build_publish_calendar(db, days_ahead=days_ahead, days_back=days_back)}
+    user_id = user.get("db_id", "")
+    calendar = build_publish_calendar(db, days_ahead=days_ahead, days_back=days_back)
+    outlook = outlook_status(db, user_id=user_id)
+    if outlook.get("connected"):
+        outlook_events = await fetch_outlook_calendar_events(
+            db,
+            user_id=user_id,
+            days_ahead=days_ahead,
+            days_back=days_back,
+        )
+        if outlook_events:
+            events = list(calendar["events"]) + outlook_events
+            events.sort(key=lambda item: (item["date"], item.get("datetime") or ""))
+            by_date: dict[str, list] = {}
+            for event in events:
+                by_date.setdefault(event["date"], []).append(event)
+            calendar = {**calendar, "events": events, "by_date": by_date}
+    return {"calendar": calendar, "outlook": outlook}

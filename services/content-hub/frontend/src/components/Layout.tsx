@@ -59,8 +59,8 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
     { to: "/articles", label: t("nav.articles"), icon: "✎" },
     { to: "/files", label: t("nav.files"), icon: "▣" },
     { to: "/certificates", label: t("nav.certificates"), icon: "◎" },
-    { to: "/publish", label: t("nav.publish"), icon: "↗" },
-    { to: "/publish/calendar", label: t("nav.calendar"), icon: "▦" },
+    { to: "/publish", label: t("nav.publish"), end: true, icon: "↗" },
+    { to: "/calendar", label: t("nav.calendar"), icon: "▦" },
   ];
 
   if (canApprove || canApproveCertificates) {

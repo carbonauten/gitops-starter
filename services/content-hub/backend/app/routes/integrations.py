@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import get_session, new_oauth_state, set_session
 from ..database import get_db
-from ..dependencies import require_it_master
+from ..dependencies import get_current_user, require_it_master
 from ..integrations_service import (
     complete_microsoft_connection,
     complete_notion_connection,
@@ -20,6 +20,12 @@ from ..integrations_service import (
     microsoft_authorize_url,
     notion_authorize_url,
 )
+from ..outlook_service import (
+    complete_outlook_connection,
+    disconnect_outlook,
+    outlook_authorize_url,
+    outlook_status,
+)
 from ..publish_service import update_publish_settings
 
 router = APIRouter(prefix="/api/integrations", tags=["integrations"])
@@ -27,6 +33,10 @@ router = APIRouter(prefix="/api/integrations", tags=["integrations"])
 
 def _publish_redirect(status: str, provider: str) -> RedirectResponse:
     return RedirectResponse(url=f"/publish?integration={provider}&status={status}", status_code=302)
+
+
+def _calendar_redirect(status: str) -> RedirectResponse:
+    return RedirectResponse(url=f"/calendar?outlook={status}", status_code=302)
 
 
 @router.get("/status")
@@ -181,3 +191,61 @@ async def notion_databases(
     _admin: dict = Depends(require_it_master),
 ) -> dict:
     return {"databases": await list_notion_databases(db)}
+
+
+@router.get("/outlook/status")
+def outlook_status_route(
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+) -> dict:
+    return outlook_status(db, user_id=user.get("db_id", ""))
+
+
+@router.get("/outlook/connect")
+async def outlook_connect(request: Request) -> RedirectResponse:
+    state = new_oauth_state()
+    session = get_session(request) or {}
+    if "user" not in session:
+        raise HTTPException(status_code=401, detail="unauthorized")
+    session["integration_oauth_state"] = state
+    session["integration_provider"] = "outlook"
+    response = RedirectResponse(url=outlook_authorize_url(state), status_code=302)
+    set_session(response, session)
+    return response
+
+
+@router.get("/outlook/callback")
+async def outlook_callback(
+    request: Request,
+    db: Session = Depends(get_db),
+    code: Optional[str] = None,
+    state: Optional[str] = None,
+) -> RedirectResponse:
+    session = get_session(request) or {}
+    expected_state = session.get("integration_oauth_state")
+    if not code or not state or state != expected_state:
+        return _calendar_redirect("error")
+
+    user = session.get("user")
+    if not user:
+        raise HTTPException(status_code=401, detail="unauthorized")
+
+    try:
+        await complete_outlook_connection(db, code=code, user=user)
+    except HTTPException:
+        return _calendar_redirect("error")
+
+    response = _calendar_redirect("success")
+    session.pop("integration_oauth_state", None)
+    session.pop("integration_provider", None)
+    set_session(response, session)
+    return response
+
+
+@router.delete("/outlook")
+def outlook_disconnect(
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+) -> dict:
+    disconnect_outlook(db, user_id=user.get("db_id", ""))
+    return {"ok": True}

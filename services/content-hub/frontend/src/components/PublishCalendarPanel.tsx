@@ -11,6 +11,9 @@ import { EmptyState } from "./EmptyState";
 import { LoadingState } from "./LoadingState";
 
 function eventLink(event: CalendarEvent): string {
+  if (event.type === "outlook_event" && event.external_url) {
+    return event.external_url;
+  }
   if (event.resource_type === "certificate" || event.type === "certificate_expiry") {
     return `/certificates/${event.resource_id}/edit`;
   }
@@ -25,6 +28,7 @@ function eventTypeLabel(type: string, t: (key: string) => string): string {
   if (type === "publication") return t("calendar.types.publication");
   if (type === "certificate_reminder") return t("calendar.types.reminder");
   if (type === "certificate_expiry") return t("calendar.types.expiry");
+  if (type === "outlook_event") return t("calendar.types.outlook");
   return type;
 }
 
@@ -40,9 +44,13 @@ export function PublishCalendarPanel({ compact = false }: { compact?: boolean })
       setLoading(true);
       try {
         const payload = await fetchPublishCalendar(compact ? 45 : 90, compact ? 7 : 14);
-        setCalendar(payload);
+        setCalendar(payload.calendar);
         const today = new Date().toISOString().slice(0, 10);
-        setSelectedDate(payload.by_date[today] ? today : Object.keys(payload.by_date).sort()[0] || today);
+        setSelectedDate(
+          payload.calendar.by_date[today]
+            ? today
+            : Object.keys(payload.calendar.by_date).sort()[0] || today,
+        );
       } catch (err) {
         setError(err instanceof Error ? err.message : t("common.error"));
       } finally {
@@ -74,7 +82,7 @@ export function PublishCalendarPanel({ compact = false }: { compact?: boolean })
             {t("calendar.openPublish")}
           </Link>
         ) : (
-          <Link to="/publish/calendar" className="ghost-button link-button">
+          <Link to="/calendar" className="ghost-button link-button">
             {t("calendar.openFull")}
           </Link>
         )}
@@ -90,26 +98,54 @@ export function PublishCalendarPanel({ compact = false }: { compact?: boolean })
             className={selectedDate === day ? "calendar-day-chip active" : "calendar-day-chip"}
             onClick={() => setSelectedDate(day)}
           >
-            <span>{new Date(`${day}T00:00:00`).toLocaleDateString(i18n.language, { month: "short", day: "numeric" })}</span>
+            <span>
+              {new Date(`${day}T00:00:00`).toLocaleDateString(i18n.language, {
+                month: "short",
+                day: "numeric",
+              })}
+            </span>
             <strong>{calendar.by_date[day]?.length || 0}</strong>
           </button>
         ))}
       </div>
 
       <div className="list-stack calendar-event-list">
-        {selectedEvents.map((event) => (
-          <Link key={event.id} to={eventLink(event)} className={`calendar-event calendar-event-${event.type}`}>
-            <div className="list-card-title-row">
-              <strong>{event.title}</strong>
-              <span className="badge">{eventTypeLabel(event.type, t)}</span>
-            </div>
-            <p className="muted">
-              {event.datetime
-                ? new Date(event.datetime).toLocaleString(i18n.language)
-                : event.date}
-            </p>
-          </Link>
-        ))}
+        {selectedEvents.map((event) => {
+          const external = event.type === "outlook_event" && Boolean(event.external_url);
+          const className = `calendar-event calendar-event-${event.type}`;
+          const body = (
+            <>
+              <div className="list-card-title-row">
+                <strong>{event.title}</strong>
+                <span className="badge">{eventTypeLabel(event.type, t)}</span>
+              </div>
+              <p className="muted">
+                {event.datetime
+                  ? new Date(event.datetime).toLocaleString(i18n.language)
+                  : event.date}
+                {event.location ? ` · ${event.location}` : ""}
+              </p>
+            </>
+          );
+          if (external) {
+            return (
+              <a
+                key={event.id}
+                href={event.external_url}
+                target="_blank"
+                rel="noreferrer"
+                className={className}
+              >
+                {body}
+              </a>
+            );
+          }
+          return (
+            <Link key={event.id} to={eventLink(event)} className={className}>
+              {body}
+            </Link>
+          );
+        })}
       </div>
     </div>
   );

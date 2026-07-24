@@ -239,7 +239,7 @@ export function PublishPage() {
           <h1>{t("publish.title")}</h1>
           <p className="muted">{t("publish.subtitle")}</p>
         </div>
-        <Link to="/publish/calendar" className="ghost-button link-button">
+        <Link to="/calendar" className="ghost-button link-button">
           {t("calendar.openFull")}
         </Link>
       </header>

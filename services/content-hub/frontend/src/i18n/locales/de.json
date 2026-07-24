@@ -378,15 +378,28 @@
     "eyebrow": "Planung",
     "title": "Veröffentlichungskalender",
     "pageTitle": "Kalender",
-    "pageSubtitle": "Geplante Artikel, Veröffentlichungen und Zertifikatsabläufe auf einen Blick.",
+    "pageSubtitle": "Geplante Artikel, Veröffentlichungen, Zertifikatsabläufe und dein persönlicher Outlook-Kalender.",
     "empty": "Noch keine Kalendereinträge im Zeitraum.",
     "openPublish": "Zur Veröffentlichung",
     "openFull": "Kalender öffnen",
+    "outlookTitle": "Outlook verbinden",
+    "outlookHint": "Verbinde deinen persönlichen Outlook-Kalender und dein Postfach mit einem Klick. Die Verbindung gilt nur für dich.",
+    "outlookFeatureCalendar": "Kalender: Termine aus Outlook erscheinen in diesem Kalender-Tab",
+    "outlookFeatureMail": "E-Mail: Zugriff auf dein Outlook-Postfach für persönliche Erinnerungen",
+    "outlookConnect": "Outlook-Kalender & E-Mail verbinden",
+    "outlookDisconnect": "Outlook trennen",
+    "outlookConnected": "Outlook erfolgreich verbunden.",
+    "outlookDisconnected": "Outlook-Verbindung getrennt.",
+    "outlookFailed": "Outlook-Verbindung fehlgeschlagen. Bitte erneut versuchen.",
+    "outlookEnvMissing": "Microsoft-Anmeldung ist noch nicht konfiguriert (AZURE_* in Railway).",
+    "connected": "Verbunden",
+    "notConnected": "Nicht verbunden",
     "types": {
       "scheduled": "Geplant",
       "publication": "Veröffentlicht",
       "reminder": "Erinnerung",
-      "expiry": "Ablauf"
+      "expiry": "Ablauf",
+      "outlook": "Outlook"
     }
   },
   "ai": {

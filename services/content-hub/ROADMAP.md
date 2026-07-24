@@ -416,15 +416,18 @@ flowchart LR
 ### Deliverables
 
 - [x] API `/api/dashboard/home` — meine Entwürfe, Freigaben, ablaufende Zertifikate, Neuigkeiten
-- [x] API `/api/dashboard/calendar` — geplante Artikel, Publikationen, Zertifikatsabläufe
+- [x] API `/api/dashboard/calendar` — geplante Artikel, Publikationen, Zertifikatsabläufe (+ Outlook wenn verbunden)
 - [x] Dashboard: persönliches Home-Grid + Kalender-Widget
-- [x] Seite `/publish/calendar` + Nav-Eintrag „Kalender“
+- [x] Seite `/calendar` + Nav-Eintrag „Kalender“ (getrennt von Veröffentlichen)
+- [x] Pro User: Outlook-Kalender & E-Mail per OAuth im Kalender-Tab
 - [x] DE / EN / 中文
 
 ### Akzeptanzkriterien
 
 - [x] Nutzer sieht morgens zuerst die eigene Arbeit
 - [x] Geplante Veröffentlichungen und Abläufe sind im Kalender sichtbar
+- [x] Nav highlightet Kalender und Veröffentlichen getrennt
+- [x] Jeder User kann eigenen Outlook-Kalender & E-Mail verbinden
 - [x] Klick führt direkt zum Editor / Publish
 
 ---

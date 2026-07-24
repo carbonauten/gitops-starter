@@ -378,15 +378,28 @@
     "eyebrow": "计划",
     "title": "发布日历",
     "pageTitle": "日历",
-    "pageSubtitle": "一览已排期文章、发布记录与证书到期。",
+    "pageSubtitle": "一览已排期文章、发布记录、证书到期，以及您的个人 Outlook 日历。",
     "empty": "该时间范围内暂无日历事件。",
     "openPublish": "前往发布",
     "openFull": "打开日历",
+    "outlookTitle": "连接 Outlook",
+    "outlookHint": "一键连接您的个人 Outlook 日历与邮箱。此连接仅对您本人生效。",
+    "outlookFeatureCalendar": "日历：Outlook 日程会出现在此日历页",
+    "outlookFeatureMail": "邮件：访问您的 Outlook 邮箱用于个人提醒",
+    "outlookConnect": "连接 Outlook 日历与邮件",
+    "outlookDisconnect": "断开 Outlook",
+    "outlookConnected": "Outlook 已成功连接。",
+    "outlookDisconnected": "已断开 Outlook 连接。",
+    "outlookFailed": "Outlook 连接失败，请重试。",
+    "outlookEnvMissing": "尚未配置 Microsoft 登录（Railway 中的 AZURE_*）。",
+    "connected": "已连接",
+    "notConnected": "未连接",
     "types": {
       "scheduled": "已排期",
       "publication": "已发布",
       "reminder": "提醒",
-      "expiry": "到期"
+      "expiry": "到期",
+      "outlook": "Outlook"
     }
   },
   "ai": {

@@ -512,6 +512,26 @@ a {
   justify-content: center;
 }
 
+.outlook-connect-card {
+  margin-bottom: 1.5rem;
+}
+
+.outlook-feature-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--muted, #667085);
+  font-size: 0.92rem;
+}
+
+.success-text {
+  color: #027a48;
+  margin: 0;
+}
+
+.calendar-event-outlook_event {
+  border-left: 3px solid #0078d4;
+}
+
 .version-history-panel {
   margin-top: 1.5rem;
   padding-top: 1.25rem;

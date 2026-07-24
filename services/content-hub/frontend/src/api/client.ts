@@ -438,19 +438,30 @@ export type DashboardHome = {
 
 export type CalendarEvent = {
   id: string;
-  type: "scheduled_publish" | "publication" | "certificate_reminder" | "certificate_expiry" | string;
+  type: "scheduled_publish" | "publication" | "certificate_reminder" | "certificate_expiry" | "outlook_event" | string;
   title: string;
   date: string;
   datetime?: string | null;
   resource_type: string;
   resource_id: string;
   status?: string;
+  external_url?: string;
+  location?: string;
 };
 
 export type PublishCalendar = {
   range: { start: string; end: string };
   events: CalendarEvent[];
   by_date: Record<string, CalendarEvent[]>;
+};
+
+export type OutlookStatus = {
+  connected: boolean;
+  account: string;
+  connected_at?: string | null;
+  calendar_enabled?: boolean;
+  mail_enabled?: boolean;
+  oauth_available: boolean;
 };
 
 export async function fetchDashboardStats(): Promise<DashboardStats> {
@@ -463,13 +474,27 @@ export async function fetchDashboardHome(): Promise<DashboardHome> {
   return payload.home;
 }
 
-export async function fetchPublishCalendar(daysAhead = 90, daysBack = 14): Promise<PublishCalendar> {
+export async function fetchPublishCalendar(
+  daysAhead = 90,
+  daysBack = 14,
+): Promise<{ calendar: PublishCalendar; outlook: OutlookStatus }> {
   const params = new URLSearchParams({
     days_ahead: String(daysAhead),
     days_back: String(daysBack),
   });
-  const payload = await request<{ calendar: PublishCalendar }>(`/api/dashboard/calendar?${params}`);
-  return payload.calendar;
+  return request<{ calendar: PublishCalendar; outlook: OutlookStatus }>(`/api/dashboard/calendar?${params}`);
+}
+
+export async function fetchOutlookStatus(): Promise<OutlookStatus> {
+  return request<OutlookStatus>("/api/integrations/outlook/status");
+}
+
+export async function disconnectOutlook(): Promise<void> {
+  await request<void>("/api/integrations/outlook", { method: "DELETE" });
+}
+
+export function outlookConnectUrl(): string {
+  return "/api/integrations/outlook/connect";
 }
 
 export async function fetchPlatformInfo(): Promise<PlatformInfo> {
