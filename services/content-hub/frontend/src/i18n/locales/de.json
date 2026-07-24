@@ -136,7 +136,14 @@
     "folderMarketing": "Marketing",
     "download": "Herunterladen",
     "delete": "Löschen",
-    "confirmDelete": "Diese Datei wirklich löschen?"
+    "confirmDelete": "Diese Datei wirklich löschen?",
+    "openOffice": "Öffnen",
+    "officeTitle": "Office Online",
+    "officeLoading": "Dokument wird geladen…",
+    "officeEdit": "In Office Online bearbeiten",
+    "officeEmbedBlocked": "Die eingebettete Vorschau ist nicht verfügbar. Öffne das Dokument in Office Online.",
+    "officeMockHint": "Demo-Modus: Verbinde OneDrive für echte Dokumente.",
+    "officePlatformHint": "Plattform-Dateien können hier nur angesehen werden. Zum Bearbeiten in OneDrive speichern oder Microsoft 365 nutzen."
   },
   "publish": {
     "title": "Veröffentlichen",
@@ -468,7 +475,8 @@
     "loading": "Laden…",
     "error": "Etwas ist schiefgelaufen.",
     "yes": "Ja",
-    "no": "Nein"
+    "no": "Nein",
+    "close": "Schließen"
   },
   "versions": {
     "title": "Versionshistorie",

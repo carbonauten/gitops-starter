@@ -284,9 +284,16 @@ Unter `/files` gibt es drei Quellen: **Plattform**, **SharePoint**, **OneDrive**
 1. Entra → Delegated Permission: `Files.Read` (+ Admin Consent)
 2. Redirect URI (falls noch nicht): `…/api/integrations/outlook/callback`
 3. In der App unter **Dateien → OneDrive** oder **Kalender** → **OneDrive & Outlook verbinden**
-4. Danach erscheinen echte OneDrive-Ordner/Dateien; „In Microsoft 365 öffnen“ öffnet die echte Datei
+4. Danach erscheinen echte OneDrive-Ordner/Dateien
+5. Bei Word/Excel/PowerPoint: **Öffnen** → Office Online Panel (Vorschau + **In Office Online bearbeiten**)
 
 Keine extra Railway-Variable nötig (nutzt `AZURE_*` + `APP_PUBLIC_URL`).
+
+### Office Online
+
+- OneDrive/SharePoint: Graph Embed-Link für Vorschau, `webUrl` zum Bearbeiten in Microsoft 365
+- Plattform-Uploads: kurzlebige Public-Preview-URL (`/api/files/public-preview`) + Office Online Viewer (nur Ansicht, kein Speichern zurück)
+- `APP_PUBLIC_URL` muss öffentlich erreichbar sein, sonst funktioniert die Viewer-Vorschau für Plattform-Dateien nicht
 
 ### SharePoint (Firmenbibliothek)
 

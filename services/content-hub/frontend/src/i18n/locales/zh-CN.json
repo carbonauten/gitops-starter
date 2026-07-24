@@ -136,7 +136,14 @@
     "folderMarketing": "市场",
     "download": "下载",
     "delete": "删除",
-    "confirmDelete": "确定删除此文件吗？"
+    "confirmDelete": "确定删除此文件吗？",
+    "openOffice": "打开",
+    "officeTitle": "Office Online",
+    "officeLoading": "正在加载文档…",
+    "officeEdit": "在 Office Online 中编辑",
+    "officeEmbedBlocked": "无法嵌入预览。请在 Office Online 中打开文档。",
+    "officeMockHint": "演示模式：连接 OneDrive 以使用真实文档。",
+    "officePlatformHint": "平台文件此处仅可预览。如需编辑，请保存到 OneDrive 或使用 Microsoft 365。"
   },
   "publish": {
     "title": "发布",
@@ -468,7 +475,8 @@
     "loading": "加载中…",
     "error": "出现错误。",
     "yes": "是",
-    "no": "否"
+    "no": "否",
+    "close": "关闭"
   },
   "versions": {
     "title": "版本历史",

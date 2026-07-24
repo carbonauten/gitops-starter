@@ -614,6 +614,27 @@ export function fileDownloadUrl(id: string): string {
   return `/api/files/${id}/download`;
 }
 
+export type OfficeSession = {
+  source: "platform" | "sharepoint" | "onedrive";
+  item_id: string;
+  name: string;
+  embed_url: string;
+  edit_url: string;
+  can_edit: boolean;
+  mock?: boolean;
+  expires_at?: string | null;
+  preview_url?: string;
+};
+
+export async function fetchOfficeSession(
+  source: FileSource["id"],
+  itemId: string,
+): Promise<OfficeSession> {
+  const params = new URLSearchParams({ source, item_id: itemId });
+  const payload = await request<{ session: OfficeSession }>(`/api/files/office/session?${params}`);
+  return payload.session;
+}
+
 export async function searchContent(q: string, type?: SearchResultType): Promise<SearchResponse> {
   const params = new URLSearchParams({ q });
   if (type) params.set("type", type);
