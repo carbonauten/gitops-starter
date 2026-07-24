@@ -42,6 +42,8 @@ def certificate_snapshot(certificate: Certificate) -> dict[str, Any]:
         "renewal_review_comment": certificate.renewal_review_comment,
         "responsible_name": certificate.responsible_name,
         "responsible_email": certificate.responsible_email,
+        "escalate_email": certificate.escalate_email,
+        "parent_id": certificate.parent_id,
         "file_asset_id": certificate.file_asset_id,
         "notes": certificate.notes,
     }

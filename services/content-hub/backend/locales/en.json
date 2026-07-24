@@ -33,5 +33,7 @@
   "errors.invalid_workflow_state": "This action is not allowed in the current workflow state.",
   "errors.article_not_published": "Only published articles can be sent to external channels.",
   "errors.renewal_not_requested": "Enable renewal in progress before requesting approval.",
+  "errors.has_children": "Certificate has dependent child certificates and cannot be deleted.",
+  "errors.invalid_parent": "Invalid parent link (cycle or self-reference).",
   "messages.language_updated": "Language updated."
 }

@@ -5,11 +5,15 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import {
   createCertificate,
   fetchCertificate,
+  fetchCertificates,
   fileDownloadUrl,
   requestCertificateRenewal,
   updateCertificate,
   uploadFile,
+  type Certificate,
 } from "../api/client";
+import { CertificateStatusBadge } from "../components/CertificateStatusBadge";
+import { LoadingState } from "../components/LoadingState";
 import { VersionHistoryPanel } from "../components/VersionHistoryPanel";
 
 const CATEGORIES = ["compliance", "product", "training", "ssl"] as const;
@@ -39,12 +43,27 @@ export function CertificateEditorPage() {
   const [renewalApprovalStatus, setRenewalApprovalStatus] = useState("none");
   const [responsibleName, setResponsibleName] = useState("");
   const [responsibleEmail, setResponsibleEmail] = useState("");
+  const [escalateEmail, setEscalateEmail] = useState("");
+  const [parentId, setParentId] = useState("");
+  const [children, setChildren] = useState<NonNullable<Certificate["children"]>>([]);
+  const [parentOptions, setParentOptions] = useState<Certificate[]>([]);
   const [notes, setNotes] = useState("");
   const [fileAssetId, setFileAssetId] = useState<string | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const options = await fetchCertificates();
+        setParentOptions(options.filter((item) => item.id !== id));
+      } catch {
+        setParentOptions([]);
+      }
+    })();
+  }, [id]);
 
   useEffect(() => {
     if (isNew || !id) return;
@@ -60,6 +79,9 @@ export function CertificateEditorPage() {
         setRenewalApprovalStatus(certificate.renewal_approval_status || "none");
         setResponsibleName(certificate.responsible_name);
         setResponsibleEmail(certificate.responsible_email);
+        setEscalateEmail(certificate.escalate_email || "");
+        setParentId(certificate.parent_id || "");
+        setChildren(certificate.children || []);
         setNotes(certificate.notes);
         setFileAssetId(certificate.file_asset_id);
         setFileName(certificate.file_name);
@@ -101,6 +123,8 @@ export function CertificateEditorPage() {
       renewal_in_progress: renewalInProgress,
       responsible_name: responsibleName,
       responsible_email: responsibleEmail,
+      escalate_email: escalateEmail,
+      parent_id: parentId || null,
       file_asset_id: fileAssetId,
       notes,
     };
@@ -110,7 +134,8 @@ export function CertificateEditorPage() {
         navigate(`/certificates/${certificate.id}/edit`, { replace: true });
         return;
       }
-      await updateCertificate(id!, payload);
+      const updated = await updateCertificate(id!, payload);
+      setChildren(updated.children || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
@@ -119,7 +144,7 @@ export function CertificateEditorPage() {
   }
 
   if (loading) {
-    return <p>{t("common.loading")}</p>;
+    return <LoadingState />;
   }
 
   return (
@@ -154,6 +179,18 @@ export function CertificateEditorPage() {
         <label>
           {t("certificates.fieldIssuer")}
           <input value={issuer} onChange={(event) => setIssuer(event.target.value)} />
+        </label>
+
+        <label>
+          {t("certificates.fieldParent")}
+          <select value={parentId} onChange={(event) => setParentId(event.target.value)}>
+            <option value="">{t("certificates.noParent")}</option>
+            {parentOptions.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
         </label>
 
         <div className="form-grid">
@@ -192,6 +229,16 @@ export function CertificateEditorPage() {
         </div>
 
         <label>
+          {t("certificates.fieldEscalateEmail")}
+          <input
+            type="email"
+            value={escalateEmail}
+            onChange={(event) => setEscalateEmail(event.target.value)}
+            placeholder={t("certificates.escalateHint")}
+          />
+        </label>
+
+        <label>
           {t("certificates.fieldNotes")}
           <textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={4} />
         </label>
@@ -207,6 +254,25 @@ export function CertificateEditorPage() {
               {fileName}
             </a>
           </p>
+        ) : null}
+
+        {!isNew && children.length > 0 ? (
+          <div className="certificate-children-panel">
+            <h2>{t("certificates.childrenTitle")}</h2>
+            <div className="list-stack">
+              {children.map((child) => (
+                <article key={child.id} className="list-card">
+                  <div className="list-card-title-row">
+                    <Link to={`/certificates/${child.id}/edit`}>{child.name}</Link>
+                    <CertificateStatusBadge status={child.status as Certificate["status"]} />
+                  </div>
+                  <p className="muted">
+                    {t("certificates.validUntil")}: {child.valid_to}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </div>
         ) : null}
 
         {error ? <p className="error-text">{error}</p> : null}

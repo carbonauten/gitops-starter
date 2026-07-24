@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import {
+  certificatesAuditExportUrl,
   certificatesExportUrl,
   deleteCertificate,
   fetchCertificates,
@@ -70,6 +71,9 @@ export function CertificatesPage() {
           <a href={certificatesExportUrl()} className="ghost-button link-button">
             {t("certificates.export")}
           </a>
+          <a href={certificatesAuditExportUrl()} className="ghost-button link-button">
+            {t("certificates.auditExport")}
+          </a>
           {canEdit ? (
             <Link to="/certificates/new" className="primary-button link-button">
               {t("certificates.new")}
@@ -129,6 +133,16 @@ export function CertificatesPage() {
               <p className="muted">
                 {t(`certificates.categories.${certificate.category}`)} · {certificate.issuer || t("certificates.noIssuer")}
               </p>
+              {certificate.parent_name ? (
+                <p className="muted">
+                  {t("certificates.parent")}: {certificate.parent_name}
+                </p>
+              ) : null}
+              {(certificate.children?.length || 0) > 0 ? (
+                <p className="muted">
+                  {t("certificates.childrenCount", { count: certificate.children?.length || 0 })}
+                </p>
+              ) : null}
               <p className="muted">
                 {t("certificates.validUntil")}: {certificate.valid_to}
                 {certificate.days_until_expiry >= 0

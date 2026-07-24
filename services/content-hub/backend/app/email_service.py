@@ -92,6 +92,22 @@ def _send_via_smtp(
         return False
 
 
+def send_plain_email(
+    *,
+    to_email: str,
+    subject: str,
+    body: str,
+    settings: Settings | None = None,
+) -> bool:
+    settings = settings or get_settings()
+    if settings.resend_configured:
+        return _send_via_resend(settings, to_email=to_email, subject=subject, body=body)
+    if settings.smtp_configured:
+        return _send_via_smtp(settings, to_email=to_email, subject=subject, body=body)
+    logger.warning("Email not configured; skipped send to %s subject=%s", to_email, subject)
+    return False
+
+
 def send_invite_email(
     *,
     to_email: str,

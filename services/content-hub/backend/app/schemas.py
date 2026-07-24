@@ -71,6 +71,8 @@ class CertificateCreate(BaseModel):
     renewal_in_progress: bool = False
     responsible_name: str = Field(default="", max_length=200)
     responsible_email: str = Field(default="", max_length=200)
+    escalate_email: str = Field(default="", max_length=200)
+    parent_id: Optional[str] = None
     file_asset_id: Optional[str] = None
     notes: str = ""
 
@@ -84,8 +86,18 @@ class CertificateUpdate(BaseModel):
     renewal_in_progress: Optional[bool] = None
     responsible_name: Optional[str] = Field(default=None, max_length=200)
     responsible_email: Optional[str] = Field(default=None, max_length=200)
+    escalate_email: Optional[str] = Field(default=None, max_length=200)
+    parent_id: Optional[str] = None
     file_asset_id: Optional[str] = None
     notes: Optional[str] = None
+
+
+class CertificateChildSummary(BaseModel):
+    id: str
+    name: str
+    status: str
+    valid_to: date
+    days_until_expiry: int
 
 
 class CertificateResponse(BaseModel):
@@ -102,6 +114,10 @@ class CertificateResponse(BaseModel):
     days_until_expiry: int
     responsible_name: str
     responsible_email: str
+    escalate_email: str = ""
+    parent_id: Optional[str] = None
+    parent_name: Optional[str] = None
+    children: list[CertificateChildSummary] = []
     file_asset_id: Optional[str]
     file_name: Optional[str] = None
     notes: str

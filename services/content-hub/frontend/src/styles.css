@@ -1701,3 +1701,23 @@ a {
     position: static;
   }
 }
+
+.certificate-children-panel {
+  margin: 1.25rem 0;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.certificate-children-panel h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  align-items: center;
+}

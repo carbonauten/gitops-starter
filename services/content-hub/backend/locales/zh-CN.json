@@ -33,5 +33,7 @@
   "errors.invalid_workflow_state": "当前工作流状态下不允许此操作。",
   "errors.article_not_published": "只有已发布的文章才能发送到外部渠道。",
   "errors.renewal_not_requested": "请先启用续期，再申请审批。",
+  "errors.has_children": "该证书仍有子证书，无法删除。",
+  "errors.invalid_parent": "无效的父级关联（循环或自引用）。",
   "messages.language_updated": "语言已更新。"
 }

@@ -474,67 +474,6 @@ def _expiry_window_days(certificate: Certificate, today: date) -> int | None:
 
 
 async def run_certificate_reminders(db: Session, *, user: dict) -> dict:
-    settings_row = ensure_publish_settings(db)
-    today = datetime.now(timezone.utc).date()
-    certificates = list(db.scalars(select(Certificate)).all())
-    triggered = []
+    from .certificate_service import process_due_certificate_reminders
 
-    for certificate in certificates:
-        window = _expiry_window_days(certificate, today)
-        if window is None:
-            continue
-
-        title = f"Zertifikat läuft in {window} Tagen ab: {certificate.name}"
-        summary = (
-            f"Zertifikat: {certificate.name}\n"
-            f"Kategorie: {certificate.category}\n"
-            f"Gültig bis: {certificate.valid_to.isoformat()}\n"
-            f"Verantwortlich: {certificate.responsible_name} ({certificate.responsible_email})"
-        )
-        body_html = f"<p>{summary.replace(chr(10), '<br/>')}</p>"
-
-        publication = Publication(
-            resource_type="certificate_reminder",
-            resource_id=certificate.id,
-            title=title,
-            summary=summary,
-            published_by_id=user["db_id"],
-            published_by_name=user["name"],
-        )
-        db.add(publication)
-        db.flush()
-
-        channels: list[str] = []
-        if settings_row.teams_enabled:
-            channels.append("teams")
-        if settings_row.outlook_enabled:
-            channels.append("outlook")
-        if not channels and get_settings().publish_mock_mode:
-            channels = ["teams", "outlook"]
-
-        deliveries = [
-            PublicationDelivery(publication_id=publication.id, channel=channel, status="pending")
-            for channel in channels
-        ]
-        db.add_all(deliveries)
-        db.commit()
-
-        await _run_deliveries(
-            db,
-            deliveries,
-            title=title,
-            body_html=body_html,
-            summary=summary,
-            settings_row=settings_row,
-            to_email=certificate.responsible_email or None,
-        )
-        triggered.append(
-            {
-                "certificate_id": certificate.id,
-                "certificate_name": certificate.name,
-                "days_until_expiry": window,
-                "publication_id": publication.id,
-            }
-        )
-
-    return {"reminders_sent": len(triggered), "items": triggered}
+    return await process_due_certificate_reminders(db, actor=user, send_email=True)

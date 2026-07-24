@@ -11,11 +11,18 @@ from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from ..audit_service import log_audit
-from ..version_service import certificate_snapshot, record_revision
-from ..dependencies import get_current_user, require_editor
-from ..certificates import compute_certificate_status, days_until_expiry, expiry_window_end
+from ..certificate_service import (
+    build_audit_export_zip,
+    build_certificate_chains,
+    children_of,
+    parent_name,
+    validate_parent_id,
+)
+from ..certificates import compute_certificate_status, days_until_expiry
 from ..database import Certificate, FileAsset, get_db
-from ..schemas import CertificateCreate, CertificateResponse, CertificateUpdate
+from ..dependencies import get_current_user, require_editor
+from ..schemas import CertificateChildSummary, CertificateCreate, CertificateResponse, CertificateUpdate
+from ..version_service import certificate_snapshot, record_revision
 
 router = APIRouter(prefix="/api/certificates", tags=["certificates"])
 
@@ -39,6 +46,7 @@ def _validate_file_asset(db: Session, file_asset_id: Optional[str]) -> None:
 
 def _to_response(certificate: Certificate, db: Session, today: Optional[date] = None) -> CertificateResponse:
     today = today or date.today()
+    child_rows = children_of(db, certificate.id)
     return CertificateResponse(
         id=certificate.id,
         name=certificate.name,
@@ -53,6 +61,19 @@ def _to_response(certificate: Certificate, db: Session, today: Optional[date] = 
         days_until_expiry=days_until_expiry(certificate.valid_to, today),
         responsible_name=certificate.responsible_name,
         responsible_email=certificate.responsible_email,
+        escalate_email=certificate.escalate_email or "",
+        parent_id=certificate.parent_id,
+        parent_name=parent_name(db, certificate.parent_id),
+        children=[
+            CertificateChildSummary(
+                id=child.id,
+                name=child.name,
+                status=compute_certificate_status(child.valid_to, child.renewal_in_progress, today),
+                valid_to=child.valid_to,
+                days_until_expiry=days_until_expiry(child.valid_to, today),
+            )
+            for child in child_rows
+        ],
         file_asset_id=certificate.file_asset_id,
         file_name=_file_name(db, certificate.file_asset_id),
         notes=certificate.notes,
@@ -114,8 +135,11 @@ def export_certificates(
             "valid_to",
             "status",
             "days_until_expiry",
+            "parent_id",
+            "parent_name",
             "responsible_name",
             "responsible_email",
+            "escalate_email",
             "renewal_in_progress",
             "notes",
         ]
@@ -131,8 +155,11 @@ def export_certificates(
                 response.valid_to.isoformat(),
                 response.status,
                 response.days_until_expiry,
+                response.parent_id or "",
+                response.parent_name or "",
                 response.responsible_name,
                 response.responsible_email,
+                response.escalate_email,
                 response.renewal_in_progress,
                 response.notes,
             ]
@@ -145,6 +172,35 @@ def export_certificates(
     )
 
 
+@router.get("/audit-export")
+def audit_export_certificates(
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+) -> Response:
+    payload = build_audit_export_zip(db)
+    log_audit(
+        db,
+        entity_type="certificate",
+        entity_id="*",
+        action="audit_export",
+        actor=user,
+        details={"bytes": len(payload)},
+    )
+    return Response(
+        content=payload,
+        media_type="application/zip",
+        headers={"Content-Disposition": 'attachment; filename="carbonauten-certificate-audit.zip"'},
+    )
+
+
+@router.get("/chains")
+def certificate_chains(
+    db: Session = Depends(get_db),
+    _user: dict = Depends(get_current_user),
+) -> dict:
+    return {"chains": build_certificate_chains(db)}
+
+
 @router.post("", status_code=201)
 def create_certificate(
     payload: CertificateCreate,
@@ -153,6 +209,7 @@ def create_certificate(
 ) -> dict:
     _validate_dates(payload.valid_from, payload.valid_to)
     _validate_file_asset(db, payload.file_asset_id)
+    validate_parent_id(db, certificate_id=None, parent_id=payload.parent_id)
     certificate = Certificate(
         name=payload.name,
         category=payload.category,
@@ -162,6 +219,8 @@ def create_certificate(
         renewal_in_progress=payload.renewal_in_progress,
         responsible_name=payload.responsible_name,
         responsible_email=payload.responsible_email,
+        escalate_email=payload.escalate_email,
+        parent_id=payload.parent_id,
         file_asset_id=payload.file_asset_id,
         notes=payload.notes,
         created_by_id=user["id"],
@@ -176,7 +235,7 @@ def create_certificate(
         entity_id=certificate.id,
         action="create",
         actor=user,
-        details={"name": certificate.name},
+        details={"name": certificate.name, "parent_id": certificate.parent_id},
     )
     return {"certificate": _to_response(certificate, db)}
 
@@ -213,6 +272,11 @@ def update_certificate(
             actor=user,
         )
 
+    data = payload.model_dump(exclude_unset=True)
+    if "parent_id" in data:
+        validate_parent_id(db, certificate_id=certificate.id, parent_id=data["parent_id"])
+        certificate.parent_id = data["parent_id"]
+
     if payload.name is not None:
         certificate.name = payload.name
     if payload.category is not None:
@@ -232,6 +296,8 @@ def update_certificate(
         certificate.responsible_name = payload.responsible_name
     if payload.responsible_email is not None:
         certificate.responsible_email = payload.responsible_email
+    if payload.escalate_email is not None:
+        certificate.escalate_email = payload.escalate_email
     if payload.file_asset_id is not None:
         _validate_file_asset(db, payload.file_asset_id)
         certificate.file_asset_id = payload.file_asset_id
@@ -247,7 +313,7 @@ def update_certificate(
         entity_id=certificate.id,
         action="update",
         actor=user,
-        details={"name": certificate.name, "renewal_in_progress": certificate.renewal_in_progress},
+        details={"name": certificate.name, "parent_id": certificate.parent_id},
     )
     return {"certificate": _to_response(certificate, db)}
 
@@ -261,6 +327,8 @@ def delete_certificate(
     certificate = db.get(Certificate, certificate_id)
     if not certificate:
         raise HTTPException(status_code=404, detail="not_found")
+    if children_of(db, certificate.id):
+        raise HTTPException(status_code=409, detail="has_children")
     log_audit(
         db,
         entity_type="certificate",

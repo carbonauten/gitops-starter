@@ -178,6 +178,16 @@ export type Certificate = {
   days_until_expiry: number;
   responsible_name: string;
   responsible_email: string;
+  escalate_email?: string;
+  parent_id?: string | null;
+  parent_name?: string | null;
+  children?: Array<{
+    id: string;
+    name: string;
+    status: string;
+    valid_to: string;
+    days_until_expiry: number;
+  }>;
   file_asset_id: string | null;
   file_name: string | null;
   notes: string;
@@ -593,7 +603,20 @@ export async function fetchCertificate(id: string): Promise<Certificate> {
 }
 
 export async function createCertificate(
-  data: Omit<Certificate, "id" | "status" | "days_until_expiry" | "file_name" | "created_by_id" | "created_by_name" | "created_at" | "updated_at">,
+  data: {
+    name: string;
+    category: Certificate["category"];
+    issuer: string;
+    valid_from: string;
+    valid_to: string;
+    renewal_in_progress: boolean;
+    responsible_name: string;
+    responsible_email: string;
+    escalate_email?: string;
+    parent_id?: string | null;
+    file_asset_id: string | null;
+    notes: string;
+  },
 ): Promise<Certificate> {
   const payload = await request<{ certificate: Certificate }>("/api/certificates", {
     method: "POST",
@@ -616,6 +639,15 @@ export async function deleteCertificate(id: string): Promise<void> {
 
 export function certificatesExportUrl(): string {
   return "/api/certificates/export";
+}
+
+export function certificatesAuditExportUrl(): string {
+  return "/api/certificates/audit-export";
+}
+
+export async function fetchCertificateChains(): Promise<unknown[]> {
+  const payload = await request<{ chains: unknown[] }>("/api/certificates/chains");
+  return payload.chains;
 }
 
 export async function fetchUsers(): Promise<User[]> {

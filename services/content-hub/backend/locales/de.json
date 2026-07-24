@@ -33,5 +33,7 @@
   "errors.invalid_workflow_state": "Diese Aktion ist im aktuellen Workflow-Status nicht erlaubt.",
   "errors.article_not_published": "Nur veröffentlichte Artikel können an externe Kanäle gesendet werden.",
   "errors.renewal_not_requested": "Bitte Erneuerung aktivieren, bevor eine Freigabe angefordert wird.",
+  "errors.has_children": "Zertifikat hat abhängige Kind-Zertifikate und kann nicht gelöscht werden.",
+  "errors.invalid_parent": "Ungültige Parent-Zuordnung (Zyklus oder Selbstbezug).",
   "messages.language_updated": "Sprache wurde aktualisiert."
 }

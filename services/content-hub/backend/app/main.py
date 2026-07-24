@@ -45,13 +45,33 @@ async def lifespan(app: FastAPI):
             finally:
                 db.close()
 
-    task = asyncio.create_task(scheduled_publish_loop())
+    async def certificate_reminder_loop():
+        from .certificate_service import process_due_certificate_reminders
+        from .database import _SessionLocal
+
+        while True:
+            await asyncio.sleep(3600)
+            if _SessionLocal is None:
+                continue
+            db = _SessionLocal()
+            try:
+                await process_due_certificate_reminders(db, send_email=True)
+            except Exception:  # noqa: BLE001
+                logger.exception("Certificate reminder loop failed")
+            finally:
+                db.close()
+
+    publish_task = asyncio.create_task(scheduled_publish_loop())
+    reminder_task = asyncio.create_task(certificate_reminder_loop())
     try:
         yield
     finally:
-        task.cancel()
+        publish_task.cancel()
+        reminder_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
-            await task
+            await publish_task
+        with contextlib.suppress(asyncio.CancelledError):
+            await reminder_task
 
 
 def create_app() -> FastAPI:

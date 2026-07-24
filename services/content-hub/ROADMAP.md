@@ -64,6 +64,7 @@ flowchart LR
 | UI 2 | 2–3 Tage | ✅ Abgeschlossen | Loading/Empty States, Badges, Audit-Mobile |
 | Search + AI | 3–5 Tage | ✅ Abgeschlossen (MVP) | Zentrale Suche, KI-Fragen, ⌘K |
 | A | 3–5 Tage | ✅ Abgeschlossen | Ask Carbonauten live: Translate, Summarize, richer RAG |
+| B | 3–5 Tage | ✅ Abgeschlossen | Zertifikat-Ketten, Erinnerungen, Audit-Export |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -384,14 +385,37 @@ flowchart LR
 
 ---
 
+## Sprint B — Zertifikat-Ketten & Compliance Pack ✅
+
+**Ziel:** Zertifikate als Compliance-Operating-System: Ketten, zuverlässige Erinnerungen, Audit-Export.
+
+### Deliverables
+
+- [x] Parent/Child-Ketten (`parent_id`) inkl. Zykluserkennung
+- [x] Eskalations-E-Mail zusätzlich zur verantwortlichen Person
+- [x] Erinnerungen 90/60/30 Tage — einmalig pro Fenster, mit Tracking-Feldern
+- [x] Direkte E-Mail (Resend/SMTP) + Teams/Outlook Publish-Kanäle
+- [x] Stündlicher Hintergrund-Job für fällige Erinnerungen
+- [x] Audit-Paket ZIP: `certificates.csv`, `chains.json`, `summary.json`, `README.md`
+- [x] UI: Parent-Auswahl, Kind-Liste, Audit-Export-Button
+
+### Akzeptanzkriterien
+
+- [x] Root→Child-Beziehungen sind in Liste und Editor sichtbar
+- [x] Löschen eines Parents mit Kindern wird blockiert
+- [x] Erinnerungen feuern nicht doppelt für dasselbe Fenster
+- [x] Auditoren können ein ZIP-Paket herunterladen
+
+---
+
 ## Backlog (Sprint 8+)
 
 | Thema | Beschreibung | Priorität |
 |-------|--------------|-----------|
-| Zertifikat-Ketten | Abhängigkeiten zwischen Zertifikaten (Parent/Child) | Hoch |
+| Zertifikat-Ketten | Abhängigkeiten zwischen Zertifikaten (Parent/Child) | ~~Hoch~~ ✅ Sprint B |
 | Version Restore | Alte Version wiederherstellen | Mittel |
 | Auto-Import CA | Let's Encrypt / Azure Key Vault Sync | Mittel |
-| KI-Assistenz | Zusammenfassung, Übersetzung DE↔EN↔中文 | Mittel |
+| KI-Assistenz | Zusammenfassung, Übersetzung DE↔EN↔中文 | ~~Mittel~~ ✅ Sprint A |
 | SharePoint | Zertifikate aus SharePoint-Bibliothek importieren | Mittel |
 | Mobile | Responsive Optimierung / PWA | ~~Niedrig~~ Teilweise (UI Sprint) |
 | Analytics | Veröffentlichungs- und Zertifikat-Statistiken | Niedrig |

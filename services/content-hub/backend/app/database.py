@@ -202,6 +202,11 @@ class Certificate(Base):
     renewal_review_comment: Mapped[str] = mapped_column(Text, default="")
     responsible_name: Mapped[str] = mapped_column(String(200), default="")
     responsible_email: Mapped[str] = mapped_column(String(200), default="")
+    escalate_email: Mapped[str] = mapped_column(String(200), default="")
+    parent_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    reminder_90_sent_on: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    reminder_60_sent_on: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
+    reminder_30_sent_on: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     file_asset_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     notes: Mapped[str] = mapped_column(Text, default="")
     created_by_id: Mapped[str] = mapped_column(String(100))
@@ -322,6 +327,19 @@ def ensure_schema_updates(engine, is_sqlite: bool) -> None:
                             "ALTER TABLE certificates ADD COLUMN renewal_review_comment TEXT NOT NULL DEFAULT ''"
                         )
                     )
+        for column_name, ddl_sqlite, ddl_pg in (
+            ("parent_id", "ALTER TABLE certificates ADD COLUMN parent_id VARCHAR(36)", "ALTER TABLE certificates ADD COLUMN parent_id VARCHAR(36)"),
+            ("escalate_email", "ALTER TABLE certificates ADD COLUMN escalate_email VARCHAR(200) DEFAULT ''", "ALTER TABLE certificates ADD COLUMN escalate_email VARCHAR(200) NOT NULL DEFAULT ''"),
+            ("reminder_90_sent_on", "ALTER TABLE certificates ADD COLUMN reminder_90_sent_on DATE", "ALTER TABLE certificates ADD COLUMN reminder_90_sent_on DATE"),
+            ("reminder_60_sent_on", "ALTER TABLE certificates ADD COLUMN reminder_60_sent_on DATE", "ALTER TABLE certificates ADD COLUMN reminder_60_sent_on DATE"),
+            ("reminder_30_sent_on", "ALTER TABLE certificates ADD COLUMN reminder_30_sent_on DATE", "ALTER TABLE certificates ADD COLUMN reminder_30_sent_on DATE"),
+        ):
+            if column_name not in columns:
+                try:
+                    with engine.begin() as connection:
+                        connection.execute(text(ddl_sqlite if is_sqlite else ddl_pg))
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Could not add certificates.%s: %s", column_name, exc)
 
 
 DEFAULT_DEPARTMENTS: tuple[tuple[str, str, int], ...] = (
