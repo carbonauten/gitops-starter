@@ -202,3 +202,31 @@ def build_keyword_answer(question: str, results: list[SearchResult]) -> str:
         return ""
     lines = [f"• {item.title}: {item.snippet or '—'}" for item in results[:5]]
     return f"{question.strip()}\n\n" + "\n".join(lines)
+
+
+def enrich_context_for_ask(db: Session, results: list[SearchResult], limit: int = 6) -> list[str]:
+    """Load fuller source text for Ask Carbonauten RAG answers."""
+    blocks: list[str] = []
+    for index, item in enumerate(results[:limit], start=1):
+        if item.type == "article":
+            article = db.get(Article, item.id)
+            body = _clean_text(article.content if article else item.snippet)[:1200]
+            blocks.append(
+                f"[{index}] type=article title={item.title}\nstatus={item.status or '-'}\ncontent={body}"
+            )
+        elif item.type == "certificate":
+            certificate = db.get(Certificate, item.id)
+            if certificate:
+                notes = _clean_text(certificate.notes)[:400]
+                blocks.append(
+                    f"[{index}] type=certificate title={certificate.name}\n"
+                    f"issuer={certificate.issuer} category={certificate.category} "
+                    f"valid_to={certificate.valid_to} status={item.status or '-'}\nnotes={notes}"
+                )
+            else:
+                blocks.append(f"[{index}] type=certificate title={item.title}\nsnippet={item.snippet}")
+        else:
+            blocks.append(
+                f"[{index}] type=file title={item.title}\nfolder={item.folder or item.snippet or '-'}"
+            )
+    return blocks

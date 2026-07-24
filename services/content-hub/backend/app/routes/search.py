@@ -9,7 +9,13 @@ from ..ai_service import ai_configured, expand_search_query, generate_search_ans
 from ..dependencies import get_current_user
 from ..database import get_db
 from ..schemas import SearchAskRequest
-from ..search_service import build_keyword_answer, build_suggestions, extract_keywords, search_content
+from ..search_service import (
+    build_keyword_answer,
+    build_suggestions,
+    enrich_context_for_ask,
+    extract_keywords,
+    search_content,
+)
 
 router = APIRouter(prefix="/api/search", tags=["search"])
 
@@ -28,6 +34,7 @@ def search(
         "results": results,
         "counts": counts,
         "ai_available": ai_configured(),
+        "assistant_name": "Ask Carbonauten",
     }
 
 
@@ -61,7 +68,13 @@ def ask_search(
 
     answer = ""
     if ai_configured():
-        ai_answer = generate_search_answer(payload.question, results, language=language)
+        enriched = enrich_context_for_ask(db, results)
+        ai_answer = generate_search_answer(
+            payload.question,
+            results,
+            language=language,
+            enriched_context=enriched,
+        )
         if ai_answer:
             answer = ai_answer
             mode = "ai"
@@ -82,6 +95,7 @@ def ask_search(
         "counts": counts,
         "suggested_queries": suggestions,
         "ai_available": ai_configured(),
+        "assistant_name": "Ask Carbonauten",
     }
 
 
@@ -93,6 +107,7 @@ def search_suggestions(
     return {
         "suggestions": build_suggestions(db),
         "ai_available": ai_configured(),
+        "assistant_name": "Ask Carbonauten",
     }
 
 

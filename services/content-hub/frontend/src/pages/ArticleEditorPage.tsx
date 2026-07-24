@@ -11,7 +11,9 @@ import {
   type ArticleTemplate,
 } from "../api/client";
 import { ArticleEditor } from "../components/ArticleEditor";
+import { AiAssistPanel } from "../components/AiAssistPanel";
 import { VersionHistoryPanel } from "../components/VersionHistoryPanel";
+import { LoadingState } from "../components/LoadingState";
 
 const EDITABLE_STATUSES = new Set(["draft", "rejected"]);
 
@@ -123,7 +125,7 @@ export function ArticleEditorPage() {
   }
 
   if (loading) {
-    return <p>{t("common.loading")}</p>;
+    return <LoadingState />;
   }
 
   return (
@@ -156,30 +158,43 @@ export function ArticleEditorPage() {
         </div>
       ) : null}
 
-      <form className="editor-form" onSubmit={(event) => void handleSaveDraft(event)}>
-        <label>
-          {t("articles.fieldTitle")}
-          <input value={title} onChange={(event) => setTitle(event.target.value)} required disabled={!canEditContent} />
-        </label>
+      <div className="editor-layout">
+        <form className="editor-form" onSubmit={(event) => void handleSaveDraft(event)}>
+          <label>
+            {t("articles.fieldTitle")}
+            <input value={title} onChange={(event) => setTitle(event.target.value)} required disabled={!canEditContent} />
+          </label>
 
-        <label>
-          {t("articles.fieldContent")}
-          <ArticleEditor content={content} onChange={setContent} />
-        </label>
+          <label>
+            {t("articles.fieldContent")}
+            <ArticleEditor content={content} onChange={setContent} />
+          </label>
 
-        {error ? <p className="error-text">{error}</p> : null}
+          {error ? <p className="error-text">{error}</p> : null}
 
-        {canEditContent ? (
-          <div className="form-actions">
-            <button type="submit" className="ghost-button" disabled={saving}>
-              {t("articles.saveDraft")}
-            </button>
-            <button type="button" className="primary-button" disabled={saving} onClick={(event) => void handleSubmitReview(event)}>
-              {t("articles.submitReview")}
-            </button>
-          </div>
-        ) : null}
-      </form>
+          {canEditContent ? (
+            <div className="form-actions">
+              <button type="submit" className="ghost-button" disabled={saving}>
+                {t("articles.saveDraft")}
+              </button>
+              <button type="button" className="primary-button" disabled={saving} onClick={(event) => void handleSubmitReview(event)}>
+                {t("articles.submitReview")}
+              </button>
+            </div>
+          ) : null}
+        </form>
+
+        <AiAssistPanel
+          title={title}
+          content={content}
+          disabled={!canEditContent}
+          onApplyTranslation={({ title: nextTitle, content: nextContent }) => {
+            setTitle(nextTitle);
+            setContent(nextContent);
+          }}
+        />
+      </div>
+
       {!isNew && id ? <VersionHistoryPanel entityType="article" entityId={id} /> : null}
     </section>
   );

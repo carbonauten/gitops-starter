@@ -63,6 +63,7 @@ flowchart LR
 | UI | 2–3 Tage | ✅ Abgeschlossen | Responsive Navigation, Status-Badges, Polish |
 | UI 2 | 2–3 Tage | ✅ Abgeschlossen | Loading/Empty States, Badges, Audit-Mobile |
 | Search + AI | 3–5 Tage | ✅ Abgeschlossen (MVP) | Zentrale Suche, KI-Fragen, ⌘K |
+| A | 3–5 Tage | ✅ Abgeschlossen | Ask Carbonauten live: Translate, Summarize, richer RAG |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -359,6 +360,27 @@ flowchart LR
 - [x] Nutzer findet Inhalte von jeder Seite aus (TopBar / Dashboard)
 - [x] Natürliche Fragen liefern Antwort + Quellen
 - [x] DE / EN / 中文 für alle neuen UI-Texte
+
+---
+
+## Sprint A — Ask Carbonauten live ✅
+
+**Ziel:** KI als produktives Feature: Fragen, Übersetzen, Zusammenfassen — nur aus firmeneigenen Inhalten.
+
+### Deliverables
+
+- [x] Ask Carbonauten Branding in Suche / Ask-Modus
+- [x] Reichere RAG-Kontexte (Artikelinhalt, Zertifikatsdetails)
+- [x] API: `/api/ai/status`, `/api/ai/translate`, `/api/ai/summarize`
+- [x] Artikel-Editor: Übersetzung DE / EN / 中文 + Zusammenfassung
+- [x] Längere Timeouts für KI-Requests im Frontend
+- [x] Tests für AI-Status, Translate, Summarize, Ask-Branding
+
+### Akzeptanzkriterien
+
+- [x] Ohne API-Key: klare Hinweise, Keyword-Fallback weiterhin nutzbar
+- [x] Mit Azure OpenAI / OpenAI: Übersetzen ersetzt Titel+Inhalt im Editor
+- [x] Ask-Antworten referenzieren Plattform-Quellen
 
 ---
 

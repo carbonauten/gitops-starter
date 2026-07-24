@@ -83,26 +83,38 @@ def expand_search_query(question: str, language: str = "de") -> str:
     return expanded.strip().strip(chr(34)).strip(chr(39))
 
 
+LANG_NAMES = {
+    "de": "German",
+    "en": "English",
+    "zh-CN": "Simplified Chinese",
+    "zh": "Simplified Chinese",
+}
+
+
 def generate_search_answer(
     question: str,
     results: list[SearchResult],
     *,
     language: str = "de",
+    enriched_context: list[str] | None = None,
 ) -> str | None:
-    if not results:
+    if not results and not enriched_context:
         return None
 
-    context_blocks = []
-    for index, item in enumerate(results[:8], start=1):
-        context_blocks.append(
-            f"[{index}] type={item.type} title={item.title}\n"
-            f"status={item.status or '-'} snippet={item.snippet or '-'}"
-        )
+    context_blocks = list(enriched_context or [])
+    if not context_blocks:
+        for index, item in enumerate(results[:8], start=1):
+            context_blocks.append(
+                f"[{index}] type={item.type} title={item.title}\n"
+                f"status={item.status or '-'} snippet={item.snippet or '-'}"
+            )
     context = "\n\n".join(context_blocks)
+    lang_name = LANG_NAMES.get(language, language)
     system = (
-        "You are a helpful assistant for an internal content platform (articles, files, certificates). "
-        "Answer using ONLY the provided sources. If the answer is not in the sources, say you could not find it. "
-        f"Respond in language code {language}. Be concise (max 6 sentences). "
+        "You are Ask Carbonauten, the internal knowledge assistant for Carbonauten. "
+        "Answer using ONLY the provided company sources (articles, files, certificates). "
+        "Never invent facts outside the sources. If the answer is not in the sources, say so clearly. "
+        f"Respond in {lang_name}. Be concise (max 6 sentences). "
         "Reference source numbers like [1] when relevant."
     )
     user = f"Question: {question.strip()}\n\nSources:\n{context}"
@@ -112,6 +124,76 @@ def generate_search_answer(
             {"role": "user", "content": user},
         ],
         max_tokens=500,
+    )
+
+
+def translate_article(
+    *,
+    title: str,
+    content: str,
+    target_language: str,
+    source_language: str | None = None,
+) -> dict[str, str] | None:
+    target = LANG_NAMES.get(target_language, target_language)
+    source_hint = ""
+    if source_language:
+        source_hint = f" The source language is {LANG_NAMES.get(source_language, source_language)}."
+    system = (
+        "You translate internal company content for Carbonauten. "
+        "Preserve HTML structure and tags exactly. Translate visible text only. "
+        "Return valid JSON with keys title and content only."
+    )
+    user = (
+        f"Translate the following article into {target}.{source_hint}\n\n"
+        f"TITLE:\n{title}\n\nCONTENT_HTML:\n{content}"
+    )
+    raw = _chat_completion(
+        [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        max_tokens=2500,
+    )
+    if not raw:
+        return None
+    match = re.search(r"\{.*\}", raw, re.DOTALL)
+    if not match:
+        return None
+    try:
+        parsed = json.loads(match.group(0))
+    except json.JSONDecodeError:
+        return None
+    translated_title = str(parsed.get("title", "")).strip()
+    translated_content = str(parsed.get("content", "")).strip()
+    if not translated_title and not translated_content:
+        return None
+    return {
+        "title": translated_title or title,
+        "content": translated_content or content,
+        "target_language": target_language,
+    }
+
+
+def summarize_article(
+    *,
+    title: str,
+    content: str,
+    language: str = "de",
+) -> str | None:
+    lang_name = LANG_NAMES.get(language, language)
+    plain = re.sub(r"<[^>]+>", " ", content or "")
+    plain = " ".join(plain.split())
+    system = (
+        "You write short internal summaries for Carbonauten employees. "
+        f"Respond in {lang_name}. Use 3-5 bullet points. No preamble."
+    )
+    user = f"Title: {title}\n\nContent:\n{plain[:6000]}"
+    return _chat_completion(
+        [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        max_tokens=400,
     )
 
 

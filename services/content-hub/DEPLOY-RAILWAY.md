@@ -120,6 +120,11 @@ Die zentrale Suche funktioniert auch ohne KI (Textsuche + Zusammenfassung). Für
 
 `/api/health` → `"ai_search_configured": true` wenn gesetzt.
 
+Danach verfügbar:
+- **Ask Carbonauten** in der Suche
+- **Übersetzen** DE / EN / 中文 im Artikel-Editor
+- **Zusammenfassen** im Artikel-Editor
+
 **SMTP (nur Railway Pro oder anderer Host):**
 
 | Variable | Wert |

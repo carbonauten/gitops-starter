@@ -262,7 +262,7 @@ type ApiError = {
   code: string;
 };
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function request<T>(path: string, init?: RequestInit, timeoutMs = 15000): Promise<T> {
   const headers = new Headers(init?.headers);
   const isFormData = init?.body instanceof FormData;
   if (!isFormData && !headers.has("Content-Type")) {
@@ -270,7 +270,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 15000);
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(path, {
@@ -502,15 +502,73 @@ export async function askSearch(
   language?: string,
   type?: SearchResultType,
 ): Promise<SearchAskResponse> {
-  return request<SearchAskResponse>("/api/search/ask", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question, language, type: type || null }),
-  });
+  return request<SearchAskResponse>(
+    "/api/search/ask",
+    {
+      method: "POST",
+      body: JSON.stringify({ question, language, type: type || null }),
+    },
+    45000,
+  );
 }
 
-export async function fetchSearchSuggestions(): Promise<{ suggestions: string[]; ai_available: boolean }> {
-  return request<{ suggestions: string[]; ai_available: boolean }>("/api/search/suggestions");
+export async function fetchSearchSuggestions(): Promise<{
+  suggestions: string[];
+  ai_available: boolean;
+  assistant_name?: string;
+}> {
+  return request<{ suggestions: string[]; ai_available: boolean; assistant_name?: string }>(
+    "/api/search/suggestions",
+  );
+}
+
+export type AiStatus = {
+  available: boolean;
+  features: string[];
+  assistant_name: string;
+};
+
+export type AiTranslation = {
+  title: string;
+  content: string;
+  target_language: string;
+};
+
+export async function fetchAiStatus(): Promise<AiStatus> {
+  return request<AiStatus>("/api/ai/status");
+}
+
+export async function translateArticleContent(payload: {
+  title: string;
+  content: string;
+  target_language: "de" | "en" | "zh-CN";
+  source_language?: "de" | "en" | "zh-CN";
+}): Promise<AiTranslation> {
+  const response = await request<{ translation: AiTranslation }>(
+    "/api/ai/translate",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    60000,
+  );
+  return response.translation;
+}
+
+export async function summarizeArticleContent(payload: {
+  title: string;
+  content: string;
+  language?: "de" | "en" | "zh-CN";
+}): Promise<string> {
+  const response = await request<{ summary: string }>(
+    "/api/ai/summarize",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    45000,
+  );
+  return response.summary;
 }
 
 export async function fetchCertificates(
