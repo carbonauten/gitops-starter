@@ -136,7 +136,14 @@
     "folderMarketing": "Marketing",
     "download": "Download",
     "delete": "Delete",
-    "confirmDelete": "Delete this file?"
+    "confirmDelete": "Delete this file?",
+    "openOffice": "Open",
+    "officeTitle": "Office Online",
+    "officeLoading": "Loading document…",
+    "officeEdit": "Edit in Office Online",
+    "officeEmbedBlocked": "Embedded preview is unavailable. Open the document in Office Online.",
+    "officeMockHint": "Demo mode: connect OneDrive for real documents.",
+    "officePlatformHint": "Platform files can only be previewed here. To edit, save to OneDrive or use Microsoft 365."
   },
   "publish": {
     "title": "Publish",
@@ -468,7 +475,8 @@
     "loading": "Loading…",
     "error": "Something went wrong.",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "close": "Close"
   },
   "versions": {
     "title": "Version history",

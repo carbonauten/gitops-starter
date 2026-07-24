@@ -20,6 +20,7 @@ from ..file_folder_service import (
     resolve_upload_folder,
 )
 from ..graph_files_service import browse_onedrive, browse_sharepoint
+from ..office_embed_service import create_office_session, parse_preview_token
 from ..outlook_service import outlook_status
 from ..schemas import FileResponse as FileSchema
 from ..storage import delete_upload, read_upload, save_upload
@@ -199,6 +200,48 @@ def list_files(
         "folders": sorted(db.scalars(select(FileAsset.folder).distinct()).all()),
         "folder_tree": browse.get("folder_tree", []),
     }
+
+
+@router.get("/office/session")
+async def office_session(
+    source: Literal["platform", "sharepoint", "onedrive"] = Query(...),
+    item_id: str = Query(..., min_length=1),
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+) -> dict:
+    session = await create_office_session(db, source=source, item_id=item_id, user=user)
+    return {"session": session}
+
+
+@router.get("/public-preview")
+def public_file_preview(
+    token: str = Query(..., min_length=10),
+    db: Session = Depends(get_db),
+):
+    """Unauthenticated short-lived download for Office Online Viewer."""
+    payload = parse_preview_token(token)
+    file_asset = db.get(FileAsset, payload["file_id"])
+    if not file_asset:
+        raise HTTPException(status_code=404, detail="not_found")
+    if file_asset.storage_path.startswith("oss://"):
+        content = read_upload(file_asset.storage_path)
+        return StreamingResponse(
+            iter([content]),
+            media_type=file_asset.content_type,
+            headers={
+                "Content-Disposition": f'inline; filename="{file_asset.original_name}"',
+                "Cache-Control": "private, max-age=60",
+            },
+        )
+    path = Path(file_asset.storage_path)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="not_found")
+    return FileResponse(
+        path,
+        media_type=file_asset.content_type,
+        filename=file_asset.original_name,
+        content_disposition_type="inline",
+    )
 
 
 @router.post("/upload", status_code=201)

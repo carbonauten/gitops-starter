@@ -5,15 +5,21 @@ import {
   browseFiles,
   deleteFile,
   fetchFileSources,
+  fetchOfficeSession,
   fileDownloadUrl,
   outlookConnectUrl,
   uploadFile,
   type FileBrowseItem,
   type FileBrowseResult,
   type FileSource,
+  type OfficeSession,
 } from "../api/client";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingState } from "../components/LoadingState";
+import { OfficeOnlinePanel } from "../components/OfficeOnlinePanel";
+
+const OFFICE_EXT = /\.(docx?|xlsx?|pptx?|odt|ods|odp)$/i;
+const OFFICE_MIME = /officedocument|msword|ms-excel|ms-powerpoint|opendocument/i;
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -29,6 +35,12 @@ function isHttpUrl(url?: string): boolean {
   return Boolean(url && /^https?:\/\//i.test(url));
 }
 
+function isOfficeFile(file: FileBrowseItem): boolean {
+  const name = fileTitle(file);
+  if (OFFICE_EXT.test(name)) return true;
+  return OFFICE_MIME.test(file.content_type || "");
+}
+
 export function FilesPage() {
   const { t } = useTranslation();
   const [sources, setSources] = useState<FileSource[]>([]);
@@ -40,6 +52,10 @@ export function FilesPage() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const [inputEl, setInputEl] = useState<HTMLInputElement | null>(null);
+  const [officeSession, setOfficeSession] = useState<OfficeSession | null>(null);
+  const [officeOpen, setOfficeOpen] = useState(false);
+  const [officeLoading, setOfficeLoading] = useState(false);
+  const [officeError, setOfficeError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -107,6 +123,28 @@ export function FilesPage() {
     if (!window.confirm(t("files.confirmDelete"))) return;
     await deleteFile(file.id);
     await reload();
+  }
+
+  async function openOffice(file: FileBrowseItem) {
+    setOfficeOpen(true);
+    setOfficeLoading(true);
+    setOfficeError("");
+    setOfficeSession(null);
+    try {
+      const session = await fetchOfficeSession(source, file.id);
+      setOfficeSession(session);
+    } catch (err) {
+      setOfficeError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setOfficeLoading(false);
+    }
+  }
+
+  function closeOffice() {
+    setOfficeOpen(false);
+    setOfficeSession(null);
+    setOfficeError("");
+    setOfficeLoading(false);
   }
 
   function selectSource(next: FileSource["id"]) {
@@ -296,6 +334,15 @@ export function FilesPage() {
                       </p>
                     </div>
                     <div className="list-card-actions">
+                      {isOfficeFile(file) ? (
+                        <button
+                          type="button"
+                          className="primary-button"
+                          onClick={() => void openOffice(file)}
+                        >
+                          {t("files.openOffice")}
+                        </button>
+                      ) : null}
                       {isHttpUrl(file.web_url) ? (
                         <a
                           href={file.web_url}
@@ -309,7 +356,7 @@ export function FilesPage() {
                         <a href={fileDownloadUrl(file.id)} className="ghost-button link-button">
                           {t("files.download")}
                         </a>
-                      ) : browse?.mock ? (
+                      ) : browse?.mock && !isOfficeFile(file) ? (
                         <span className="muted">{t("files.previewOnly")}</span>
                       ) : null}
                       {source === "platform" ? (
@@ -328,6 +375,15 @@ export function FilesPage() {
           </div>
         </div>
       </div>
+
+      {officeOpen ? (
+        <OfficeOnlinePanel
+          session={officeSession}
+          loading={officeLoading}
+          error={officeError}
+          onClose={closeOffice}
+        />
+      ) : null}
     </section>
   );
 }

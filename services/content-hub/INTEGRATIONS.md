@@ -52,7 +52,8 @@ Auf **Veröffentlichen → Kanal-Konfiguration** (IT-Master) können Microsoft 3
 1. Unter **Kalender** oder **Dateien → OneDrive** → verbinden
 2. Mit dem eigenen Microsoft-Konto anmelden
 3. Outlook-Termine, E-Mail und OneDrive werden nutzerbezogen freigeschaltet
-4. Unabhängig von der IT-Publish-Integration
+4. Word/Excel/PowerPoint: unter **Dateien** → **Öffnen** für Office Online Vorschau/Bearbeiten
+5. Unabhängig von der IT-Publish-Integration
 
 ---
 
