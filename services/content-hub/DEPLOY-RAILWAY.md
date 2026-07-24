@@ -256,6 +256,7 @@ Kanäle werden simuliert — gut zum Testen der UI und Historie.
 |------------|-------|
 | `ChannelMessage.Send` | Teams-Kanal-Nachrichten |
 | `Mail.ReadWrite` | Outlook-Entwürfe / persönliches Postfach |
+| `Files.Read` | Persönliches OneDrive (Dateien-Tab) |
 | `Calendars.ReadWrite` | Persönlicher Outlook-Kalender (Kalender-Tab) |
 
 | Variable | Wert |
@@ -278,31 +279,36 @@ Kanäle können zusätzlich in der App unter **Veröffentlichen** (IT-Master) ko
 
 Unter `/files` gibt es drei Quellen: **Plattform**, **SharePoint**, **OneDrive**.
 
-### Mock-Modus (Standard)
+### OneDrive (empfohlen, pro User)
 
-| Variable | Wert |
-|----------|------|
-| `FILES_BROWSE_MOCK_MODE` | `true` |
+1. Entra → Delegated Permission: `Files.Read` (+ Admin Consent)
+2. Redirect URI (falls noch nicht): `…/api/integrations/outlook/callback`
+3. In der App unter **Dateien → OneDrive** oder **Kalender** → **OneDrive & Outlook verbinden**
+4. Danach erscheinen echte OneDrive-Ordner/Dateien; „In Microsoft 365 öffnen“ öffnet die echte Datei
 
-Zeigt Beispiel-Ordner für SharePoint/OneDrive zum UI-Test.
+Keine extra Railway-Variable nötig (nutzt `AZURE_*` + `APP_PUBLIC_URL`).
 
-### Produktion
-
-**Graph Application Permissions** (zusätzlich zu Publish):
-
-| Permission | Zweck |
-|------------|-------|
-| `Files.Read.All` | SharePoint + OneDrive lesen |
+### SharePoint (Firmenbibliothek)
 
 | Variable | Wert |
 |----------|------|
 | `FILES_BROWSE_MOCK_MODE` | `false` |
 | `SHAREPOINT_SITE_URL` | z. B. `https://carbonauten.sharepoint.com/sites/Firmendokumente` |
 | `SHAREPOINT_DISPLAY_NAME` | `Firmendokumente` |
-| `SHAREPOINT_DRIVE_ID` | optional, falls mehrere Libraries |
+| `SHAREPOINT_DRIVE_ID` | optional |
 | `AZURE_*` | wie SSO |
 
-OneDrive zeigt das Laufwerk des **aktuell angemeldeten Users** (E-Mail aus Session).
+**Graph Application Permission:** `Files.Read.All` (+ Admin Consent)
+
+### Mock / Vorschau
+
+Wenn OneDrive nicht verbunden ist bzw. SharePoint nicht konfiguriert:
+
+| Variable | Wert |
+|----------|------|
+| `FILES_BROWSE_MOCK_MODE` | `true` (Default) |
+
+Ordner und Dateien sind klickbar (Demo). Für Produktion OneDrive verbinden / SharePoint-Variablen setzen.
 
 `/api/health` → `sharepoint_configured`, `files_browse_mock_mode`
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -6,6 +6,7 @@ import {
   deleteFile,
   fetchFileSources,
   fileDownloadUrl,
+  outlookConnectUrl,
   uploadFile,
   type FileBrowseItem,
   type FileBrowseResult,
@@ -20,9 +21,16 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+function fileTitle(file: FileBrowseItem): string {
+  return file.original_name || file.name || file.id;
+}
+
+function isHttpUrl(url?: string): boolean {
+  return Boolean(url && /^https?:\/\//i.test(url));
+}
+
 export function FilesPage() {
   const { t } = useTranslation();
-  const inputRef = useRef<HTMLInputElement>(null);
   const [sources, setSources] = useState<FileSource[]>([]);
   const [source, setSource] = useState<FileSource["id"]>("platform");
   const [browse, setBrowse] = useState<FileBrowseResult | null>(null);
@@ -31,14 +39,41 @@ export function FilesPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [inputEl, setInputEl] = useState<HTMLInputElement | null>(null);
 
-  async function load(itemId = currentItemId) {
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      setLoading(true);
+      setError("");
+      try {
+        const [nextSources, nextBrowse] = await Promise.all([
+          fetchFileSources(),
+          browseFiles(source, currentItemId === "root" ? undefined : currentItemId, query || undefined),
+        ]);
+        if (cancelled) return;
+        setSources(nextSources);
+        setBrowse(nextBrowse);
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : t("common.error"));
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [source, currentItemId, query, t]);
+
+  async function reload() {
     setLoading(true);
     setError("");
     try {
       const [nextSources, nextBrowse] = await Promise.all([
         fetchFileSources(),
-        browseFiles(source, itemId === "root" ? undefined : itemId, query || undefined),
+        browseFiles(source, currentItemId === "root" ? undefined : currentItemId, query || undefined),
       ]);
       setSources(nextSources);
       setBrowse(nextBrowse);
@@ -49,15 +84,6 @@ export function FilesPage() {
     }
   }
 
-  useEffect(() => {
-    void load("root");
-    setCurrentItemId("root");
-  }, [source]);
-
-  useEffect(() => {
-    void load(currentItemId);
-  }, [query, currentItemId]);
-
   async function handleUpload(selected: FileList | null) {
     if (!selected || selected.length === 0 || source !== "platform") return;
     setUploading(true);
@@ -67,12 +93,12 @@ export function FilesPage() {
       for (const file of Array.from(selected)) {
         await uploadFile(file, browse?.breadcrumbs.at(-1)?.name || "general", folderId);
       }
-      await load(currentItemId);
+      await reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
       setUploading(false);
-      if (inputRef.current) inputRef.current.value = "";
+      if (inputEl) inputEl.value = "";
     }
   }
 
@@ -80,11 +106,18 @@ export function FilesPage() {
     if (file.source && file.source !== "platform") return;
     if (!window.confirm(t("files.confirmDelete"))) return;
     await deleteFile(file.id);
-    await load(currentItemId);
+    await reload();
+  }
+
+  function selectSource(next: FileSource["id"]) {
+    setSource(next);
+    setCurrentItemId("root");
+    setQuery("");
   }
 
   function openFolder(folderId: string) {
     setCurrentItemId(folderId);
+    setQuery("");
   }
 
   function goUp() {
@@ -98,6 +131,7 @@ export function FilesPage() {
   const currentSource = sources.find((entry) => entry.id === source);
   const files = browse?.files ?? [];
   const folders = browse?.folders ?? [];
+  const onedriveSource = sources.find((entry) => entry.id === "onedrive");
 
   return (
     <section className="page">
@@ -106,20 +140,42 @@ export function FilesPage() {
         <p className="muted">{t("files.subtitle")}</p>
       </header>
 
-      <div className="file-source-tabs">
+      <div className="file-source-tabs" role="tablist" aria-label={t("files.title")}>
         {(["platform", "sharepoint", "onedrive"] as const).map((entry) => (
           <button
             key={entry}
             type="button"
+            role="tab"
+            aria-selected={source === entry}
             className={source === entry ? "admin-tab active" : "admin-tab"}
-            onClick={() => setSource(entry)}
+            onClick={() => selectSource(entry)}
           >
             {t(`files.sources.${entry}`)}
           </button>
         ))}
       </div>
 
+      {source === "onedrive" && onedriveSource && !onedriveSource.outlook_connected ? (
+        <div className="integration-connect-block outlook-connect-card">
+          <div className="integration-connect-header">
+            <strong>{t("files.onedriveConnectTitle")}</strong>
+            <span className="integration-badge">{t("files.notConnected")}</span>
+          </div>
+          <p className="muted">{t("files.onedriveConnectHint")}</p>
+          {onedriveSource.oauth_available ? (
+            <a className="primary-button integration-connect-button" href={outlookConnectUrl()}>
+              {t("files.onedriveConnect")}
+            </a>
+          ) : (
+            <p className="muted">{t("files.onedriveEnvMissing")}</p>
+          )}
+        </div>
+      ) : null}
+
       {currentSource?.mock ? <p className="muted">{t("files.mockHint")}</p> : null}
+      {source === "sharepoint" && currentSource && !currentSource.configured ? (
+        <p className="muted">{t("files.sharepointHint")}</p>
+      ) : null}
 
       {source === "platform" ? (
         <div
@@ -131,10 +187,21 @@ export function FilesPage() {
           }}
         >
           <p>{t("files.dropHint")}</p>
-          <button type="button" className="primary-button" disabled={uploading} onClick={() => inputRef.current?.click()}>
+          <button
+            type="button"
+            className="primary-button"
+            disabled={uploading}
+            onClick={() => inputEl?.click()}
+          >
             {uploading ? t("common.loading") : t("files.upload")}
           </button>
-          <input ref={inputRef} type="file" multiple hidden onChange={(event) => void handleUpload(event.target.files)} />
+          <input
+            ref={setInputEl}
+            type="file"
+            multiple
+            hidden
+            onChange={(event) => void handleUpload(event.target.files)}
+          />
         </div>
       ) : null}
 
@@ -145,7 +212,7 @@ export function FilesPage() {
             <div className="file-breadcrumbs">
               {browse.breadcrumbs.map((crumb, index) => (
                 <button
-                  key={crumb.id}
+                  key={`${crumb.id}-${index}`}
                   type="button"
                   className="ghost-button"
                   onClick={() => openFolder(crumb.id)}
@@ -203,33 +270,61 @@ export function FilesPage() {
           ) : null}
 
           <div className="list-stack">
-            {files.map((file) => (
-              <article key={`${file.source ?? source}-${file.id}`} className="list-card">
-                <div>
-                  <h2>{file.original_name}</h2>
-                  <p className="muted">
-                    {formatSize(file.size_bytes)}
-                    {file.uploaded_by_name ? ` · ${file.uploaded_by_name}` : ""}
-                  </p>
-                </div>
-                <div className="list-card-actions">
-                  {file.web_url ? (
-                    <a href={file.web_url} className="ghost-button link-button" target="_blank" rel="noreferrer">
-                      {t("files.openExternal")}
-                    </a>
-                  ) : (
-                    <a href={fileDownloadUrl(file.id)} className="ghost-button link-button">
-                      {t("files.download")}
-                    </a>
-                  )}
-                  {source === "platform" ? (
-                    <button type="button" className="ghost-button danger" onClick={() => void handleDelete(file)}>
-                      {t("files.delete")}
-                    </button>
-                  ) : null}
-                </div>
-              </article>
-            ))}
+            {!loading
+              ? folders.map((folder) => (
+                  <button
+                    key={`folder-${folder.id}`}
+                    type="button"
+                    className="list-card file-folder-card"
+                    onClick={() => openFolder(folder.id)}
+                  >
+                    <div>
+                      <h2>📁 {folder.name}</h2>
+                      <p className="muted">{t("files.openFolder")}</p>
+                    </div>
+                  </button>
+                ))
+              : null}
+            {!loading
+              ? files.map((file) => (
+                  <article key={`${file.source ?? source}-${file.id}`} className="list-card">
+                    <div>
+                      <h2>{fileTitle(file)}</h2>
+                      <p className="muted">
+                        {formatSize(file.size_bytes || 0)}
+                        {file.uploaded_by_name ? ` · ${file.uploaded_by_name}` : ""}
+                      </p>
+                    </div>
+                    <div className="list-card-actions">
+                      {isHttpUrl(file.web_url) ? (
+                        <a
+                          href={file.web_url}
+                          className="ghost-button link-button"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {t("files.openExternal")}
+                        </a>
+                      ) : source === "platform" ? (
+                        <a href={fileDownloadUrl(file.id)} className="ghost-button link-button">
+                          {t("files.download")}
+                        </a>
+                      ) : browse?.mock ? (
+                        <span className="muted">{t("files.previewOnly")}</span>
+                      ) : null}
+                      {source === "platform" ? (
+                        <button
+                          type="button"
+                          className="ghost-button danger"
+                          onClick={() => void handleDelete(file)}
+                        >
+                          {t("files.delete")}
+                        </button>
+                      ) : null}
+                    </div>
+                  </article>
+                ))
+              : null}
           </div>
         </div>
       </div>

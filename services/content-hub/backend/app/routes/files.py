@@ -20,6 +20,7 @@ from ..file_folder_service import (
     resolve_upload_folder,
 )
 from ..graph_files_service import browse_onedrive, browse_sharepoint
+from ..outlook_service import outlook_status
 from ..schemas import FileResponse as FileSchema
 from ..storage import delete_upload, read_upload, save_upload
 
@@ -98,8 +99,16 @@ def _platform_browse(db: Session, *, folder_id: str | None, q: str | None) -> di
 
 
 @router.get("/sources")
-def list_sources(_user: dict = Depends(get_current_user)) -> dict:
+def list_sources(
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+) -> dict:
     settings = get_settings()
+    outlook = outlook_status(db, user_id=user.get("db_id", ""))
+    onedrive_connected = bool(outlook.get("connected"))
+    onedrive_live = onedrive_connected or (
+        settings.graph_publish_configured and not settings.files_browse_mock_mode
+    )
     return {
         "sources": [
             {
@@ -117,8 +126,10 @@ def list_sources(_user: dict = Depends(get_current_user)) -> dict:
             {
                 "id": "onedrive",
                 "label": "onedrive",
-                "configured": settings.graph_publish_configured,
-                "mock": settings.files_browse_mock_mode or not settings.graph_publish_configured,
+                "configured": onedrive_live,
+                "mock": not onedrive_live,
+                "outlook_connected": onedrive_connected,
+                "oauth_available": bool(outlook.get("oauth_available")),
             },
         ]
     }
@@ -160,7 +171,12 @@ async def browse_files(
         return _platform_browse(db, folder_id=folder_id, q=q)
     if source == "sharepoint":
         return await browse_sharepoint(item_id)
-    return await browse_onedrive(user.get("email", ""), item_id)
+    return await browse_onedrive(
+        user.get("email", ""),
+        item_id,
+        db=db,
+        user_id=user.get("db_id", ""),
+    )
 
 
 @router.get("")

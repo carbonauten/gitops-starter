@@ -30,10 +30,27 @@ def test_browse_onedrive_mock(auth_client):
     payload = response.json()
     assert payload["source"] == "onedrive"
     assert payload["mock"] is True
+    assert any(folder["id"] == "od-documents" for folder in payload["folders"])
+
+
+def test_browse_onedrive_mock_folder_navigates(auth_client):
+    response = auth_client.get(
+        "/api/files/browse",
+        params={"source": "onedrive", "item_id": "od-documents"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["current_item_id"] == "od-documents"
+    assert payload["parent_item_id"] == "root"
+    assert len(payload["files"]) >= 1
+    assert payload["files"][0]["original_name"]
+    assert payload["files"][0]["web_url"].startswith("https://")
 
 
 def test_file_sources(auth_client):
     response = auth_client.get("/api/files/sources")
     assert response.status_code == 200
-    sources = {entry["id"] for entry in response.json()["sources"]}
-    assert sources == {"platform", "sharepoint", "onedrive"}
+    sources = {entry["id"]: entry for entry in response.json()["sources"]}
+    assert set(sources) == {"platform", "sharepoint", "onedrive"}
+    assert sources["onedrive"]["mock"] is True
+    assert sources["onedrive"]["outlook_connected"] is False

@@ -105,6 +105,7 @@ export type FileBrowseFolder = {
 };
 
 export type FileBrowseItem = FileAsset & {
+  name?: string;
   web_url?: string;
   source?: "platform" | "sharepoint" | "onedrive";
 };
@@ -125,6 +126,8 @@ export type FileSource = {
   label: string;
   configured: boolean;
   mock: boolean;
+  outlook_connected?: boolean;
+  oauth_available?: boolean;
 };
 
 export type ArticleTemplate = {

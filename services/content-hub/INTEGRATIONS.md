@@ -29,6 +29,7 @@ Auf **Veröffentlichen → Kanal-Konfiguration** (IT-Master) können Microsoft 3
    - `ChannelMessage.Send`
    - `Mail.ReadWrite`
    - `Calendars.ReadWrite` (persönlicher Kalender im Kalender-Tab)
+   - `Files.Read` (persönliches OneDrive unter Dateien)
 4. **Grant admin consent** (empfohlen für alle Nutzer)
 
 ### Railway Variablen
@@ -47,11 +48,11 @@ Auf **Veröffentlichen → Kanal-Konfiguration** (IT-Master) können Microsoft 3
 3. **Team** und **Kanal** wählen → **Kanäle speichern**
 4. Optional: `PUBLISH_MOCK_MODE=false` setzen für Live-Versand
 
-**Kalender-Tab (jeder User):**
-1. Unter **Kalender** → **Outlook-Kalender & E-Mail verbinden**
+**Kalender-Tab / Dateien-Tab (jeder User):**
+1. Unter **Kalender** oder **Dateien → OneDrive** → verbinden
 2. Mit dem eigenen Microsoft-Konto anmelden
-3. Outlook-Termine erscheinen im Kalender; E-Mail-Zugriff ist für persönliche Erinnerungen freigeschaltet
-4. Die Verbindung ist nutzerbezogen und unabhängig von der IT-Publish-Integration
+3. Outlook-Termine, E-Mail und OneDrive werden nutzerbezogen freigeschaltet
+4. Unabhängig von der IT-Publish-Integration
 
 ---
 

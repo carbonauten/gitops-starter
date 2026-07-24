@@ -53,6 +53,7 @@ def test_outlook_connect_redirects_when_entra_configured(auth_client, monkeypatc
     assert "login.microsoftonline.com" in location
     assert "Calendars.ReadWrite" in location
     assert "Mail.ReadWrite" in location
+    assert "Files.Read" in location
 
 
 def test_outlook_disconnect_when_not_connected(auth_client):

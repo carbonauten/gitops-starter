@@ -631,16 +631,32 @@ a {
 }
 
 .file-folder-node {
+  display: block;
+  width: 100%;
   text-align: left;
-  border: none;
+  border: 1px solid transparent;
   background: transparent;
   padding: 0.45rem 0.55rem;
   border-radius: 8px;
   cursor: pointer;
+  color: inherit;
 }
 
 .file-folder-node:hover {
   background: rgba(37, 99, 235, 0.08);
+  border-color: var(--border);
+}
+
+.file-folder-card {
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+}
+
+.file-folder-card:hover {
+  border-color: #98a2b3;
 }
 
 @media (max-width: 900px) {

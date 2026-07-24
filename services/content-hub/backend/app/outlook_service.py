@@ -21,9 +21,9 @@ from .user_integration_store import (
 
 logger = logging.getLogger(__name__)
 
-# Personal Outlook: calendar + mailbox for the signed-in user.
+# Personal Microsoft 365: calendar, mailbox, and OneDrive for the signed-in user.
 OUTLOOK_USER_SCOPES = (
-    "offline_access User.Read Calendars.ReadWrite Mail.ReadWrite"
+    "offline_access User.Read Calendars.ReadWrite Mail.ReadWrite Files.Read"
 )
 
 
