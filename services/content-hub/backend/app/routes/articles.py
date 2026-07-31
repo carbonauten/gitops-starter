@@ -85,6 +85,14 @@ def create_article(
     db.add(article)
     db.commit()
     db.refresh(article)
+    record_revision(
+        db,
+        entity_type="article",
+        entity_id=article.id,
+        snapshot=article_snapshot(article),
+        actor=user,
+    )
+    db.commit()
     log_audit(
         db,
         entity_type="article",

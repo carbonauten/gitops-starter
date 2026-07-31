@@ -332,7 +332,35 @@ export function CertificateEditorPage() {
         </div>
       </form>
       {!isNew && id ? (
-        <VersionHistoryPanel key={`${id}-${versionTick}`} entityType="certificate" entityId={id} />
+        <VersionHistoryPanel
+          key={`${id}-${versionTick}`}
+          entityType="certificate"
+          entityId={id}
+          onRestored={() => {
+            void (async () => {
+              try {
+                const certificate = await fetchCertificate(id);
+                setName(certificate.name);
+                setCategory(certificate.category);
+                setIssuer(certificate.issuer);
+                setValidFrom(certificate.valid_from);
+                setValidTo(certificate.valid_to);
+                setRenewalInProgress(certificate.renewal_in_progress);
+                setRenewalApprovalStatus(certificate.renewal_approval_status || "none");
+                setResponsibleName(certificate.responsible_name);
+                setResponsibleEmail(certificate.responsible_email);
+                setEscalateEmail(certificate.escalate_email || "");
+                setParentId(certificate.parent_id || "");
+                setChildren(certificate.children || []);
+                setNotes(certificate.notes);
+                setFileAssetId(certificate.file_asset_id);
+                setFileName(certificate.file_name);
+              } catch (err) {
+                setError(err instanceof Error ? err.message : t("common.error"));
+              }
+            })();
+          }}
+        />
       ) : null}
     </section>
   );

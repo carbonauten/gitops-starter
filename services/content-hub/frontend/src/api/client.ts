@@ -1091,6 +1091,17 @@ export async function compareVersions(
   );
 }
 
+export async function restoreContentVersion(
+  entityType: "article" | "certificate",
+  entityId: string,
+  versionNumber: number,
+): Promise<{ ok: boolean; restored_version: number }> {
+  return request<{ ok: boolean; restored_version: number }>(
+    `/api/versions/${entityType}/${encodeURIComponent(entityId)}/restore/${versionNumber}`,
+    { method: "POST" },
+  );
+}
+
 export async function fetchWorkflowPending(): Promise<WorkflowPending> {
   return request<WorkflowPending>("/api/workflow/pending");
 }

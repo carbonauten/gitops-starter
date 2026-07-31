@@ -66,6 +66,7 @@ flowchart LR
 | A | 3–5 Tage | ✅ Abgeschlossen | Ask Carbonauten live: Translate, Summarize, richer RAG |
 | B | 3–5 Tage | ✅ Abgeschlossen | Zertifikat-Ketten, Erinnerungen, Audit-Export |
 | C | 3–5 Tage | ✅ Abgeschlossen | Mein Dashboard + Veröffentlichungskalender |
+| D | 2–4 Tage | ✅ Abgeschlossen | Version Restore für Artikel & Zertifikate |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -432,12 +433,33 @@ flowchart LR
 
 ---
 
+## Sprint D — Version Restore ✅
+
+**Ziel:** Alte Artikel- und Zertifikat-Stände wiederherstellen.
+
+### Deliverables
+
+- [x] API `POST /api/versions/{type}/{id}/restore/{version}`
+- [x] Vor Restore wird der aktuelle Stand als neue Version gesichert
+- [x] Erste Version wird bereits beim Anlegen gespeichert
+- [x] UI-Button **Wiederherstellen** in der Versionshistorie
+- [x] Editor lädt nach Restore die wiederhergestellten Felder
+- [x] DE / EN / 中文
+
+### Akzeptanzkriterien
+
+- [x] Nach Speichern ist mindestens Version 1 sichtbar
+- [x] Restore setzt Felder auf den alten Stand zurück
+- [x] Aktueller Stand bleibt in der Historie erhalten
+
+---
+
 ## Backlog (Sprint 8+)
 
 | Thema | Beschreibung | Priorität |
 |-------|--------------|-----------|
 | Zertifikat-Ketten | Abhängigkeiten zwischen Zertifikaten (Parent/Child) | ~~Hoch~~ ✅ Sprint B |
-| Version Restore | Alte Version wiederherstellen | Mittel |
+| Version Restore | Alte Version wiederherstellen | ~~Mittel~~ ✅ Sprint D |
 | Auto-Import CA | Let's Encrypt / Azure Key Vault Sync | Mittel |
 | KI-Assistenz | Zusammenfassung, Übersetzung DE↔EN↔中文 | ~~Mittel~~ ✅ Sprint A |
 | SharePoint | Zertifikate aus SharePoint-Bibliothek importieren | Mittel |
@@ -499,6 +521,6 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ## Nächster Schritt
 
-**Sprint 8+:** Siehe Backlog unten — Zertifikat-Ketten, KI-Assistenz, Analytics.
+**Sprint E (Vorschlag):** Analytics Dashboard oder SharePoint-Zertifikat-Import — siehe Backlog.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.

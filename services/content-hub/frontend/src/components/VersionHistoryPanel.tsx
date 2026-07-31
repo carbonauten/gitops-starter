@@ -5,6 +5,7 @@ import {
   compareVersions,
   fetchContentVersions,
   fetchVersionDetail,
+  restoreContentVersion,
   type ContentRevision,
   type VersionChange,
 } from "../api/client";
@@ -12,13 +13,16 @@ import {
 type VersionHistoryPanelProps = {
   entityType: "article" | "certificate";
   entityId: string;
+  onRestored?: () => void;
 };
 
-export function VersionHistoryPanel({ entityType, entityId }: VersionHistoryPanelProps) {
+export function VersionHistoryPanel({ entityType, entityId, onRestored }: VersionHistoryPanelProps) {
   const { t } = useTranslation();
   const [versions, setVersions] = useState<ContentRevision[]>([]);
   const [loading, setLoading] = useState(true);
+  const [restoring, setRestoring] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [selectedVersion, setSelectedVersion] = useState<number | null>(null);
   const [changes, setChanges] = useState<VersionChange[]>([]);
   const [compareLabel, setCompareLabel] = useState("");
@@ -75,6 +79,25 @@ export function VersionHistoryPanel({ entityType, entityId }: VersionHistoryPane
     }
   }
 
+  async function handleRestore(versionNumber: number) {
+    if (!window.confirm(t("versions.confirmRestore", { number: versionNumber }))) return;
+    setRestoring(versionNumber);
+    setError("");
+    setNotice("");
+    try {
+      await restoreContentVersion(entityType, entityId, versionNumber);
+      setNotice(t("versions.restored", { number: versionNumber }));
+      setSelectedVersion(null);
+      setChanges([]);
+      await loadVersions();
+      onRestored?.();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setRestoring(null);
+    }
+  }
+
   function formatValue(value: unknown): string {
     if (value === null || value === undefined) {
       return "—";
@@ -91,6 +114,7 @@ export function VersionHistoryPanel({ entityType, entityId }: VersionHistoryPane
       <h2>{t("versions.title")}</h2>
       <p className="muted">{t("versions.subtitle")}</p>
       {loading ? <p>{t("common.loading")}</p> : null}
+      {notice ? <p className="success-text" role="status">{notice}</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
       {!loading && versions.length === 0 ? <p className="muted">{t("versions.empty")}</p> : null}
       {versions.length > 0 ? (
@@ -120,6 +144,16 @@ export function VersionHistoryPanel({ entityType, entityId }: VersionHistoryPane
                     onClick={() => void handleCompare(version.version_number)}
                   >
                     {t("versions.compareCurrent")}
+                  </button>
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    disabled={restoring === version.version_number}
+                    onClick={() => void handleRestore(version.version_number)}
+                  >
+                    {restoring === version.version_number
+                      ? t("common.loading")
+                      : t("versions.restore")}
                   </button>
                 </div>
               </li>

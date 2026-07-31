@@ -185,3 +185,133 @@ def compare_versions(
         "to_version": to_label,
         "changes": diff_snapshots(from_snapshot, to_snapshot),
     }
+
+
+def _parse_datetime(value: Any) -> datetime | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, datetime):
+        return value
+    text = str(value).replace("Z", "+00:00")
+    try:
+        return datetime.fromisoformat(text)
+    except ValueError:
+        return None
+
+
+def _parse_date(value: Any) -> date | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, date) and not isinstance(value, datetime):
+        return value
+    try:
+        return date.fromisoformat(str(value)[:10])
+    except ValueError:
+        return None
+
+
+def apply_article_snapshot(article: Article, snapshot: dict[str, Any]) -> None:
+    if "title" in snapshot:
+        article.title = snapshot.get("title") or ""
+    if "content" in snapshot:
+        article.content = snapshot.get("content") or ""
+    if "status" in snapshot and snapshot["status"]:
+        article.status = snapshot["status"]
+    if "template" in snapshot:
+        article.template = snapshot.get("template") or ""
+    if "scheduled_publish_at" in snapshot:
+        article.scheduled_publish_at = _parse_datetime(snapshot.get("scheduled_publish_at"))
+    if "review_comment" in snapshot:
+        article.review_comment = snapshot.get("review_comment") or ""
+
+
+def apply_certificate_snapshot(certificate: Certificate, snapshot: dict[str, Any]) -> None:
+    if "name" in snapshot:
+        certificate.name = snapshot.get("name") or ""
+    if "category" in snapshot and snapshot["category"]:
+        certificate.category = snapshot["category"]
+    if "issuer" in snapshot:
+        certificate.issuer = snapshot.get("issuer") or ""
+    if "valid_from" in snapshot:
+        parsed = _parse_date(snapshot.get("valid_from"))
+        if parsed:
+            certificate.valid_from = parsed
+    if "valid_to" in snapshot:
+        parsed = _parse_date(snapshot.get("valid_to"))
+        if parsed:
+            certificate.valid_to = parsed
+    if "renewal_in_progress" in snapshot:
+        certificate.renewal_in_progress = bool(snapshot.get("renewal_in_progress"))
+    if "renewal_approval_status" in snapshot and snapshot["renewal_approval_status"] is not None:
+        certificate.renewal_approval_status = snapshot["renewal_approval_status"] or "none"
+    if "renewal_review_comment" in snapshot:
+        certificate.renewal_review_comment = snapshot.get("renewal_review_comment") or ""
+    if "responsible_name" in snapshot:
+        certificate.responsible_name = snapshot.get("responsible_name") or ""
+    if "responsible_email" in snapshot:
+        certificate.responsible_email = snapshot.get("responsible_email") or ""
+    if "escalate_email" in snapshot:
+        certificate.escalate_email = snapshot.get("escalate_email") or ""
+    if "parent_id" in snapshot:
+        certificate.parent_id = snapshot.get("parent_id") or None
+    if "file_asset_id" in snapshot:
+        certificate.file_asset_id = snapshot.get("file_asset_id") or None
+    if "notes" in snapshot:
+        certificate.notes = snapshot.get("notes") or ""
+
+
+def restore_revision(
+    db: Session,
+    *,
+    entity_type: str,
+    entity_id: str,
+    version_number: int,
+    actor: dict,
+) -> dict[str, Any]:
+    revision = db.scalar(
+        select(ContentRevision).where(
+            ContentRevision.entity_type == entity_type,
+            ContentRevision.entity_id == entity_id,
+            ContentRevision.version_number == version_number,
+        )
+    )
+    if not revision:
+        raise HTTPException(status_code=404, detail="not_found")
+
+    snapshot = _load_snapshot(revision)
+    if entity_type == "article":
+        entity = db.get(Article, entity_id)
+        if not entity:
+            raise HTTPException(status_code=404, detail="not_found")
+        # Keep current state in history before restoring.
+        record_revision(
+            db,
+            entity_type="article",
+            entity_id=entity.id,
+            snapshot=article_snapshot(entity),
+            actor=actor,
+        )
+        apply_article_snapshot(entity, snapshot)
+        db.commit()
+        db.refresh(entity)
+        return {"entity_type": "article", "entity_id": entity.id, "restored_version": version_number}
+    if entity_type == "certificate":
+        entity = db.get(Certificate, entity_id)
+        if not entity:
+            raise HTTPException(status_code=404, detail="not_found")
+        record_revision(
+            db,
+            entity_type="certificate",
+            entity_id=entity.id,
+            snapshot=certificate_snapshot(entity),
+            actor=actor,
+        )
+        apply_certificate_snapshot(entity, snapshot)
+        db.commit()
+        db.refresh(entity)
+        return {
+            "entity_type": "certificate",
+            "entity_id": entity.id,
+            "restored_version": version_number,
+        }
+    raise HTTPException(status_code=422, detail="validation")

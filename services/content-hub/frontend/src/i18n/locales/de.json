@@ -483,11 +483,14 @@
   },
   "versions": {
     "title": "Versionshistorie",
-    "subtitle": "Frühere Stände ansehen und mit der aktuellen Version vergleichen.",
+    "subtitle": "Frühere Stände ansehen, vergleichen und wiederherstellen.",
     "empty": "Noch keine gespeicherten Versionen.",
     "versionNumber": "Version {{number}}",
     "view": "Ansehen",
     "compareCurrent": "Mit aktuell vergleichen",
+    "restore": "Wiederherstellen",
+    "confirmRestore": "Version {{number}} wirklich wiederherstellen? Der aktuelle Stand wird vorher als neue Version gesichert.",
+    "restored": "Version {{number}} wiederhergestellt.",
     "compareLabel": "Version {{from}} → {{to}}",
     "snapshotLabel": "Version {{version}}",
     "current": "Aktuell",
@@ -512,6 +515,8 @@
       "renewal_review_comment": "Freigabe-Kommentar",
       "responsible_name": "Verantwortlich",
       "responsible_email": "E-Mail Verantwortlich",
+      "escalate_email": "Eskalations-E-Mail",
+      "parent_id": "Übergeordnet",
       "file_asset_id": "Datei",
       "notes": "Notizen"
     }

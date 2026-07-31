@@ -483,11 +483,14 @@
   },
   "versions": {
     "title": "Version history",
-    "subtitle": "View previous snapshots and compare them with the current version.",
+    "subtitle": "View, compare, and restore previous snapshots.",
     "empty": "No saved versions yet.",
     "versionNumber": "Version {{number}}",
     "view": "View",
     "compareCurrent": "Compare with current",
+    "restore": "Restore",
+    "confirmRestore": "Restore version {{number}}? The current state will be saved as a new version first.",
+    "restored": "Restored version {{number}}.",
     "compareLabel": "Version {{from}} → {{to}}",
     "snapshotLabel": "Version {{version}}",
     "current": "Current",
@@ -512,6 +515,8 @@
       "renewal_review_comment": "Approval comment",
       "responsible_name": "Responsible person",
       "responsible_email": "Responsible email",
+      "escalate_email": "Escalation email",
+      "parent_id": "Parent",
       "file_asset_id": "File",
       "notes": "Notes"
     }

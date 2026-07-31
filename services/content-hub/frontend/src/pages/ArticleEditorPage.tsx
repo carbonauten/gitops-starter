@@ -65,6 +65,20 @@ export function ArticleEditorPage() {
     })();
   }, [id, isNew, searchParams, t]);
 
+  async function reloadArticle() {
+    if (!id || isNew) return;
+    try {
+      const article = await fetchArticle(id);
+      setTitle(article.title);
+      setContent(article.content || "<p></p>");
+      setStatus(article.status);
+      setReviewComment(article.review_comment || "");
+      setScheduledAt(article.scheduled_publish_at || null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    }
+  }
+
   const canEditContent = isNew || EDITABLE_STATUSES.has(status);
 
   async function handleSaveDraft(event: FormEvent) {
@@ -195,7 +209,9 @@ export function ArticleEditorPage() {
         />
       </div>
 
-      {!isNew && id ? <VersionHistoryPanel entityType="article" entityId={id} /> : null}
+      {!isNew && id ? (
+        <VersionHistoryPanel entityType="article" entityId={id} onRestored={() => void reloadArticle()} />
+      ) : null}
     </section>
   );
 }

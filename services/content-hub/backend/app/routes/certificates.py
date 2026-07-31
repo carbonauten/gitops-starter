@@ -229,6 +229,14 @@ def create_certificate(
     db.add(certificate)
     db.commit()
     db.refresh(certificate)
+    record_revision(
+        db,
+        entity_type="certificate",
+        entity_id=certificate.id,
+        snapshot=certificate_snapshot(certificate),
+        actor=user,
+    )
+    db.commit()
     log_audit(
         db,
         entity_type="certificate",
