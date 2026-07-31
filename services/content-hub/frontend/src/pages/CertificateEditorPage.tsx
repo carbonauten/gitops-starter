@@ -7,13 +7,16 @@ import {
   fetchCertificate,
   fetchCertificates,
   fileDownloadUrl,
+  importFileFromSharePoint,
   requestCertificateRenewal,
   updateCertificate,
   uploadFile,
   type Certificate,
+  type FileBrowseItem,
 } from "../api/client";
 import { CertificateStatusBadge } from "../components/CertificateStatusBadge";
 import { LoadingState } from "../components/LoadingState";
+import { SharePointImportPicker } from "../components/SharePointImportPicker";
 import { VersionHistoryPanel } from "../components/VersionHistoryPanel";
 
 const CATEGORIES = ["compliance", "product", "training", "ssl"] as const;
@@ -56,6 +59,7 @@ export function CertificateEditorPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [versionTick, setVersionTick] = useState(0);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -72,6 +76,9 @@ export function CertificateEditorPage() {
     const state = location.state as { notice?: string } | null;
     if (state?.notice === "saved") {
       setNotice(t("certificates.saved"));
+      navigate(location.pathname, { replace: true, state: null });
+    } else if (state?.notice === "sharepoint-imported") {
+      setNotice(t("certificates.sharepointImported"));
       navigate(location.pathname, { replace: true, state: null });
     }
   }, [location.pathname, location.state, navigate, t]);
@@ -120,6 +127,30 @@ export function CertificateEditorPage() {
     } finally {
       setSaving(false);
       event.target.value = "";
+    }
+  }
+
+  async function handleSharePointAttach(file: FileBrowseItem) {
+    setSaving(true);
+    setError("");
+    setNotice("");
+    try {
+      const imported = await importFileFromSharePoint(file.id, "certificates");
+      setFileAssetId(imported.file.id);
+      setFileName(imported.file.original_name);
+      if (isNew && !name.trim()) {
+        const stem = (imported.file.original_name || file.name || "")
+          .replace(/\.[^.]+$/, "")
+          .replace(/[_-]+/g, " ")
+          .trim();
+        if (stem) setName(stem);
+      }
+      setPickerOpen(false);
+      setNotice(t("certificates.sharepointFileAttached"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -266,6 +297,11 @@ export function CertificateEditorPage() {
           {t("certificates.fieldFile")}
           <input type="file" accept=".pdf,.pem,.crt,.cer,.txt,image/*" onChange={(event) => void handleFileChange(event)} />
         </label>
+        <div className="sharepoint-attach-actions">
+          <button type="button" className="ghost-button" onClick={() => setPickerOpen(true)} disabled={saving}>
+            {t("certificates.attachFromSharePoint")}
+          </button>
+        </div>
         {fileName && fileAssetId ? (
           <p className="muted">
             {t("certificates.attachedFile")}:{" "}
@@ -274,6 +310,16 @@ export function CertificateEditorPage() {
             </a>
           </p>
         ) : null}
+
+        <SharePointImportPicker
+          open={pickerOpen}
+          title={t("certificates.sharepointAttachTitle")}
+          selecting={saving}
+          onClose={() => {
+            if (!saving) setPickerOpen(false);
+          }}
+          onSelect={handleSharePointAttach}
+        />
 
         {!isNew && children.length > 0 ? (
           <div className="certificate-children-panel">

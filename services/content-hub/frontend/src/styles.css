@@ -2052,3 +2052,53 @@ a {
     height: 96px;
   }
 }
+
+.sharepoint-import-panel {
+  height: auto;
+  max-height: min(860px, 92vh);
+  grid-template-rows: auto auto auto 1fr;
+  overflow: auto;
+}
+
+.sharepoint-import-breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.sharepoint-import-lists {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.sharepoint-import-lists h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.sharepoint-import-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.sharepoint-import-list .primary-button,
+.sharepoint-import-list .ghost-button {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.sharepoint-attach-actions {
+  margin-top: -0.35rem;
+}
+
+@media (max-width: 700px) {
+  .sharepoint-import-lists {
+    grid-template-columns: 1fr;
+  }
+}

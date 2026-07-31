@@ -23,6 +23,7 @@ from ..graph_files_service import browse_onedrive, browse_sharepoint
 from ..office_embed_service import create_office_session, parse_preview_token
 from ..outlook_service import outlook_status
 from ..schemas import FileResponse as FileSchema
+from ..sharepoint_import_service import import_sharepoint_item_as_file_asset
 from ..storage import delete_upload, read_upload, save_upload
 
 router = APIRouter(prefix="/api/files", tags=["files"])
@@ -32,6 +33,11 @@ class FolderCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     slug: str = Field(..., min_length=1, max_length=100)
     parent_id: Optional[str] = None
+
+
+class SharePointFileImportBody(BaseModel):
+    item_id: str = Field(..., min_length=1, max_length=200)
+    folder: str = Field(default="certificates", max_length=200)
 
 
 def _to_response(file_asset: FileAsset) -> FileSchema:
@@ -178,6 +184,29 @@ async def browse_files(
         db=db,
         user_id=user.get("db_id", ""),
     )
+
+
+@router.post("/import-from-sharepoint", status_code=201)
+async def import_file_from_sharepoint(
+    payload: SharePointFileImportBody,
+    db: Session = Depends(get_db),
+    user: dict = Depends(require_editor),
+) -> dict:
+    file_asset, downloaded = await import_sharepoint_item_as_file_asset(
+        db,
+        item_id=payload.item_id,
+        user=user,
+        folder=payload.folder or "certificates",
+    )
+    return {
+        "file": _to_response(file_asset),
+        "source": {
+            "provider": "sharepoint",
+            "item_id": downloaded["item_id"],
+            "web_url": downloaded.get("web_url") or "",
+            "mock": bool(downloaded.get("mock")),
+        },
+    }
 
 
 @router.get("")

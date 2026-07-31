@@ -307,6 +307,8 @@ Keine extra Railway-Variable nötig (nutzt `AZURE_*` + `APP_PUBLIC_URL`).
 
 **Graph Application Permission:** `Files.Read.All` (+ Admin Consent)
 
+Unter **Zertifikate** können Dateien aus dieser Bibliothek importiert werden (`/api/certificates/import-from-sharepoint`). Im Mock-Modus gibt es den Demo-Ordner „Zertifikate“.
+
 ### Mock / Vorschau
 
 Wenn OneDrive nicht verbunden ist bzw. SharePoint nicht konfiguriert:

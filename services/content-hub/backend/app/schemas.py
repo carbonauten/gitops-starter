@@ -77,6 +77,26 @@ class CertificateCreate(BaseModel):
     notes: str = ""
 
 
+class SharePointCertificateImport(BaseModel):
+    item_id: str = Field(min_length=1, max_length=200)
+    name: Optional[str] = Field(default=None, max_length=500)
+    category: Optional[Literal["compliance", "product", "training", "ssl"]] = None
+    issuer: str = Field(default="", max_length=500)
+    valid_from: Optional[date] = None
+    valid_to: Optional[date] = None
+    renewal_in_progress: bool = False
+    responsible_name: str = Field(default="", max_length=200)
+    responsible_email: str = Field(default="", max_length=200)
+    escalate_email: str = Field(default="", max_length=200)
+    parent_id: Optional[str] = None
+    notes: str = ""
+
+
+class SharePointFileImport(BaseModel):
+    item_id: str = Field(min_length=1, max_length=200)
+    folder: str = Field(default="certificates", max_length=200)
+
+
 class CertificateUpdate(BaseModel):
     name: Optional[str] = Field(default=None, max_length=500)
     category: Optional[Literal["compliance", "product", "training", "ssl"]] = None

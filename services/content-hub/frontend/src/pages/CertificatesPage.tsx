@@ -1,17 +1,20 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import {
   certificatesAuditExportUrl,
   certificatesExportUrl,
   deleteCertificate,
   fetchCertificates,
+  importCertificateFromSharePoint,
   type Certificate,
+  type FileBrowseItem,
 } from "../api/client";
 import { CertificateStatusBadge } from "../components/CertificateStatusBadge";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingState } from "../components/LoadingState";
+import { SharePointImportPicker } from "../components/SharePointImportPicker";
 import { usePermissions } from "../hooks/usePermissions";
 
 const CATEGORIES = ["compliance", "product", "training", "ssl"] as const;
@@ -19,6 +22,7 @@ const STATUSES = ["valid", "expiring", "expired", "renewal"] as const;
 
 export function CertificatesPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { canEdit } = usePermissions();
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [query, setQuery] = useState("");
@@ -26,6 +30,8 @@ export function CertificatesPage() {
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -54,6 +60,23 @@ export function CertificatesPage() {
     await load();
   }
 
+  async function handleSharePointImport(file: FileBrowseItem) {
+    setImporting(true);
+    setError("");
+    try {
+      const certificate = await importCertificateFromSharePoint({ item_id: file.id });
+      setPickerOpen(false);
+      navigate(`/certificates/${certificate.id}/edit`, {
+        replace: false,
+        state: { notice: "sharepoint-imported" },
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setImporting(false);
+    }
+  }
+
   const categoryCounts = CATEGORIES.map((item) => ({
     key: item,
     label: t(`certificates.categories.${item}`),
@@ -75,12 +98,27 @@ export function CertificatesPage() {
             {t("certificates.auditExport")}
           </a>
           {canEdit ? (
-            <Link to="/certificates/new" className="primary-button link-button">
-              {t("certificates.new")}
-            </Link>
+            <>
+              <button type="button" className="ghost-button" onClick={() => setPickerOpen(true)}>
+                {t("certificates.importFromSharePoint")}
+              </button>
+              <Link to="/certificates/new" className="primary-button link-button">
+                {t("certificates.new")}
+              </Link>
+            </>
           ) : null}
         </div>
       </header>
+
+      <SharePointImportPicker
+        open={pickerOpen}
+        title={t("certificates.sharepointImportTitle")}
+        selecting={importing}
+        onClose={() => {
+          if (!importing) setPickerOpen(false);
+        }}
+        onSelect={handleSharePointImport}
+      />
 
       <div className="card-grid compact-grid">
         {categoryCounts.map((item) => (

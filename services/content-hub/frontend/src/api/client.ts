@@ -662,6 +662,16 @@ export async function uploadFile(file: File, folder: string, folderId?: string):
   return payload.file;
 }
 
+export async function importFileFromSharePoint(
+  itemId: string,
+  folder = "certificates",
+): Promise<{ file: FileAsset; source: { provider: string; item_id: string; web_url: string; mock: boolean } }> {
+  return request("/api/files/import-from-sharepoint", {
+    method: "POST",
+    body: JSON.stringify({ item_id: itemId, folder }),
+  });
+}
+
 export async function deleteFile(id: string): Promise<void> {
   await request<void>(`/api/files/${id}`, { method: "DELETE" });
 }
@@ -809,6 +819,28 @@ export async function createCertificate(
   },
 ): Promise<Certificate> {
   const payload = await request<{ certificate: Certificate }>("/api/certificates", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return payload.certificate;
+}
+
+export async function importCertificateFromSharePoint(
+  data: {
+    item_id: string;
+    name?: string;
+    category?: Certificate["category"];
+    issuer?: string;
+    valid_from?: string;
+    valid_to?: string;
+    responsible_name?: string;
+    responsible_email?: string;
+    escalate_email?: string;
+    parent_id?: string | null;
+    notes?: string;
+  },
+): Promise<Certificate> {
+  const payload = await request<{ certificate: Certificate }>("/api/certificates/import-from-sharepoint", {
     method: "POST",
     body: JSON.stringify(data),
   });

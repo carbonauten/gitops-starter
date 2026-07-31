@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import csv
 import io
-from datetime import date
+from datetime import date, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response
@@ -21,7 +21,18 @@ from ..certificate_service import (
 from ..certificates import compute_certificate_status, days_until_expiry
 from ..database import Certificate, FileAsset, get_db
 from ..dependencies import get_current_user, require_editor
-from ..schemas import CertificateChildSummary, CertificateCreate, CertificateResponse, CertificateUpdate
+from ..schemas import (
+    CertificateChildSummary,
+    CertificateCreate,
+    CertificateResponse,
+    CertificateUpdate,
+    SharePointCertificateImport,
+)
+from ..sharepoint_import_service import (
+    guess_certificate_category,
+    guess_certificate_name,
+    import_sharepoint_item_as_file_asset,
+)
 from ..version_service import certificate_snapshot, record_revision
 
 router = APIRouter(prefix="/api/certificates", tags=["certificates"])
@@ -199,6 +210,96 @@ def certificate_chains(
     _user: dict = Depends(get_current_user),
 ) -> dict:
     return {"chains": build_certificate_chains(db)}
+
+
+@router.post("/import-from-sharepoint", status_code=201)
+async def import_certificate_from_sharepoint(
+    payload: SharePointCertificateImport,
+    db: Session = Depends(get_db),
+    user: dict = Depends(require_editor),
+) -> dict:
+    file_asset, downloaded = await import_sharepoint_item_as_file_asset(
+        db,
+        item_id=payload.item_id,
+        user=user,
+        folder="certificates",
+    )
+    original_name = file_asset.original_name
+    today = date.today()
+    valid_from = payload.valid_from or today
+    valid_to = payload.valid_to or (today + timedelta(days=365))
+    _validate_dates(valid_from, valid_to)
+    validate_parent_id(db, certificate_id=None, parent_id=payload.parent_id)
+
+    name = (payload.name or "").strip() or guess_certificate_name(original_name)
+    category = payload.category or guess_certificate_category(original_name)
+    if category not in VALID_CATEGORIES:
+        category = "compliance"
+
+    notes = payload.notes.strip()
+    source_note = f"Importiert aus SharePoint ({downloaded['item_id']})"
+    if downloaded.get("web_url"):
+        source_note = f"{source_note}: {downloaded['web_url']}"
+    if notes:
+        notes = f"{notes}\n{source_note}"
+    else:
+        notes = source_note
+
+    certificate = Certificate(
+        name=name,
+        category=category,
+        issuer=payload.issuer,
+        valid_from=valid_from,
+        valid_to=valid_to,
+        renewal_in_progress=payload.renewal_in_progress,
+        responsible_name=payload.responsible_name,
+        responsible_email=payload.responsible_email,
+        escalate_email=payload.escalate_email,
+        parent_id=payload.parent_id,
+        file_asset_id=file_asset.id,
+        notes=notes,
+        created_by_id=user["id"],
+        created_by_name=user["name"],
+    )
+    db.add(certificate)
+    db.commit()
+    db.refresh(certificate)
+    record_revision(
+        db,
+        entity_type="certificate",
+        entity_id=certificate.id,
+        snapshot=certificate_snapshot(certificate),
+        actor=user,
+    )
+    db.commit()
+    log_audit(
+        db,
+        entity_type="certificate",
+        entity_id=certificate.id,
+        action="import_sharepoint",
+        actor=user,
+        details={
+            "name": certificate.name,
+            "sharepoint_item_id": downloaded["item_id"],
+            "file_asset_id": file_asset.id,
+            "mock": bool(downloaded.get("mock")),
+        },
+    )
+    return {
+        "certificate": _to_response(certificate, db),
+        "file": {
+            "id": file_asset.id,
+            "original_name": file_asset.original_name,
+            "content_type": file_asset.content_type,
+            "size_bytes": file_asset.size_bytes,
+        },
+        "source": {
+            "provider": "sharepoint",
+            "item_id": downloaded["item_id"],
+            "web_url": downloaded.get("web_url") or "",
+            "mock": bool(downloaded.get("mock")),
+        },
+    }
 
 
 @router.post("", status_code=201)

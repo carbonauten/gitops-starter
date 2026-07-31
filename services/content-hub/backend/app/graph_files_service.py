@@ -74,6 +74,38 @@ _MOCK_CHILDREN: dict[str, dict[str, list[dict[str, Any]]]] = {
             }
         ],
     },
+    "sp-zertifikate": {
+        "folders": [],
+        "files": [
+            {
+                "id": "sp-file-cert-iso9001",
+                "name": "ISO_9001_2024.pdf",
+                "original_name": "ISO_9001_2024.pdf",
+                "size_bytes": 280_000,
+                "content_type": "application/pdf",
+                "web_url": "https://www.office.com",
+                "source": "sharepoint",
+            },
+            {
+                "id": "sp-file-cert-iso14001",
+                "name": "ISO_14001_Umwelt.pdf",
+                "original_name": "ISO_14001_Umwelt.pdf",
+                "size_bytes": 310_000,
+                "content_type": "application/pdf",
+                "web_url": "https://www.office.com",
+                "source": "sharepoint",
+            },
+            {
+                "id": "sp-file-cert-ssl",
+                "name": "app_carbonauten_com.crt",
+                "original_name": "app_carbonauten_com.crt",
+                "size_bytes": 2_400,
+                "content_type": "application/pkix-cert",
+                "web_url": "https://www.office.com",
+                "source": "sharepoint",
+            },
+        ],
+    },
     "sp-produktion": {
         "folders": [],
         "files": [
@@ -109,6 +141,7 @@ _MOCK_PARENT: dict[str, str] = {
     "od-shared": "root",
     "od-docs-work": "od-documents",
     "sp-hr": "root",
+    "sp-zertifikate": "root",
     "sp-produktion": "root",
     "sp-vertrieb": "root",
 }
@@ -118,8 +151,23 @@ _MOCK_NAMES: dict[str, str] = {
     "od-shared": "Freigegeben",
     "od-docs-work": "Arbeit",
     "sp-hr": "HR",
+    "sp-zertifikate": "Zertifikate",
     "sp-produktion": "Produktion",
     "sp-vertrieb": "Vertrieb",
+}
+
+_MOCK_FILE_BYTES: dict[str, bytes] = {
+    "sp-file-1": b"%PDF-1.4\n% Mock Organigramm\n",
+    "sp-file-hr-1": b"%PDF-1.4\n% Mock Mitarbeiterhandbuch\n",
+    "sp-file-prod-1": b"PK\x03\x04mock-docx",
+    "sp-file-sales-1": b"PK\x03\x04mock-xlsx",
+    "sp-file-cert-iso9001": b"%PDF-1.4\n% Mock ISO 9001 Certificate\n",
+    "sp-file-cert-iso14001": b"%PDF-1.4\n% Mock ISO 14001 Certificate\n",
+    "sp-file-cert-ssl": (
+        b"-----BEGIN CERTIFICATE-----\n"
+        b"MIIBkTCB+wIJAKHBfPexampleMockCertDataForImportTestsOnly==\n"
+        b"-----END CERTIFICATE-----\n"
+    ),
 }
 
 
@@ -134,6 +182,7 @@ def _mock_browse(source: str, item_id: str | None) -> dict:
                 "breadcrumbs": [{"id": "root", "name": root_name}],
                 "folders": [
                     {"id": "sp-hr", "name": "HR", "source": source},
+                    {"id": "sp-zertifikate", "name": "Zertifikate", "source": source},
                     {"id": "sp-produktion", "name": "Produktion", "source": source},
                     {"id": "sp-vertrieb", "name": "Vertrieb", "source": source},
                 ],
@@ -291,6 +340,76 @@ async def browse_sharepoint(item_id: str | None = None, settings: Settings | Non
         "breadcrumbs": breadcrumbs,
         "folders": folders,
         "files": files,
+        "mock": False,
+    }
+
+
+def _mock_download_sharepoint_item(item_id: str) -> dict[str, Any]:
+    # Flatten mock files for lookup
+    candidates: list[dict[str, Any]] = []
+    root = _mock_browse("sharepoint", None)
+    candidates.extend(root.get("files", []))
+    for folder in root.get("folders", []):
+        children = _MOCK_CHILDREN.get(folder["id"], {})
+        candidates.extend(children.get("files", []))
+    for folder_files in _MOCK_CHILDREN.values():
+        candidates.extend(folder_files.get("files", []))
+
+    match = next((item for item in candidates if item.get("id") == item_id), None)
+    if not match:
+        raise HTTPException(status_code=404, detail="not_found")
+    content = _MOCK_FILE_BYTES.get(item_id, b"%PDF-1.4\n% mock sharepoint file\n")
+    return {
+        "item_id": item_id,
+        "name": match["name"],
+        "original_name": match.get("original_name") or match["name"],
+        "content_type": match.get("content_type") or "application/octet-stream",
+        "size_bytes": len(content),
+        "web_url": match.get("web_url") or "",
+        "content": content,
+        "mock": True,
+    }
+
+
+async def download_sharepoint_item(item_id: str, settings: Settings | None = None) -> dict[str, Any]:
+    """Download a SharePoint drive item (metadata + bytes)."""
+    settings = settings or get_settings()
+    normalized = (item_id or "").strip()
+    if not normalized or normalized == "root":
+        raise HTTPException(status_code=400, detail="validation")
+
+    if settings.files_browse_mock_mode or not settings.sharepoint_configured:
+        return _mock_download_sharepoint_item(normalized)
+
+    drive_id = await _resolve_sharepoint_drive_id(settings)
+    token = await get_app_access_token(settings)
+    meta = await _graph_get_with_token(f"/drives/{drive_id}/items/{normalized}", token)
+    if "folder" in meta:
+        raise HTTPException(status_code=400, detail="sharepoint_item_is_folder")
+
+    async with httpx.AsyncClient(timeout=60.0, follow_redirects=True) as client:
+        response = await client.get(
+            f"{GRAPH_BASE}/drives/{drive_id}/items/{normalized}/content",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        if response.status_code != 200:
+            logger.error("Graph SharePoint download failed %s: %s", normalized, response.text)
+            raise HTTPException(status_code=502, detail="graph_files_failed")
+        content = response.content
+
+    if not content:
+        raise HTTPException(status_code=400, detail="empty_file")
+
+    name = meta.get("name") or "sharepoint-file.bin"
+    file_info = meta.get("file", {}) or {}
+    return {
+        "item_id": normalized,
+        "name": name,
+        "original_name": name,
+        "content_type": file_info.get("mimeType") or "application/octet-stream",
+        "size_bytes": len(content),
+        "web_url": meta.get("webUrl") or "",
+        "content": content,
         "mock": False,
     }
 

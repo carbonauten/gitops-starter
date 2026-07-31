@@ -68,6 +68,7 @@ flowchart LR
 | C | 3–5 Tage | ✅ Abgeschlossen | Mein Dashboard + Veröffentlichungskalender |
 | D | 2–4 Tage | ✅ Abgeschlossen | Version Restore für Artikel & Zertifikate |
 | E | 2–4 Tage | ✅ Abgeschlossen | Analytics Dashboard (Publish & Zertifikate) |
+| F | 2–4 Tage | ✅ Abgeschlossen | SharePoint-Zertifikat-Import |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -476,6 +477,27 @@ flowchart LR
 
 ---
 
+## Sprint F — SharePoint-Zertifikat-Import ✅
+
+**Ziel:** Zertifikatsdateien aus der SharePoint-Firmenbibliothek in die Plattform übernehmen.
+
+### Deliverables
+
+- [x] Graph-Download: SharePoint Drive-Item → Plattform-`FileAsset`
+- [x] API `POST /api/files/import-from-sharepoint`
+- [x] API `POST /api/certificates/import-from-sharepoint` (Name/Kategorie aus Dateiname, Defaults für Gültigkeit)
+- [x] UI: Import-Picker auf Zertifikatsliste + Datei-Anhang im Editor
+- [x] Mock-Bibliothek inkl. Ordner „Zertifikate“ für Demo ohne Graph
+- [x] DE / EN / 中文
+
+### Akzeptanzkriterien
+
+- [x] Redakteur importiert eine SharePoint-Datei als neues Zertifikat
+- [x] Datei liegt danach als Plattform-Anhang vor
+- [x] Ohne SharePoint-Konfiguration funktioniert der Demo-/Mock-Import
+
+---
+
 ## Backlog (Sprint 8+)
 
 | Thema | Beschreibung | Priorität |
@@ -484,7 +506,7 @@ flowchart LR
 | Version Restore | Alte Version wiederherstellen | ~~Mittel~~ ✅ Sprint D |
 | Auto-Import CA | Let's Encrypt / Azure Key Vault Sync | Mittel |
 | KI-Assistenz | Zusammenfassung, Übersetzung DE↔EN↔中文 | ~~Mittel~~ ✅ Sprint A |
-| SharePoint | Zertifikate aus SharePoint-Bibliothek importieren | Mittel |
+| SharePoint | Zertifikate aus SharePoint-Bibliothek importieren | ~~Mittel~~ ✅ Sprint F |
 | Mobile | Responsive Optimierung / PWA | ~~Niedrig~~ Teilweise (UI Sprint) |
 | Analytics | Veröffentlichungs- und Zertifikat-Statistiken | ~~Niedrig~~ ✅ Sprint E |
 
@@ -543,6 +565,6 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ## Nächster Schritt
 
-**Sprint F (Vorschlag):** SharePoint-Zertifikat-Import oder Auto-Import CA — siehe Backlog.
+**Sprint G (Vorschlag):** Auto-Import CA (Let's Encrypt / Azure Key Vault) — siehe Backlog.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
