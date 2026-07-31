@@ -63,3 +63,46 @@ def test_search_ask_keyword_mode(auth_client):
     assert payload["mode"] in {"keyword", "ai"}
     assert payload["answer"]
     assert any(item["title"] == "Ask Target" for item in payload["results"])
+
+
+def test_search_ask_lists_certificates_for_inventory_question(auth_client):
+    auth_client.post(
+        "/api/certificates",
+        json={
+            "name": "ISO 14001",
+            "category": "compliance",
+            "issuer": "TÜV",
+            "valid_from": "2025-01-01",
+            "valid_to": "2027-01-01",
+            "responsible_name": "QA",
+            "responsible_email": "qa@example.com",
+        },
+    )
+    response = auth_client.post(
+        "/api/search/ask",
+        json={"question": "welche zertifikate gibt es?", "language": "de"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["counts"]["certificate"] >= 1
+    assert any(item["title"] == "ISO 14001" for item in payload["results"])
+    assert payload["answer"]
+    assert "ISO 14001" in payload["answer"]
+
+
+def test_search_matches_individual_terms(auth_client):
+    auth_client.post(
+        "/api/certificates",
+        json={
+            "name": "Produktzertifikat Alpha",
+            "category": "product",
+            "issuer": "Lab",
+            "valid_from": "2025-01-01",
+            "valid_to": "2026-06-01",
+            "responsible_name": "QA",
+            "responsible_email": "qa@example.com",
+        },
+    )
+    response = auth_client.get("/api/search", params={"q": "zertifikate produkt"})
+    assert response.status_code == 200
+    assert any(item["title"] == "Produktzertifikat Alpha" for item in response.json()["results"])

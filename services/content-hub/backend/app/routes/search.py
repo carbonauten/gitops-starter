@@ -14,6 +14,8 @@ from ..search_service import (
     build_suggestions,
     enrich_context_for_ask,
     extract_keywords,
+    list_recent_certificates,
+    looks_like_certificate_inventory,
     search_content,
 )
 
@@ -65,6 +67,17 @@ def ask_search(
         result_type=payload.type,
         limit=12,
     )
+
+    # Broad questions like "welche Zertifikate gibt es?" should list certificates
+    # even when the word "Zertifikat" is not part of a certificate name.
+    if not results and looks_like_certificate_inventory(payload.question) and payload.type in (None, "certificate"):
+        results = list_recent_certificates(db, limit=12)
+        counts = {
+            "article": 0,
+            "file": 0,
+            "certificate": len(results),
+        }
+        search_query = "certificates"
 
     answer = ""
     if ai_configured():

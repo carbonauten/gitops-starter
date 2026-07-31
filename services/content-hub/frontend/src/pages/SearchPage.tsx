@@ -189,7 +189,7 @@ export function SearchPage() {
               ) : null}
             </article>
           ) : null}
-          {!askLoading && askResponse && askResponse.results.length === 0 ? (
+          {!askLoading && askResponse && askResponse.results.length === 0 && !askResponse.answer ? (
             <EmptyState message={t("search.noResults")} icon="⌕" />
           ) : null}
           {askResponse?.results.length ? (

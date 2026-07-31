@@ -1,6 +1,6 @@
 import { FormEvent, useEffect, useState, type ChangeEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 import {
   createCertificate,
@@ -31,6 +31,7 @@ function defaultValidTo(): string {
 export function CertificateEditorPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { id } = useParams();
   const isNew = !id || id === "new";
 
@@ -53,6 +54,8 @@ export function CertificateEditorPage() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [versionTick, setVersionTick] = useState(0);
 
   useEffect(() => {
     void (async () => {
@@ -64,6 +67,14 @@ export function CertificateEditorPage() {
       }
     })();
   }, [id]);
+
+  useEffect(() => {
+    const state = location.state as { notice?: string } | null;
+    if (state?.notice === "saved") {
+      setNotice(t("certificates.saved"));
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.pathname, location.state, navigate, t]);
 
   useEffect(() => {
     if (isNew || !id) return;
@@ -98,10 +109,12 @@ export function CertificateEditorPage() {
     if (!file) return;
     setSaving(true);
     setError("");
+    setNotice("");
     try {
       const uploaded = await uploadFile(file, "certificates");
       setFileAssetId(uploaded.id);
       setFileName(uploaded.original_name);
+      setNotice(t("certificates.fileUploaded"));
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
@@ -114,6 +127,7 @@ export function CertificateEditorPage() {
     event.preventDefault();
     setSaving(true);
     setError("");
+    setNotice("");
     const payload = {
       name,
       category,
@@ -131,11 +145,16 @@ export function CertificateEditorPage() {
     try {
       if (isNew) {
         const certificate = await createCertificate(payload);
-        navigate(`/certificates/${certificate.id}/edit`, { replace: true });
+        navigate(`/certificates/${certificate.id}/edit`, {
+          replace: true,
+          state: { notice: "saved" },
+        });
         return;
       }
       const updated = await updateCertificate(id!, payload);
       setChildren(updated.children || []);
+      setNotice(t("certificates.saved"));
+      setVersionTick((value) => value + 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
@@ -275,6 +294,7 @@ export function CertificateEditorPage() {
           </div>
         ) : null}
 
+        {notice ? <p className="success-text" role="status">{notice}</p> : null}
         {error ? <p className="error-text">{error}</p> : null}
 
         {!isNew && renewalInProgress && renewalApprovalStatus !== "pending" && renewalApprovalStatus !== "approved" ? (
@@ -286,9 +306,12 @@ export function CertificateEditorPage() {
               onClick={() =>
                 void (async () => {
                   setSaving(true);
+                  setError("");
+                  setNotice("");
                   try {
                     await requestCertificateRenewal(id!);
                     setRenewalApprovalStatus("pending");
+                    setNotice(t("certificates.renewalRequested"));
                   } catch (err) {
                     setError(err instanceof Error ? err.message : t("common.error"));
                   } finally {
@@ -308,7 +331,9 @@ export function CertificateEditorPage() {
           </button>
         </div>
       </form>
-      {!isNew && id ? <VersionHistoryPanel entityType="certificate" entityId={id} /> : null}
+      {!isNew && id ? (
+        <VersionHistoryPanel key={`${id}-${versionTick}`} entityType="certificate" entityId={id} />
+      ) : null}
     </section>
   );
 }

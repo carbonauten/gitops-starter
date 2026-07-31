@@ -19,8 +19,11 @@ STOPWORDS = {
     "did", "will", "would", "could", "should", "may", "might", "must", "shall", "can",
     "what", "which", "who", "whom", "whose", "where", "when", "why", "how", "this", "that",
     "these", "those", "i", "you", "he", "she", "it", "we", "they", "my", "your", "our",
+    "there", "here", "any", "all", "some", "about", "into", "from",
     "der", "die", "das", "ein", "eine", "und", "oder", "ist", "sind", "was", "wie", "wo",
-    "wann", "warum", "welche", "welcher", "welches", "für", "mit", "von", "zu", "im", "am",
+    "wann", "warum", "welche", "welcher", "welches", "welchen", "für", "mit", "von", "zu",
+    "im", "am", "gibt", "gibts", "noch", "auch", "nur", "bitte", "alle", "alles", "hier",
+    "dort", "mehr", "bereits", "schon", "mal", "uns", "euch", "mir", "dir", "ihm", "ihr",
 }
 
 
@@ -33,6 +36,42 @@ def extract_keywords(question: str) -> str:
     if not words:
         return question.strip()
     return " ".join(words[:6])
+
+
+def _term_variants(term: str) -> list[str]:
+    variants = {term.lower()}
+    if term.endswith(("en", "es", "er")) and len(term) > 4:
+        variants.add(term[:-2])
+    if term.endswith("e") and len(term) > 3:
+        variants.add(term[:-1])
+    if term.endswith("n") and len(term) > 4:
+        variants.add(term[:-1])
+    return [item for item in variants if len(item) >= 2]
+
+
+def _query_terms(query: str) -> list[str]:
+    raw = [term for term in re.split(r"\s+", query.strip().lower()) if len(term) >= 2]
+    terms: list[str] = []
+    seen: set[str] = set()
+    for term in raw:
+        for variant in _term_variants(term):
+            if variant not in seen:
+                seen.add(variant)
+                terms.append(variant)
+    return terms or ([query.strip()] if query.strip() else [])
+
+
+def looks_like_certificate_inventory(question: str) -> bool:
+    q = question.lower()
+    mentions_cert = any(
+        token in q
+        for token in ("zertifikat", "zertifikate", "certificate", "certificates", "iso ")
+    )
+    inventory = any(
+        token in q
+        for token in ("welche", "which", "was gibt", "gibt es", "liste", "list", "alle", "overview", "überblick")
+    )
+    return mentions_cert and inventory
 
 
 def _clean_text(text: str) -> str:
@@ -87,13 +126,22 @@ def search_content(
     if not q:
         return [], {"article": 0, "file": 0, "certificate": 0}
 
-    pattern = f"%{q}%"
+    terms = _query_terms(q)
     results: list[SearchResult] = []
 
     if result_type in (None, "article"):
+        article_filters = []
+        for term in terms:
+            pattern = f"%{term}%"
+            article_filters.extend(
+                [
+                    Article.title.ilike(pattern),
+                    Article.content.ilike(pattern),
+                ]
+            )
         articles = db.scalars(
             select(Article)
-            .where(or_(Article.title.ilike(pattern), Article.content.ilike(pattern)))
+            .where(or_(*article_filters))
             .order_by(Article.updated_at.desc())
             .limit(limit)
         ).all()
@@ -113,9 +161,18 @@ def search_content(
             )
 
     if result_type in (None, "file"):
+        file_filters = []
+        for term in terms:
+            pattern = f"%{term}%"
+            file_filters.extend(
+                [
+                    FileAsset.original_name.ilike(pattern),
+                    FileAsset.folder.ilike(pattern),
+                ]
+            )
         files = db.scalars(
             select(FileAsset)
-            .where(or_(FileAsset.original_name.ilike(pattern), FileAsset.folder.ilike(pattern)))
+            .where(or_(*file_filters))
             .order_by(FileAsset.created_at.desc())
             .limit(limit)
         ).all()
@@ -134,16 +191,21 @@ def search_content(
             )
 
     if result_type in (None, "certificate"):
-        certificates = db.scalars(
-            select(Certificate)
-            .where(
-                or_(
+        certificate_filters = []
+        for term in terms:
+            pattern = f"%{term}%"
+            certificate_filters.extend(
+                [
                     Certificate.name.ilike(pattern),
                     Certificate.issuer.ilike(pattern),
                     Certificate.responsible_name.ilike(pattern),
                     Certificate.notes.ilike(pattern),
-                )
+                    Certificate.category.ilike(pattern),
+                ]
             )
+        certificates = db.scalars(
+            select(Certificate)
+            .where(or_(*certificate_filters))
             .order_by(Certificate.updated_at.desc())
             .limit(limit)
         ).all()
@@ -182,6 +244,28 @@ def search_content(
     return results[:limit], counts
 
 
+def list_recent_certificates(db: Session, *, limit: int = 12) -> list[SearchResult]:
+    certificates = db.scalars(
+        select(Certificate).order_by(Certificate.updated_at.desc()).limit(limit)
+    ).all()
+    results: list[SearchResult] = []
+    for certificate in certificates:
+        status = compute_certificate_status(certificate.valid_to, certificate.renewal_in_progress)
+        snippet = f"{certificate.issuer or certificate.category} · gültig bis {certificate.valid_to}"
+        results.append(
+            SearchResult(
+                type="certificate",
+                id=certificate.id,
+                title=certificate.name,
+                snippet=snippet,
+                status=status,
+                updated_at=certificate.updated_at,
+                relevance=1.0,
+            )
+        )
+    return results
+
+
 def build_suggestions(db: Session, limit: int = 8) -> list[str]:
     suggestions: list[str] = []
     articles = db.scalars(select(Article.title).order_by(Article.updated_at.desc()).limit(limit)).all()
@@ -200,6 +284,11 @@ def build_suggestions(db: Session, limit: int = 8) -> list[str]:
 def build_keyword_answer(question: str, results: list[SearchResult]) -> str:
     if not results:
         return ""
+    if looks_like_certificate_inventory(question):
+        certs = [item for item in results if item.type == "certificate"]
+        if certs:
+            lines = [f"• {item.title}: {item.snippet or '—'}" for item in certs[:8]]
+            return "Aktuelle Zertifikate in der Platform:\n\n" + "\n".join(lines)
     lines = [f"• {item.title}: {item.snippet or '—'}" for item in results[:5]]
     return f"{question.strip()}\n\n" + "\n".join(lines)
 
