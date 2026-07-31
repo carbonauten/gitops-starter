@@ -67,6 +67,7 @@ flowchart LR
 | B | 3–5 Tage | ✅ Abgeschlossen | Zertifikat-Ketten, Erinnerungen, Audit-Export |
 | C | 3–5 Tage | ✅ Abgeschlossen | Mein Dashboard + Veröffentlichungskalender |
 | D | 2–4 Tage | ✅ Abgeschlossen | Version Restore für Artikel & Zertifikate |
+| E | 2–4 Tage | ✅ Abgeschlossen | Analytics Dashboard (Publish & Zertifikate) |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -454,6 +455,27 @@ flowchart LR
 
 ---
 
+## Sprint E — Analytics Dashboard ✅
+
+**Ziel:** Veröffentlichungs- und Zertifikat-Statistiken für Redaktion und Management.
+
+### Deliverables
+
+- [x] API `GET /api/analytics/overview?days=` — Artikel, Zertifikate, Publikationen, Kanäle
+- [x] KPIs: Bestände, Ablauf 30/60/90, Audit-Aktionen, Dateien
+- [x] Trend: Publikationen pro Tag + Zustellung nach Kanal (ok/Fehler)
+- [x] UI `/analytics` mit Zeitraum 30/90/180 Tage
+- [x] Nav-Eintrag „Analytics“ / „数据分析“
+- [x] DE / EN / 中文
+
+### Akzeptanzkriterien
+
+- [x] Angemeldete Nutzer sehen Übersichtsstatistiken ohne Extra-Rolle
+- [x] Zeitraumfilter aktualisiert Publikationen und Audit-Zähler
+- [x] Zertifikatsstatus und Kategorien sind sichtbar
+
+---
+
 ## Backlog (Sprint 8+)
 
 | Thema | Beschreibung | Priorität |
@@ -464,7 +486,7 @@ flowchart LR
 | KI-Assistenz | Zusammenfassung, Übersetzung DE↔EN↔中文 | ~~Mittel~~ ✅ Sprint A |
 | SharePoint | Zertifikate aus SharePoint-Bibliothek importieren | Mittel |
 | Mobile | Responsive Optimierung / PWA | ~~Niedrig~~ Teilweise (UI Sprint) |
-| Analytics | Veröffentlichungs- und Zertifikat-Statistiken | Niedrig |
+| Analytics | Veröffentlichungs- und Zertifikat-Statistiken | ~~Niedrig~~ ✅ Sprint E |
 
 ---
 
@@ -521,6 +543,6 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ## Nächster Schritt
 
-**Sprint E (Vorschlag):** Analytics Dashboard oder SharePoint-Zertifikat-Import — siehe Backlog.
+**Sprint F (Vorschlag):** SharePoint-Zertifikat-Import oder Auto-Import CA — siehe Backlog.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.

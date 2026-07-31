@@ -213,6 +213,56 @@ export type DashboardStats = {
   expiring_90: number;
 };
 
+export type AnalyticsChannelStat = {
+  channel: string;
+  sent: number;
+  failed: number;
+  pending: number;
+  total: number;
+};
+
+export type AnalyticsOverview = {
+  generated_at: string;
+  range_days: number;
+  articles: {
+    total: number;
+    by_status: Record<string, number>;
+  };
+  certificates: {
+    total: number;
+    by_status: Record<string, number>;
+    by_category: Record<string, number>;
+    expiring_30: number;
+    expiring_60: number;
+    expiring_90: number;
+    renewals_pending: number;
+  };
+  publications: {
+    total: number;
+    in_range: number;
+    by_day: Array<{ date: string; count: number }>;
+    deliveries: {
+      total: number;
+      by_status: Record<string, number>;
+      by_channel: AnalyticsChannelStat[];
+    };
+    recent: Array<{
+      id: string;
+      title: string;
+      published_by_name: string;
+      created_at?: string | null;
+      channels_ok: number;
+      channels_failed: number;
+      channels_total: number;
+    }>;
+  };
+  files: { total: number };
+  activity: {
+    top_authors: Array<{ author_name: string; article_count: number }>;
+    audit_actions_in_range: number;
+  };
+};
+
 export type WorkflowPending = {
   articles_in_review: Array<{
     id: string;
@@ -470,6 +520,12 @@ export type OutlookStatus = {
 export async function fetchDashboardStats(): Promise<DashboardStats> {
   const payload = await request<{ stats: DashboardStats }>("/api/dashboard/stats");
   return payload.stats;
+}
+
+export async function fetchAnalyticsOverview(days = 90): Promise<AnalyticsOverview> {
+  const params = new URLSearchParams({ days: String(days) });
+  const payload = await request<{ overview: AnalyticsOverview }>(`/api/analytics/overview?${params}`);
+  return payload.overview;
 }
 
 export async function fetchDashboardHome(): Promise<DashboardHome> {

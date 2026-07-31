@@ -18,6 +18,7 @@ import { WorkflowPage } from "./pages/WorkflowPage";
 import { UsersAdminPage } from "./pages/UsersAdminPage";
 import { SearchPage } from "./pages/SearchPage";
 import { PublishCalendarPage } from "./pages/PublishCalendarPage";
+import { AnalyticsPage } from "./pages/AnalyticsPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
@@ -128,6 +129,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <PublishCalendarPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/analytics"
+        element={
+          <ProtectedRoute>
+            <AnalyticsPage />
           </ProtectedRoute>
         }
       />
