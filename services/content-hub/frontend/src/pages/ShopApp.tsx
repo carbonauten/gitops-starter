@@ -52,7 +52,7 @@ function ShopQtyStepper({
     <div className="shop-qty-stepper" role="group" aria-label={t("shop.quantity")}>
       <button
         type="button"
-        className="ghost-button shop-qty-btn"
+        className="shop-qty-btn"
         disabled={disabled || value <= 1}
         onClick={() => onChange(clampQty(value - 1, max))}
         aria-label="-"
@@ -69,7 +69,7 @@ function ShopQtyStepper({
       />
       <button
         type="button"
-        className="ghost-button shop-qty-btn"
+        className="shop-qty-btn"
         disabled={disabled || value >= max}
         onClick={() => onChange(clampQty(value + 1, max))}
         aria-label="+"
@@ -83,9 +83,11 @@ function ShopQtyStepper({
 function ShopProductCard({
   product,
   base,
+  index = 0,
 }: {
   product: ShopProduct;
   base: string;
+  index?: number;
 }) {
   const { t, i18n } = useTranslation();
   const cart = useShopCart();
@@ -97,7 +99,7 @@ function ShopProductCard({
   const soldOut = product.in_stock === false;
 
   return (
-    <article className="shop-card shop-card-static">
+    <article className="shop-card shop-card-static" style={{ animationDelay: `${Math.min(index, 8) * 60}ms` }}>
       <Link to={`${base}/p/${product.slug}`} className="shop-card-media">
         {product.image_url ? <img src={product.image_url} alt={product.name} /> : <div className="shop-card-placeholder" />}
       </Link>
@@ -105,14 +107,16 @@ function ShopProductCard({
         <Link to={`${base}/p/${product.slug}`}>
           <h2>{product.name}</h2>
         </Link>
-        <p className="muted">{product.short_description || t("shop.noShortDescription")}</p>
-        <strong>{formatMoney(product.price_cents, product.currency, i18n.language)}</strong>
-        <p className="muted shop-vat-note">{t("shop.inclVat")}</p>
+        <p className="shop-card-desc">{product.short_description || t("shop.noShortDescription")}</p>
+        <div className="shop-card-price">
+          <strong>{formatMoney(product.price_cents, product.currency, i18n.language)}</strong>
+          <span>{t("shop.inclVat")}</span>
+        </div>
         <div className="shop-card-actions">
           <ShopQtyStepper value={qty} onChange={setQty} disabled={soldOut} max={maxQty} />
           <button
             type="button"
-            className="primary-button"
+            className="shop-btn shop-btn-primary"
             disabled={soldOut}
             onClick={() => {
               cart.addItem(product, qty);
@@ -139,59 +143,62 @@ function ShopShell({
   const { t } = useTranslation();
   const cart = useShopCart();
   const { customer, logout } = useShopAuth();
+  const brand = config?.brand_name || "FuckCo2";
   return (
     <div className="shop-shell">
       <header className="shop-topbar">
         <Link to={base || "/"} className="shop-brand">
-          <span className="shop-brand-mark">{config?.brand_name || "FuckCo2"}</span>
-          <span className="shop-brand-tag">{config?.tagline || t("shop.tagline")}</span>
+          <span className="shop-brand-mark">{brand}</span>
         </Link>
         <div className="shop-topbar-actions">
           <LanguageSwitch />
           {customer ? (
             <>
-              <Link to={`${base}/account`} className="ghost-button link-button">
-                {t("shop.account")} ({customer.co2_credit_balance} CO₂)
+              <Link to={`${base}/account`} className="shop-nav-link">
+                {t("shop.account")}
+                <span className="shop-credit-pill">{customer.co2_credit_balance} CO₂</span>
               </Link>
-              <button type="button" className="ghost-button" onClick={() => void logout()}>
+              <button type="button" className="shop-nav-link shop-nav-button" onClick={() => void logout()}>
                 {t("auth.signOut")}
               </button>
             </>
           ) : (
             <>
-              <Link to={`${base}/login`} className="ghost-button link-button">
+              <Link to={`${base}/login`} className="shop-nav-link">
                 {t("shop.login")}
               </Link>
-              <Link to={`${base}/register`} className="ghost-button link-button">
+              <Link to={`${base}/register`} className="shop-nav-link shop-nav-link-strong">
                 {t("shop.register")}
               </Link>
             </>
           )}
-          <Link to={`${base}/cart`} className="primary-button link-button">
-            {t("shop.cart")} ({cart.count})
+          <Link to={`${base}/cart`} className="shop-cart-chip">
+            {t("shop.cart")}
+            <span>{cart.count}</span>
           </Link>
         </div>
       </header>
       <main className="shop-main">{children}</main>
       <footer className="shop-footer">
-        <nav className="shop-footer-links">
-          <Link to={`${base}/legal/impressum`}>{t("shop.impressum")}</Link>
-          <Link to={`${base}/legal/privacy`}>{t("shop.privacy")}</Link>
-          <Link to={`${base}/legal/terms`}>{t("shop.terms")}</Link>
-          <button
-            type="button"
-            className="linkish shop-footer-consent"
-            onClick={() => {
-              clearShopConsentDecision();
-            }}
-          >
-            {t("shop.cmp.settings")}
-          </button>
-          <a href={`mailto:${config?.contact_email || "hello@carbonauten.com"}`}>{t("shop.contact")}</a>
-        </nav>
-        <p>
-          {config?.brand_name || "FuckCo2"} · {t("shop.footerNote")}
-        </p>
+        <div className="shop-footer-inner">
+          <strong className="shop-footer-brand">{brand}</strong>
+          <nav className="shop-footer-links">
+            <Link to={`${base}/legal/impressum`}>{t("shop.impressum")}</Link>
+            <Link to={`${base}/legal/privacy`}>{t("shop.privacy")}</Link>
+            <Link to={`${base}/legal/terms`}>{t("shop.terms")}</Link>
+            <button
+              type="button"
+              className="shop-footer-consent"
+              onClick={() => {
+                clearShopConsentDecision();
+              }}
+            >
+              {t("shop.cmp.settings")}
+            </button>
+            <a href={`mailto:${config?.contact_email || "hello@carbonauten.com"}`}>{t("shop.contact")}</a>
+          </nav>
+          <p>{t("shop.footerNote")}</p>
+        </div>
       </footer>
       <ShopConsentBanner privacyHref={`${base}/legal/privacy`} />
     </div>
@@ -203,6 +210,7 @@ function ShopHome({ config, base }: { config: ShopConfig | null; base: string })
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const brand = config?.brand_name || "FuckCo2";
 
   useEffect(() => {
     void (async () => {
@@ -218,27 +226,37 @@ function ShopHome({ config, base }: { config: ShopConfig | null; base: string })
 
   return (
     <>
-      <section className="shop-hero">
-        <p className="eyebrow">{config?.brand_name || "FuckCo2"}</p>
-        <h1>{t("shop.heroTitle")}</h1>
-        <p className="muted">{t("shop.heroSubtitle")}</p>
-        <div className="shop-hero-cta">
-          <Link to={`${base}/register`} className="primary-button link-button">
-            {t("shop.registerCta")}
-          </Link>
-          <Link to={`${base}/login`} className="ghost-button link-button">
-            {t("shop.login")}
-          </Link>
+      <section className="shop-hero-bleed">
+        <div className="shop-hero-atmosphere" aria-hidden="true" />
+        <div className="shop-hero-inner">
+          <p className="shop-hero-brand">{brand}</p>
+          <h1 className="shop-hero-title">{config?.tagline || t("shop.tagline")}</h1>
+          <p className="shop-hero-copy">{t("shop.heroSubtitle")}</p>
+          <div className="shop-hero-cta">
+            <a href="#shop-catalog" className="shop-btn shop-btn-primary">
+              {t("shop.browseProducts")}
+            </a>
+            <Link to={`${base}/register`} className="shop-btn shop-btn-ghost">
+              {t("shop.registerCta")}
+            </Link>
+          </div>
         </div>
       </section>
-      {loading ? <LoadingState /> : null}
-      {error ? <p className="error-text">{error}</p> : null}
-      {!loading && products.length === 0 ? <EmptyState message={t("shop.empty")} icon="◈" /> : null}
-      <div className="shop-grid">
-        {products.map((product) => (
-          <ShopProductCard key={product.id} product={product} base={base} />
-        ))}
-      </div>
+
+      <section id="shop-catalog" className="shop-catalog">
+        <header className="shop-section-head">
+          <h2>{t("shop.catalogTitle")}</h2>
+          <p>{t("shop.catalogSubtitle")}</p>
+        </header>
+        {loading ? <LoadingState /> : null}
+        {error ? <p className="error-text">{error}</p> : null}
+        {!loading && products.length === 0 ? <EmptyState message={t("shop.empty")} icon="◈" /> : null}
+        <div className="shop-grid">
+          {products.map((product, index) => (
+            <ShopProductCard key={product.id} product={product} base={base} index={index} />
+          ))}
+        </div>
+      </section>
     </>
   );
 }
@@ -270,7 +288,7 @@ function ShopProductDetail({ config, base }: { config: ShopConfig | null; base: 
     return (
       <div>
         <p className="error-text">{error || t("shop.notFound")}</p>
-        <Link to={base || "/"} className="ghost-button link-button">
+        <Link to={base || "/"} className="shop-btn shop-btn-ghost link-button">
           {t("shop.back")}
         </Link>
       </div>
@@ -279,7 +297,7 @@ function ShopProductDetail({ config, base }: { config: ShopConfig | null; base: 
 
   return (
     <article className="shop-detail">
-      <Link to={base || "/"} className="ghost-button link-button">
+      <Link to={base || "/"} className="shop-btn shop-btn-ghost link-button">
         {t("shop.back")}
       </Link>
       <div className="shop-detail-grid">
@@ -287,7 +305,7 @@ function ShopProductDetail({ config, base }: { config: ShopConfig | null; base: 
           {product.image_url ? <img src={product.image_url} alt={product.name} /> : <div className="shop-card-placeholder" />}
         </div>
         <div>
-          <p className="eyebrow">{config?.brand_name || "FuckCo2"}</p>
+          <p className="shop-detail-brand">{config?.brand_name || "FuckCo2"}</p>
           <h1>{product.name}</h1>
           <p className="shop-price">{formatMoney(product.price_cents, product.currency, i18n.language)}</p>
           <p className="muted">{t("shop.inclVat")}</p>
@@ -309,14 +327,14 @@ function ShopProductDetail({ config, base }: { config: ShopConfig | null; base: 
             </div>
             <button
               type="button"
-              className="primary-button"
+              className="shop-btn shop-btn-primary"
               disabled={product.in_stock === false}
               onClick={() => cart.addItem(product, qty)}
             >
               {product.in_stock === false ? t("shop.soldOut") : t("shop.addToCart")}
             </button>
           </div>
-          <Link to={`${base}/cart`} className="ghost-button link-button">
+          <Link to={`${base}/cart`} className="shop-btn shop-btn-ghost link-button">
             {t("shop.gotoCart")}
           </Link>
         </div>
@@ -340,7 +358,7 @@ function ShopCartPage({ config, base }: { config: ShopConfig | null; base: strin
       <div>
         <h1>{t("shop.cart")}</h1>
         <EmptyState message={t("shop.cartEmpty")} icon="◈" />
-        <Link to={base || "/"} className="primary-button link-button">
+        <Link to={base || "/"} className="shop-btn shop-btn-primary link-button">
           {t("shop.continueShopping")}
         </Link>
       </div>
@@ -364,7 +382,7 @@ function ShopCartPage({ config, base }: { config: ShopConfig | null; base: strin
                 value={item.quantity}
                 onChange={(event) => cart.setQuantity(item.product_id, Math.max(1, Number(event.target.value) || 1))}
               />
-              <button type="button" className="ghost-button" onClick={() => cart.removeItem(item.product_id)}>
+              <button type="button" className="shop-btn shop-btn-ghost" onClick={() => cart.removeItem(item.product_id)}>
                 {t("shop.remove")}
               </button>
             </div>
@@ -383,7 +401,7 @@ function ShopCartPage({ config, base }: { config: ShopConfig | null; base: strin
           {t("shop.total")}:{" "}
           <strong>{formatMoney(cart.subtotalCents + shipping, config?.currency || "EUR", i18n.language)}</strong>
         </p>
-        <Link to={`${base}/checkout`} className="primary-button link-button">
+        <Link to={`${base}/checkout`} className="shop-btn shop-btn-primary link-button">
           {t("shop.checkout")}
         </Link>
       </div>
@@ -432,7 +450,7 @@ function ShopCheckoutPage({ config, base }: { config: ShopConfig | null; base: s
     return (
       <section>
         <EmptyState message={t("shop.loginRequiredCheckout")} icon="☺" />
-        <Link to={`${base}/login`} className="primary-button link-button">
+        <Link to={`${base}/login`} className="shop-btn shop-btn-primary link-button">
           {t("shop.login")}
         </Link>
       </section>
@@ -443,7 +461,7 @@ function ShopCheckoutPage({ config, base }: { config: ShopConfig | null; base: s
     return (
       <div>
         <EmptyState message={t("shop.cartEmpty")} icon="◈" />
-        <Link to={base || "/"} className="primary-button link-button">
+        <Link to={base || "/"} className="shop-btn shop-btn-primary link-button">
           {t("shop.continueShopping")}
         </Link>
       </div>
@@ -565,7 +583,7 @@ function ShopCheckoutPage({ config, base }: { config: ShopConfig | null; base: s
           {t("shop.items")}
         </p>
         {error ? <p className="error-text">{error}</p> : null}
-        <button type="submit" className="primary-button" disabled={saving}>
+        <button type="submit" className="shop-btn shop-btn-primary" disabled={saving}>
           {saving ? t("common.loading") : t("shop.placeOrder")}
         </button>
       </form>
@@ -628,7 +646,7 @@ function ShopAuthForm({
   return (
     <section className="shop-auth-landing">
       <div className="shop-auth-hero">
-        <p className="eyebrow">{config?.brand_name || "FuckCo2"}</p>
+        <p className="shop-detail-brand">{config?.brand_name || "FuckCo2"}</p>
         <h1>{mode === "login" ? t("shop.authLandingLoginTitle") : t("shop.authLandingRegisterTitle")}</h1>
         <p className="muted">{t("shop.accountSubtitle")}</p>
         <ul className="shop-auth-benefits">
@@ -698,7 +716,7 @@ function ShopAuthForm({
             </>
           ) : null}
           {error ? <p className="error-text">{error}</p> : null}
-          <button type="submit" className="primary-button" disabled={saving}>
+          <button type="submit" className="shop-btn shop-btn-primary" disabled={saving}>
             {saving ? t("common.loading") : mode === "login" ? t("shop.login") : t("shop.register")}
           </button>
         </form>
@@ -733,7 +751,7 @@ function ShopAccountPage({ base }: { base: string }) {
     return (
       <section>
         <EmptyState message={t("shop.loginRequired")} icon="☺" />
-        <Link to={`${base}/login`} className="primary-button link-button">
+        <Link to={`${base}/login`} className="shop-btn shop-btn-primary link-button">
           {t("shop.login")}
         </Link>
       </section>
@@ -771,7 +789,7 @@ function ShopAccountPage({ base }: { base: string }) {
           </li>
         ))}
       </ul>
-      <Link to={base || "/"} className="primary-button link-button">
+      <Link to={base || "/"} className="shop-btn shop-btn-primary link-button">
         {t("shop.continueShopping")}
       </Link>
     </section>
@@ -834,7 +852,7 @@ function ShopOrderSuccess({ base }: { base: string }) {
           {t("shop.creditsEarned", { credits: order.credits_earned })}
         </p>
       ) : null}
-      <Link to={base || "/"} className="primary-button link-button">
+      <Link to={base || "/"} className="shop-btn shop-btn-primary link-button">
         {t("shop.continueShopping")}
       </Link>
     </section>
@@ -860,7 +878,7 @@ function ShopLegalPage({
   const title = t(`shop.${kind}`);
   return (
     <section className="shop-legal">
-      <Link to={base || "/"} className="ghost-button link-button">
+      <Link to={base || "/"} className="shop-btn shop-btn-ghost link-button">
         {t("shop.back")}
       </Link>
       <h1>{title}</h1>

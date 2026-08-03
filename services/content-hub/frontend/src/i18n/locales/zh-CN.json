@@ -566,7 +566,7 @@
   "shop": {
     "tagline": "FuckCo2 goes international",
     "heroTitle": "气候行动产品",
-    "heroSubtitle": "立即下单 — 支持银行卡或发票支付。",
+    "heroSubtitle": "订购气候友好产品 — 支持银行卡或发票。",
     "empty": "即将上线，请稍后查看。",
     "contact": "联系",
     "footerNote": "Unified Carbonauten Platform 正式商店",
@@ -636,7 +636,7 @@
     "creditHistory": "积分记录",
     "noCreditsYet": "尚未获得积分。",
     "creditsEarned": "您获得了 +{{credits}} CO₂ 奖励积分。",
-    "registerCta": "注册账户并赚取积分",
+    "registerCta": "账户与 CO₂ 积分",
     "authLandingLoginTitle": "欢迎回来",
     "authLandingRegisterTitle": "创建账户",
     "authBenefit1": "每笔已支付订单获得 CO₂ 奖励积分",
@@ -661,7 +661,10 @@
       "analyticsHint": "匿名使用测量",
       "marketing": "营销",
       "marketingHint": "个性化优惠"
-    }
+    },
+    "browseProducts": "浏览产品",
+    "catalogTitle": "产品",
+    "catalogSubtitle": "来自 Carbonauten 生产。"
   },
   "orders": {
     "title": "商店订单",

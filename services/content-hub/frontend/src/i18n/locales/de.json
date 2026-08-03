@@ -566,7 +566,7 @@
   "shop": {
     "tagline": "FuckCo2 goes international",
     "heroTitle": "Produkte für den Klimaschutz",
-    "heroSubtitle": "Sofort bestellen — sicher bezahlen oder auf Rechnung.",
+    "heroSubtitle": "Klimawirksame Produkte bestellen — Karte oder Rechnung.",
     "empty": "Demnächst verfügbar. Schauen Sie bald wieder vorbei.",
     "contact": "Kontakt",
     "footerNote": "Produktivshop der Unified Carbonauten Platform",
@@ -636,7 +636,7 @@
     "creditHistory": "Credit-Verlauf",
     "noCreditsYet": "Noch keine Credits gesammelt.",
     "creditsEarned": "Sie haben +{{credits}} CO₂ Reward Credits erhalten.",
-    "registerCta": "Konto erstellen & Credits sammeln",
+    "registerCta": "Konto & CO₂ Credits",
     "authLandingLoginTitle": "Willkommen zurück",
     "authLandingRegisterTitle": "Konto erstellen",
     "authBenefit1": "CO₂ Reward Credits bei jeder bezahlten Bestellung",
@@ -661,7 +661,10 @@
       "analyticsHint": "anonyme Nutzungsmessung",
       "marketing": "Marketing",
       "marketingHint": "personalisierte Angebote"
-    }
+    },
+    "browseProducts": "Produkte entdecken",
+    "catalogTitle": "Produkte",
+    "catalogSubtitle": "Direkt aus der Carbonauten-Produktion."
   },
   "orders": {
     "title": "Shop-Bestellungen",

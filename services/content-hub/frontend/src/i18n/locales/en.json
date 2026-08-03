@@ -566,7 +566,7 @@
   "shop": {
     "tagline": "FuckCo2 goes international",
     "heroTitle": "Products for climate action",
-    "heroSubtitle": "Order now — pay securely by card or invoice.",
+    "heroSubtitle": "Order climate-positive products — card or invoice.",
     "empty": "Coming soon. Please check back shortly.",
     "contact": "Contact",
     "footerNote": "Production shop of the Unified Carbonauten Platform",
@@ -636,7 +636,7 @@
     "creditHistory": "Credit history",
     "noCreditsYet": "No credits earned yet.",
     "creditsEarned": "You earned +{{credits}} CO₂ reward credits.",
-    "registerCta": "Create account & earn credits",
+    "registerCta": "Account & CO₂ credits",
     "authLandingLoginTitle": "Welcome back",
     "authLandingRegisterTitle": "Create your account",
     "authBenefit1": "Earn CO₂ reward credits on every paid order",
@@ -661,7 +661,10 @@
       "analyticsHint": "anonymous usage measurement",
       "marketing": "Marketing",
       "marketingHint": "personalized offers"
-    }
+    },
+    "browseProducts": "Browse products",
+    "catalogTitle": "Products",
+    "catalogSubtitle": "Straight from Carbonauten production."
   },
   "orders": {
     "title": "Shop orders",
