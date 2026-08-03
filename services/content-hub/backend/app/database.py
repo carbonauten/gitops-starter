@@ -579,6 +579,9 @@ def init_database(database_url: str, max_attempts: int = 10, retry_delay: float 
                 from .user_service import ensure_initial_admin
 
                 ensure_initial_admin(db)
+                from .shop_customer_service import ensure_initial_shop_admin
+
+                ensure_initial_shop_admin(db)
                 from .file_folder_service import migrate_legacy_file_folders, seed_default_folders
 
                 seed_default_folders(db)

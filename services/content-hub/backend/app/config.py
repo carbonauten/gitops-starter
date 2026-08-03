@@ -89,6 +89,10 @@ class Settings(BaseSettings):
     shop_bank_bic: str = ""
     shop_bank_name: str = ""
     shop_bank_holder: str = ""
+    # Optional shop master account (defaults to INITIAL_ADMIN_*)
+    shop_admin_email: str = ""
+    shop_admin_password: str = ""
+    shop_admin_name: str = ""
     # CO2 Reward Credits: credits awarded per full euro of paid order total
     shop_co2_credits_per_euro: int = 1
     shop_require_account_checkout: bool = False

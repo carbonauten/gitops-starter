@@ -139,3 +139,44 @@ def test_employee_shop_access_toggle(it_auth_client):
     )
     assert enabled.status_code == 200
     assert enabled.json()["user"]["can_manage_shop"] is True
+
+
+def test_platform_master_can_login_to_shop(client, monkeypatch):
+    monkeypatch.setenv("INITIAL_ADMIN_EMAIL", "master@carbonauten.com")
+    monkeypatch.setenv("INITIAL_ADMIN_PASSWORD", "master-pass-123")
+    monkeypatch.setenv("INITIAL_ADMIN_NAME", "Master Admin")
+    monkeypatch.setenv("IT_ADMIN_EMAILS", "master@carbonauten.com")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+
+    with client:
+        client.get("/api/health")
+        from app.database import _SessionLocal
+        from app.shop_customer_service import ensure_initial_shop_admin
+        from app.user_service import ensure_initial_admin
+
+        db = _SessionLocal()
+        try:
+            ensure_initial_admin(db)
+            ensure_initial_shop_admin(db)
+        finally:
+            db.close()
+
+        platform = client.post(
+            "/api/auth/login",
+            json={"email": "master@carbonauten.com", "password": "master-pass-123"},
+        )
+        assert platform.status_code == 200
+        assert platform.json()["user"]["role"] == "it_master"
+
+        shop = client.post(
+            "/api/shop/auth/login",
+            json={"email": "master@carbonauten.com", "password": "master-pass-123"},
+        )
+        assert shop.status_code == 200
+        assert shop.json()["customer"]["email"] == "master@carbonauten.com"
+
+        me = client.get("/api/shop/auth/me")
+        assert me.status_code == 200
+    get_settings.cache_clear()

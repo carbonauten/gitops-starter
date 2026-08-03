@@ -71,8 +71,80 @@ def register_customer(
     return customer
 
 
-def authenticate_customer(db: Session, email: str, password: str) -> ShopCustomer:
+def ensure_initial_shop_admin(db: Session) -> None:
+    """Mirror platform INITIAL_ADMIN_* into a shop customer account (same email/password)."""
+    settings = get_settings()
+    email = (settings.shop_admin_email or settings.initial_admin_email).strip().lower()
+    password = (settings.shop_admin_password or settings.initial_admin_password).strip()
+    if not email or not password:
+        return
+
+    display_name = (
+        settings.shop_admin_name.strip()
+        or settings.initial_admin_name.strip()
+        or email.split("@", 1)[0].replace(".", " ").title()
+    )
     customer = get_customer_by_email(db, email)
+    if customer is None:
+        customer = ShopCustomer(
+            id=str(uuid4()),
+            email=email,
+            name=display_name,
+            password_hash=hash_password(password),
+            language=normalize_language(settings.default_language),
+            is_active=True,
+            co2_credit_balance=0,
+        )
+        db.add(customer)
+    else:
+        customer.password_hash = hash_password(password)
+        customer.name = display_name or customer.name
+        customer.is_active = True
+    db.commit()
+
+
+def authenticate_customer(db: Session, email: str, password: str) -> ShopCustomer:
+    normalized_email = email.strip().lower()
+    customer = get_customer_by_email(db, normalized_email)
+
+    # Allow platform IT masters / INITIAL_ADMIN to use the same credentials in the shop.
+    if customer is None or not verify_password(password, customer.password_hash):
+        from .user_service import get_user_by_email
+
+        platform_user = get_user_by_email(db, normalized_email)
+        settings = get_settings()
+        is_master = bool(
+            platform_user
+            and platform_user.is_active
+            and platform_user.password_hash
+            and (
+                platform_user.role == "it_master"
+                or normalized_email in settings.it_admin_emails_list
+                or normalized_email == settings.initial_admin_email.strip().lower()
+            )
+            and verify_password(password, platform_user.password_hash)
+        )
+        if is_master and platform_user is not None:
+            if customer is None:
+                customer = ShopCustomer(
+                    id=str(uuid4()),
+                    email=normalized_email,
+                    name=platform_user.name,
+                    password_hash=platform_user.password_hash,
+                    language=platform_user.language or settings.default_language,
+                    is_active=True,
+                    co2_credit_balance=0,
+                )
+                db.add(customer)
+            else:
+                customer.password_hash = platform_user.password_hash
+                customer.name = platform_user.name or customer.name
+                customer.is_active = True
+            customer.last_login_at = _utc_now()
+            db.commit()
+            db.refresh(customer)
+            return customer
+
     if not customer or not customer.password_hash:
         raise HTTPException(status_code=401, detail="invalid_credentials")
     if not customer.is_active:

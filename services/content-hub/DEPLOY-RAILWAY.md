@@ -398,6 +398,9 @@ Der Shop läuft auf derselben Railway-App wie `app.carbonauten.com`.
 | `SHOP_IMPRESSUM` / `SHOP_PRIVACY` / `SHOP_TERMS` | Rechtstexte (Plaintext) |
 | `SHOP_CO2_CREDITS_PER_EURO` | CO₂ Credits je vollen Euro Bestellwert (Default `1`) |
 | `SHOP_REQUIRE_ACCOUNT_CHECKOUT` | `true` = Checkout nur mit Kundenkonto |
+| `SHOP_ADMIN_EMAIL` / `SHOP_ADMIN_PASSWORD` / `SHOP_ADMIN_NAME` | optional; sonst = `INITIAL_ADMIN_*` — Master-Konto für Shop-Login |
+
+**Master-Konto:** Dein Platform-IT-Master (`INITIAL_ADMIN_EMAIL` + Passwort) gilt auch für den Shop-Login unter `https://www.fuckco2.shop/login`.
 
 **Shop-Kunden:** Registrierung unter `/shop/login` bzw. Domain-Root. Credits werden bei Status `paid`/`fulfilled` gutgeschrieben.
 
