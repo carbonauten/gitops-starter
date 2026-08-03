@@ -9,7 +9,7 @@
     "articles": "Articles",
     "files": "Files",
     "certificates": "Certificates",
-    "products": "Shop products",
+    "products": "Products",
     "orders": "Orders",
     "publish": "Publish",
     "calendar": "Calendar",
@@ -20,7 +20,11 @@
     "users": "Employee management",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
-    "shopCustomers": "Shop customers"
+    "shopCustomers": "Customer accounts",
+    "overviewSection": "Overview",
+    "contentSection": "Content",
+    "shopSection": "Shop",
+    "publishSection": "Publishing"
   },
   "auth": {
     "signIn": "Sign in",
@@ -698,8 +702,8 @@
     }
   },
   "shopCustomers": {
-    "title": "Shop customers",
-    "subtitle": "Registered customers and CO₂ reward credits from fuckco2.shop.",
+    "title": "Shop customer accounts",
+    "subtitle": "Manage registered shop customers and CO₂ reward credits.",
     "empty": "No shop customers yet.",
     "columns": {
       "name": "Name",

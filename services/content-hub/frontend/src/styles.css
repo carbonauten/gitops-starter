@@ -259,12 +259,20 @@ a {
 }
 
 .nav-section-label {
-  margin: 1rem 1rem 0.25rem;
-  font-size: 0.72rem;
+  margin: 1.15rem 1rem 0.35rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-muted);
+}
+
+.nav-section-label:first-child {
+  margin-top: 0.25rem;
+  padding-top: 0;
+  border-top: none;
 }
 
 .role-legend {

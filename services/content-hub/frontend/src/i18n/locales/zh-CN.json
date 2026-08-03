@@ -9,7 +9,7 @@
     "articles": "文章",
     "files": "文件",
     "certificates": "证书",
-    "products": "商店产品",
+    "products": "产品",
     "orders": "订单",
     "publish": "发布",
     "calendar": "日历",
@@ -20,7 +20,11 @@
     "users": "员工管理",
     "openMenu": "打开菜单",
     "closeMenu": "关闭菜单",
-    "shopCustomers": "商店客户"
+    "shopCustomers": "客户账户",
+    "overviewSection": "概览",
+    "contentSection": "内容",
+    "shopSection": "商店",
+    "publishSection": "发布"
   },
   "auth": {
     "signIn": "登录",
@@ -698,8 +702,8 @@
     }
   },
   "shopCustomers": {
-    "title": "商店客户",
-    "subtitle": "fuckco2.shop 的注册客户与 CO₂ 奖励积分。",
+    "title": "商店客户管理",
+    "subtitle": "管理注册商店客户与 CO₂ 奖励积分。",
     "empty": "暂无商店客户。",
     "columns": {
       "name": "姓名",

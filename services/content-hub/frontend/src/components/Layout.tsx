@@ -8,6 +8,34 @@ import { BrandLogo } from "./BrandLogo";
 import { useAuth } from "../hooks/useAuth";
 import { usePermissions } from "../hooks/usePermissions";
 
+type NavItem = {
+  to: string;
+  label: string;
+  icon: string;
+  end?: boolean;
+};
+
+function NavItems({ items, onNavigate }: { items: NavItem[]; onNavigate: () => void }) {
+  return (
+    <>
+      {items.map((item) => (
+        <NavLink
+          key={item.to}
+          to={item.to}
+          end={item.end}
+          onClick={onNavigate}
+          className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
+        >
+          <span className="nav-link-icon" aria-hidden="true">
+            {item.icon}
+          </span>
+          {item.label}
+        </NavLink>
+      ))}
+    </>
+  );
+}
+
 export function TopBar({ onMenuToggle }: { onMenuToggle: () => void }) {
   const { t } = useTranslation();
   const { user, signOut } = useAuth();
@@ -53,72 +81,65 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
   const { t } = useTranslation();
   const { canManageUsers, canManageShop, canApprove, canApproveCertificates } = usePermissions();
 
-  const items = [
+  const overview: NavItem[] = [
     { to: "/search", label: t("nav.search"), icon: "⌕" },
     { to: "/", label: t("nav.dashboard"), end: true, icon: "◆" },
+  ];
+
+  const content: NavItem[] = [
     { to: "/articles", label: t("nav.articles"), icon: "✎" },
     { to: "/files", label: t("nav.files"), icon: "▣" },
     { to: "/certificates", label: t("nav.certificates"), icon: "◎" },
   ];
 
-  if (canManageShop) {
-    items.push(
-      { to: "/products", label: t("nav.products"), icon: "◈" },
-      { to: "/orders", label: t("nav.orders"), icon: "☰" },
-      { to: "/shop-customers", label: t("nav.shopCustomers"), icon: "☺" },
-    );
-  }
+  const shop: NavItem[] = canManageShop
+    ? [
+        { to: "/products", label: t("nav.products"), icon: "◈" },
+        { to: "/orders", label: t("nav.orders"), icon: "☰" },
+        { to: "/shop-customers", label: t("nav.shopCustomers"), icon: "☺" },
+      ]
+    : [];
 
-  items.push(
+  const publishing: NavItem[] = [
     { to: "/publish", label: t("nav.publish"), end: true, icon: "↗" },
     { to: "/calendar", label: t("nav.calendar"), icon: "▦" },
     { to: "/analytics", label: t("nav.analytics"), icon: "▥" },
-  );
+  ];
 
   if (canApprove || canApproveCertificates) {
-    items.push({ to: "/workflow", label: t("nav.workflow"), icon: "✓" });
+    publishing.push({ to: "/workflow", label: t("nav.workflow"), icon: "✓" });
   }
+
+  const admin: NavItem[] = canManageUsers
+    ? [
+        { to: "/users", label: t("nav.users"), icon: "☰" },
+        { to: "/audit", label: t("nav.audit"), icon: "≡" },
+      ]
+    : [];
 
   return (
     <aside className={`sidebar${open ? " sidebar-open" : ""}`}>
       <nav>
-        {items.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            onClick={onNavigate}
-            className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
-          >
-            <span className="nav-link-icon" aria-hidden="true">
-              {item.icon}
-            </span>
-            {item.label}
-          </NavLink>
-        ))}
-        {canManageUsers ? (
+        <div className="nav-section-label">{t("nav.overviewSection")}</div>
+        <NavItems items={overview} onNavigate={onNavigate} />
+
+        <div className="nav-section-label">{t("nav.contentSection")}</div>
+        <NavItems items={content} onNavigate={onNavigate} />
+
+        {shop.length > 0 ? (
+          <>
+            <div className="nav-section-label">{t("nav.shopSection")}</div>
+            <NavItems items={shop} onNavigate={onNavigate} />
+          </>
+        ) : null}
+
+        <div className="nav-section-label">{t("nav.publishSection")}</div>
+        <NavItems items={publishing} onNavigate={onNavigate} />
+
+        {admin.length > 0 ? (
           <>
             <div className="nav-section-label">{t("nav.adminSection")}</div>
-            <NavLink
-              to="/users"
-              onClick={onNavigate}
-              className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
-            >
-              <span className="nav-link-icon" aria-hidden="true">
-                ☰
-              </span>
-              {t("nav.users")}
-            </NavLink>
-            <NavLink
-              to="/audit"
-              onClick={onNavigate}
-              className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
-            >
-              <span className="nav-link-icon" aria-hidden="true">
-                ≡
-              </span>
-              {t("nav.audit")}
-            </NavLink>
+            <NavItems items={admin} onNavigate={onNavigate} />
           </>
         ) : null}
       </nav>

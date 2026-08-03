@@ -9,7 +9,7 @@
     "articles": "Artikel",
     "files": "Dateien",
     "certificates": "Zertifikate",
-    "products": "Shop-Produkte",
+    "products": "Produkte",
     "orders": "Bestellungen",
     "publish": "Veröffentlichen",
     "calendar": "Kalender",
@@ -20,7 +20,11 @@
     "users": "Mitarbeiterverwaltung",
     "openMenu": "Menü öffnen",
     "closeMenu": "Menü schließen",
-    "shopCustomers": "Shop-Kunden"
+    "shopCustomers": "Benutzerverwaltung",
+    "overviewSection": "Übersicht",
+    "contentSection": "Inhalte",
+    "shopSection": "Shop",
+    "publishSection": "Veröffentlichen"
   },
   "auth": {
     "signIn": "Anmelden",
@@ -698,8 +702,8 @@
     }
   },
   "shopCustomers": {
-    "title": "Shop-Kunden",
-    "subtitle": "Registrierte Kunden und CO₂ Reward Credits von fuckco2.shop.",
+    "title": "Shop-Benutzerverwaltung",
+    "subtitle": "Registrierte Shop-Kunden und CO₂ Reward Credits verwalten.",
     "empty": "Noch keine Shop-Kunden registriert.",
     "columns": {
       "name": "Name",
