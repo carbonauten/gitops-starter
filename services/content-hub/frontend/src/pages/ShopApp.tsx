@@ -20,6 +20,7 @@ import {
 import { EmptyState } from "../components/EmptyState";
 import { LanguageSwitch } from "../components/LanguageSwitch";
 import { LoadingState } from "../components/LoadingState";
+import { clearShopConsentDecision, saveShopConsent, ShopConsentBanner } from "../components/ShopConsentBanner";
 import { ShopAuthProvider, useShopAuth } from "../hooks/useShopAuth";
 import { ShopCartProvider, useShopCart } from "../hooks/useShopCart";
 
@@ -28,6 +29,102 @@ function shopBasePath(): string {
   if (host === "fuckco2.shop" || host === "www.fuckco2.shop") return "";
   if (new URLSearchParams(window.location.search).get("shop") === "1") return "";
   return "/shop";
+}
+
+function clampQty(value: number, max = 999) {
+  if (!Number.isFinite(value)) return 1;
+  return Math.min(max, Math.max(1, Math.floor(value)));
+}
+
+function ShopQtyStepper({
+  value,
+  onChange,
+  disabled,
+  max = 999,
+}: {
+  value: number;
+  onChange: (next: number) => void;
+  disabled?: boolean;
+  max?: number;
+}) {
+  const { t } = useTranslation();
+  return (
+    <div className="shop-qty-stepper" role="group" aria-label={t("shop.quantity")}>
+      <button
+        type="button"
+        className="ghost-button shop-qty-btn"
+        disabled={disabled || value <= 1}
+        onClick={() => onChange(clampQty(value - 1, max))}
+        aria-label="-"
+      >
+        −
+      </button>
+      <input
+        type="number"
+        min={1}
+        max={max}
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(clampQty(Number(event.target.value) || 1, max))}
+      />
+      <button
+        type="button"
+        className="ghost-button shop-qty-btn"
+        disabled={disabled || value >= max}
+        onClick={() => onChange(clampQty(value + 1, max))}
+        aria-label="+"
+      >
+        +
+      </button>
+    </div>
+  );
+}
+
+function ShopProductCard({
+  product,
+  base,
+}: {
+  product: ShopProduct;
+  base: string;
+}) {
+  const { t, i18n } = useTranslation();
+  const cart = useShopCart();
+  const [qty, setQty] = useState(1);
+  const maxQty =
+    product.track_inventory && product.stock_available != null
+      ? Math.max(1, product.stock_available)
+      : 999;
+  const soldOut = product.in_stock === false;
+
+  return (
+    <article className="shop-card shop-card-static">
+      <Link to={`${base}/p/${product.slug}`} className="shop-card-media">
+        {product.image_url ? <img src={product.image_url} alt={product.name} /> : <div className="shop-card-placeholder" />}
+      </Link>
+      <div className="shop-card-body">
+        <Link to={`${base}/p/${product.slug}`}>
+          <h2>{product.name}</h2>
+        </Link>
+        <p className="muted">{product.short_description || t("shop.noShortDescription")}</p>
+        <strong>{formatMoney(product.price_cents, product.currency, i18n.language)}</strong>
+        <p className="muted shop-vat-note">{t("shop.inclVat")}</p>
+        <div className="shop-card-actions">
+          <ShopQtyStepper value={qty} onChange={setQty} disabled={soldOut} max={maxQty} />
+          <button
+            type="button"
+            className="primary-button"
+            disabled={soldOut}
+            onClick={() => {
+              cart.addItem(product, qty);
+              setQty(1);
+            }}
+          >
+            {soldOut ? t("shop.soldOut") : t("shop.addToCart")}
+          </button>
+        </div>
+      </div>
+    </article>
+  );
 }
 
 function ShopShell({
@@ -61,9 +158,14 @@ function ShopShell({
               </button>
             </>
           ) : (
-            <Link to={`${base}/login`} className="ghost-button link-button">
-              {t("shop.login")}
-            </Link>
+            <>
+              <Link to={`${base}/login`} className="ghost-button link-button">
+                {t("shop.login")}
+              </Link>
+              <Link to={`${base}/register`} className="ghost-button link-button">
+                {t("shop.register")}
+              </Link>
+            </>
           )}
           <Link to={`${base}/cart`} className="primary-button link-button">
             {t("shop.cart")} ({cart.count})
@@ -76,19 +178,28 @@ function ShopShell({
           <Link to={`${base}/legal/impressum`}>{t("shop.impressum")}</Link>
           <Link to={`${base}/legal/privacy`}>{t("shop.privacy")}</Link>
           <Link to={`${base}/legal/terms`}>{t("shop.terms")}</Link>
+          <button
+            type="button"
+            className="linkish shop-footer-consent"
+            onClick={() => {
+              clearShopConsentDecision();
+            }}
+          >
+            {t("shop.cmp.settings")}
+          </button>
           <a href={`mailto:${config?.contact_email || "hello@carbonauten.com"}`}>{t("shop.contact")}</a>
         </nav>
         <p>
           {config?.brand_name || "FuckCo2"} · {t("shop.footerNote")}
         </p>
       </footer>
+      <ShopConsentBanner privacyHref={`${base}/legal/privacy`} />
     </div>
   );
 }
 
 function ShopHome({ config, base }: { config: ShopConfig | null; base: string }) {
-  const { t, i18n } = useTranslation();
-  const cart = useShopCart();
+  const { t } = useTranslation();
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -111,33 +222,21 @@ function ShopHome({ config, base }: { config: ShopConfig | null; base: string })
         <p className="eyebrow">{config?.brand_name || "FuckCo2"}</p>
         <h1>{t("shop.heroTitle")}</h1>
         <p className="muted">{t("shop.heroSubtitle")}</p>
+        <div className="shop-hero-cta">
+          <Link to={`${base}/register`} className="primary-button link-button">
+            {t("shop.registerCta")}
+          </Link>
+          <Link to={`${base}/login`} className="ghost-button link-button">
+            {t("shop.login")}
+          </Link>
+        </div>
       </section>
       {loading ? <LoadingState /> : null}
       {error ? <p className="error-text">{error}</p> : null}
       {!loading && products.length === 0 ? <EmptyState message={t("shop.empty")} icon="◈" /> : null}
       <div className="shop-grid">
         {products.map((product) => (
-          <article key={product.id} className="shop-card shop-card-static">
-            <Link to={`${base}/p/${product.slug}`} className="shop-card-media">
-              {product.image_url ? <img src={product.image_url} alt={product.name} /> : <div className="shop-card-placeholder" />}
-            </Link>
-            <div className="shop-card-body">
-              <Link to={`${base}/p/${product.slug}`}>
-                <h2>{product.name}</h2>
-              </Link>
-              <p className="muted">{product.short_description || t("shop.noShortDescription")}</p>
-              <strong>{formatMoney(product.price_cents, product.currency, i18n.language)}</strong>
-              <p className="muted shop-vat-note">{t("shop.inclVat")}</p>
-              <button
-                type="button"
-                className="primary-button"
-                disabled={product.in_stock === false}
-                onClick={() => cart.addItem(product)}
-              >
-                {product.in_stock === false ? t("shop.soldOut") : t("shop.addToCart")}
-              </button>
-            </div>
-          </article>
+          <ShopProductCard key={product.id} product={product} base={base} />
         ))}
       </div>
     </>
@@ -195,16 +294,19 @@ function ShopProductDetail({ config, base }: { config: ShopConfig | null; base: 
           {product.short_description ? <p className="muted">{product.short_description}</p> : null}
           <div className="shop-description">{product.description || t("shop.noDescription")}</div>
           <div className="shop-qty-row">
-            <label>
-              {t("shop.quantity")}
-              <input
-                type="number"
-                min={1}
-                max={999}
+            <div>
+              <span className="muted">{t("shop.quantity")}</span>
+              <ShopQtyStepper
                 value={qty}
-                onChange={(event) => setQty(Math.max(1, Number(event.target.value) || 1))}
+                onChange={setQty}
+                disabled={product.in_stock === false}
+                max={
+                  product.track_inventory && product.stock_available != null
+                    ? Math.max(1, product.stock_available)
+                    : 999
+                }
               />
-            </label>
+            </div>
             <button
               type="button"
               className="primary-button"
@@ -474,28 +576,46 @@ function ShopCheckoutPage({ config, base }: { config: ShopConfig | null; base: s
 function ShopAuthForm({
   mode,
   base,
+  config,
 }: {
   mode: "login" | "register";
   base: string;
+  config: ShopConfig | null;
 }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { login, register } = useShopAuth();
+  const { login, register, customer } = useShopAuth();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (customer) {
+      navigate(`${base}/account`, { replace: true });
+    }
+  }, [customer, navigate, base]);
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setSaving(true);
     setError("");
     try {
+      if (mode === "register" && !privacyAccepted) {
+        setError(t("shop.privacyConsentRequired"));
+        setSaving(false);
+        return;
+      }
       if (mode === "login") {
         await login(email, password);
       } else {
         await register({ email, name, password, language: i18n.language });
+        if (marketingOptIn) {
+          saveShopConsent({ preferences: true, analytics: true, marketing: true });
+        }
       }
       navigate(`${base}/account`);
     } catch (err) {
@@ -506,40 +626,83 @@ function ShopAuthForm({
   }
 
   return (
-    <section className="shop-checkout">
-      <h1>{mode === "login" ? t("shop.login") : t("shop.register")}</h1>
-      <p className="muted">{t("shop.accountSubtitle")}</p>
-      <form className="editor-form" onSubmit={(event) => void handleSubmit(event)}>
-        {mode === "register" ? (
+    <section className="shop-auth-landing">
+      <div className="shop-auth-hero">
+        <p className="eyebrow">{config?.brand_name || "FuckCo2"}</p>
+        <h1>{mode === "login" ? t("shop.authLandingLoginTitle") : t("shop.authLandingRegisterTitle")}</h1>
+        <p className="muted">{t("shop.accountSubtitle")}</p>
+        <ul className="shop-auth-benefits">
+          <li>{t("shop.authBenefit1")}</li>
+          <li>{t("shop.authBenefit2")}</li>
+          <li>{t("shop.authBenefit3")}</li>
+        </ul>
+      </div>
+      <div className="shop-auth-card">
+        <div className="shop-auth-tabs">
+          <Link
+            to={`${base}/login`}
+            className={mode === "login" ? "shop-auth-tab active" : "shop-auth-tab"}
+          >
+            {t("shop.login")}
+          </Link>
+          <Link
+            to={`${base}/register`}
+            className={mode === "register" ? "shop-auth-tab active" : "shop-auth-tab"}
+          >
+            {t("shop.register")}
+          </Link>
+        </div>
+        <form className="editor-form" onSubmit={(event) => void handleSubmit(event)}>
+          {mode === "register" ? (
+            <label>
+              {t("shop.fieldName")}
+              <input required value={name} onChange={(e) => setName(e.target.value)} />
+            </label>
+          ) : null}
           <label>
-            {t("shop.fieldName")}
-            <input required value={name} onChange={(e) => setName(e.target.value)} />
+            {t("shop.fieldEmail")}
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
           </label>
-        ) : null}
-        <label>
-          {t("shop.fieldEmail")}
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-        </label>
-        <label>
-          {t("auth.password")}
-          <input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
-        </label>
-        {error ? <p className="error-text">{error}</p> : null}
-        <button type="submit" className="primary-button" disabled={saving}>
-          {saving ? t("common.loading") : mode === "login" ? t("shop.login") : t("shop.register")}
-        </button>
-      </form>
-      <p className="muted" style={{ marginTop: "1rem" }}>
-        {mode === "login" ? (
-          <>
-            {t("shop.noAccount")} <Link to={`${base}/register`}>{t("shop.register")}</Link>
-          </>
-        ) : (
-          <>
-            {t("shop.hasAccount")} <Link to={`${base}/login`}>{t("shop.login")}</Link>
-          </>
-        )}
-      </p>
+          <label>
+            {t("auth.password")}
+            <input
+              type="password"
+              required
+              minLength={8}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </label>
+          {mode === "register" ? (
+            <>
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={privacyAccepted}
+                  onChange={(e) => setPrivacyAccepted(e.target.checked)}
+                  required
+                />
+                <span>
+                  {t("shop.privacyConsentLabel")}{" "}
+                  <Link to={`${base}/legal/privacy`}>{t("shop.privacy")}</Link>
+                </span>
+              </label>
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={marketingOptIn}
+                  onChange={(e) => setMarketingOptIn(e.target.checked)}
+                />
+                <span>{t("shop.marketingConsentLabel")}</span>
+              </label>
+            </>
+          ) : null}
+          {error ? <p className="error-text">{error}</p> : null}
+          <button type="submit" className="primary-button" disabled={saving}>
+            {saving ? t("common.loading") : mode === "login" ? t("shop.login") : t("shop.register")}
+          </button>
+        </form>
+      </div>
     </section>
   );
 }
@@ -713,8 +876,8 @@ function ShopRoutes({ config, base }: { config: ShopConfig | null; base: string 
       <Route path="/p/:slug" element={<ShopProductDetail config={config} base={base} />} />
       <Route path="/cart" element={<ShopCartPage config={config} base={base} />} />
       <Route path="/checkout" element={<ShopCheckoutPage config={config} base={base} />} />
-      <Route path="/login" element={<ShopAuthForm mode="login" base={base} />} />
-      <Route path="/register" element={<ShopAuthForm mode="register" base={base} />} />
+      <Route path="/login" element={<ShopAuthForm mode="login" base={base} config={config} />} />
+      <Route path="/register" element={<ShopAuthForm mode="register" base={base} config={config} />} />
       <Route path="/account" element={<ShopAccountPage base={base} />} />
       <Route path="/order/success" element={<ShopOrderSuccess base={base} />} />
       <Route path="/legal/impressum" element={<ShopLegalPage config={config} kind="impressum" base={base} />} />
@@ -724,8 +887,8 @@ function ShopRoutes({ config, base }: { config: ShopConfig | null; base: string 
       <Route path="/shop/p/:slug" element={<ShopProductDetail config={config} base={base} />} />
       <Route path="/shop/cart" element={<ShopCartPage config={config} base={base} />} />
       <Route path="/shop/checkout" element={<ShopCheckoutPage config={config} base={base} />} />
-      <Route path="/shop/login" element={<ShopAuthForm mode="login" base={base} />} />
-      <Route path="/shop/register" element={<ShopAuthForm mode="register" base={base} />} />
+      <Route path="/shop/login" element={<ShopAuthForm mode="login" base={base} config={config} />} />
+      <Route path="/shop/register" element={<ShopAuthForm mode="register" base={base} config={config} />} />
       <Route path="/shop/account" element={<ShopAccountPage base={base} />} />
       <Route path="/shop/order/success" element={<ShopOrderSuccess base={base} />} />
       <Route path="/shop/legal/impressum" element={<ShopLegalPage config={config} kind="impressum" base={base} />} />
