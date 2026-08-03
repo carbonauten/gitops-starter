@@ -7,7 +7,7 @@ def test_shop_config_public(client):
     assert response.status_code == 200
     payload = response.json()
     assert payload["brand_name"] == "FuckCo2"
-    assert payload["company_name"] == "Carbonauten GmbH"
+    assert payload["company_name"] == "carbonauten GmbH"
     assert "fuckco2.shop" in payload["hosts"]
 
 

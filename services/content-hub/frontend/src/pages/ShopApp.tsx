@@ -26,7 +26,7 @@ import { ShopAuthProvider, useShopAuth } from "../hooks/useShopAuth";
 import { ShopCartProvider, useShopCart } from "../hooks/useShopCart";
 
 function shopCompany(config: ShopConfig | null): string {
-  return config?.company_name?.trim() || "Carbonauten GmbH";
+  return config?.company_name?.trim() || "carbonauten GmbH";
 }
 
 function shopBasePath(): string {

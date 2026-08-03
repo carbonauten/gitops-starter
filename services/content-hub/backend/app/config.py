@@ -72,7 +72,7 @@ class Settings(BaseSettings):
 
     shop_hosts: str = "fuckco2.shop,www.fuckco2.shop"
     shop_brand_name: str = "FuckCo2"
-    shop_company_name: str = "Carbonauten GmbH"
+    shop_company_name: str = "carbonauten GmbH"
     shop_tagline: str = "FuckCo2 goes international"
     shop_contact_email: str = ""
     shop_currency: str = "EUR"

@@ -569,7 +569,7 @@
     "heroSubtitle": "Klimawirksame Produkte bestellen — Karte oder Rechnung.",
     "empty": "Demnächst verfügbar. Schauen Sie bald wieder vorbei.",
     "contact": "Kontakt",
-    "footerNote": "FuckCo2 ist die Shop-Marke der Carbonauten GmbH.",
+    "footerNote": "FuckCo2 ist die Shop-Marke der carbonauten GmbH.",
     "back": "Alle Produkte",
     "notFound": "Produkt nicht gefunden.",
     "noShortDescription": "Produktübersicht folgt.",
@@ -664,7 +664,7 @@
     },
     "browseProducts": "Produkte entdecken",
     "catalogTitle": "Produkte",
-    "catalogSubtitle": "Produkte aus der Produktion der Carbonauten GmbH.",
+    "catalogSubtitle": "Produkte aus der Produktion der carbonauten GmbH.",
     "companyLine": "Ein Shop der {{company}}",
     "companyAttribution": "{{company}} — Betreiberin von FuckCo2"
   },

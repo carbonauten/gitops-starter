@@ -8,7 +8,7 @@ type ShopLogoProps = {
 
 export function ShopLogo({
   brand = "FuckCo2",
-  company = "Carbonauten GmbH",
+  company = "carbonauten GmbH",
   size = "md",
   showCompany = true,
   stacked = false,
