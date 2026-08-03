@@ -19,7 +19,8 @@
     "adminSection": "Administration",
     "users": "Mitarbeiterverwaltung",
     "openMenu": "Menü öffnen",
-    "closeMenu": "Menü schließen"
+    "closeMenu": "Menü schließen",
+    "shopCustomers": "Shop-Kunden"
   },
   "auth": {
     "signIn": "Anmelden",
@@ -292,7 +293,8 @@
       "department": "Abteilung",
       "role": "Rolle",
       "platformAccess": "Plattformzugriff",
-      "lastLogin": "Letzter Login"
+      "lastLogin": "Letzter Login",
+      "shopAccess": "Shop-Produkte"
     },
     "tabs": {
       "employees": "Mitarbeiter",
@@ -341,6 +343,10 @@
       "revoke": "Widerrufen",
       "confirmRevoke": "Einladung für {{email}} wirklich widerrufen?",
       "empty": "Keine offenen Einladungen."
+    },
+    "shopAccess": {
+      "on": "Shop sichtbar",
+      "off": "Shop ausgeblendet"
     }
   },
   "invite": {
@@ -609,7 +615,23 @@
       "paid": "Bezahlt",
       "fulfilled": "Versendet",
       "cancelled": "Storniert"
-    }
+    },
+    "login": "Anmelden",
+    "register": "Registrieren",
+    "account": "Mein Konto",
+    "accountSubtitle": "Mit Konto sammeln Sie CO₂ Reward Credits bei jeder bezahlten Bestellung.",
+    "noAccount": "Noch kein Konto?",
+    "hasAccount": "Bereits registriert?",
+    "loginRequired": "Bitte melden Sie sich an.",
+    "loginRequiredCheckout": "Für den Checkout ist ein Kundenkonto erforderlich.",
+    "creditsHintGuest": "Als Gast bestellen Sie ohne Credits. Für CO₂ Rewards:",
+    "creditsHintMember": "Voraussichtlich +{{credits}} CO₂ Credits (aktuell {{balance}}).",
+    "co2Balance": "CO₂ Reward Credits",
+    "myOrders": "Meine Bestellungen",
+    "noOrders": "Noch keine Bestellungen.",
+    "creditHistory": "Credit-Verlauf",
+    "noCreditsYet": "Noch keine Credits gesammelt.",
+    "creditsEarned": "Sie haben +{{credits}} CO₂ Reward Credits erhalten."
   },
   "orders": {
     "title": "Shop-Bestellungen",
@@ -674,5 +696,26 @@
       "file_asset_id": "Datei",
       "notes": "Notizen"
     }
+  },
+  "shopCustomers": {
+    "title": "Shop-Kunden",
+    "subtitle": "Registrierte Kunden und CO₂ Reward Credits von fuckco2.shop.",
+    "empty": "Noch keine Shop-Kunden registriert.",
+    "columns": {
+      "name": "Name",
+      "email": "E-Mail",
+      "credits": "CO₂ Credits",
+      "status": "Status",
+      "lastLogin": "Letzter Login"
+    },
+    "disable": "Sperren",
+    "enable": "Freigeben",
+    "creditsUnit": "CO₂ Credits",
+    "creditDelta": "Credit-Änderung (+/-)",
+    "creditNote": "Notiz",
+    "adjustCredits": "Credits anpassen",
+    "ledger": "Credit-Verlauf",
+    "ledgerEmpty": "Noch keine Credit-Buchungen.",
+    "orders": "Bestellungen"
   }
 }

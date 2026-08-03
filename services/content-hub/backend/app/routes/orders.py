@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from ..audit_service import log_audit
 from ..database import ShopOrder, get_db
-from ..dependencies import require_editor
+from ..dependencies import require_shop_editor
 from ..shop_order_service import get_order_items, list_orders, order_to_dict, update_order_status
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
@@ -22,7 +22,7 @@ class OrderStatusUpdate(BaseModel):
 def admin_list_orders(
     status: Optional[str] = Query(default=None),
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_editor),
+    _user: dict = Depends(require_shop_editor),
 ) -> dict:
     orders = list_orders(db, status=status)
     return {
@@ -34,7 +34,7 @@ def admin_list_orders(
 def admin_get_order(
     order_id: str,
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_editor),
+    _user: dict = Depends(require_shop_editor),
 ) -> dict:
     order = db.get(ShopOrder, order_id)
     if not order:
@@ -47,7 +47,7 @@ def admin_update_order(
     order_id: str,
     payload: OrderStatusUpdate,
     db: Session = Depends(get_db),
-    user: dict = Depends(require_editor),
+    user: dict = Depends(require_shop_editor),
 ) -> dict:
     order = db.get(ShopOrder, order_id)
     if not order:

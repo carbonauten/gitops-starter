@@ -6,17 +6,21 @@ import {
   checkoutShop,
   confirmShopOrder,
   fetchShopConfig,
+  fetchShopMyCredits,
+  fetchShopMyOrders,
   fetchShopOrder,
   fetchShopProduct,
   fetchShopProducts,
   formatMoney,
   type ShopConfig,
+  type ShopCreditLedgerEntry,
   type ShopOrder,
   type ShopProduct,
 } from "../api/client";
 import { EmptyState } from "../components/EmptyState";
 import { LanguageSwitch } from "../components/LanguageSwitch";
 import { LoadingState } from "../components/LoadingState";
+import { ShopAuthProvider, useShopAuth } from "../hooks/useShopAuth";
 import { ShopCartProvider, useShopCart } from "../hooks/useShopCart";
 
 function shopBasePath(): string {
@@ -37,6 +41,7 @@ function ShopShell({
 }) {
   const { t } = useTranslation();
   const cart = useShopCart();
+  const { customer, logout } = useShopAuth();
   return (
     <div className="shop-shell">
       <header className="shop-topbar">
@@ -46,6 +51,20 @@ function ShopShell({
         </Link>
         <div className="shop-topbar-actions">
           <LanguageSwitch />
+          {customer ? (
+            <>
+              <Link to={`${base}/account`} className="ghost-button link-button">
+                {t("shop.account")} ({customer.co2_credit_balance} CO₂)
+              </Link>
+              <button type="button" className="ghost-button" onClick={() => void logout()}>
+                {t("auth.signOut")}
+              </button>
+            </>
+          ) : (
+            <Link to={`${base}/login`} className="ghost-button link-button">
+              {t("shop.login")}
+            </Link>
+          )}
           <Link to={`${base}/cart`} className="primary-button link-button">
             {t("shop.cart")} ({cart.count})
           </Link>
@@ -273,6 +292,7 @@ function ShopCartPage({ config, base }: { config: ShopConfig | null; base: strin
 function ShopCheckoutPage({ config, base }: { config: ShopConfig | null; base: string }) {
   const { t, i18n } = useTranslation();
   const cart = useShopCart();
+  const { customer } = useShopAuth();
   const navigate = useNavigate();
   const [paymentMethod, setPaymentMethod] = useState<"stripe" | "invoice">(
     config?.stripe_enabled ? "stripe" : "invoice",
@@ -296,6 +316,26 @@ function ShopCheckoutPage({ config, base }: { config: ShopConfig | null; base: s
     if (config?.stripe_enabled) setPaymentMethod("stripe");
     else setPaymentMethod("invoice");
   }, [config?.stripe_enabled]);
+
+  useEffect(() => {
+    if (!customer) return;
+    setForm((current) => ({
+      ...current,
+      email: customer.email,
+      name: current.name || customer.name,
+    }));
+  }, [customer]);
+
+  if (config?.require_account_checkout && !customer) {
+    return (
+      <section>
+        <EmptyState message={t("shop.loginRequiredCheckout")} icon="☺" />
+        <Link to={`${base}/login`} className="primary-button link-button">
+          {t("shop.login")}
+        </Link>
+      </section>
+    );
+  }
 
   if (cart.items.length === 0) {
     return (
@@ -334,13 +374,34 @@ function ShopCheckoutPage({ config, base }: { config: ShopConfig | null; base: s
     }
   }
 
+  const creditsPreview =
+    customer && config?.co2_credits_per_euro
+      ? Math.floor((cart.subtotalCents + (config.shipping_cents || 0)) / 100) * (config.co2_credits_per_euro || 0)
+      : 0;
+
   return (
     <section className="shop-checkout">
       <h1>{t("shop.checkout")}</h1>
+      {!customer ? (
+        <p className="muted">
+          {t("shop.creditsHintGuest")}{" "}
+          <Link to={`${base}/register`}>{t("shop.register")}</Link>
+        </p>
+      ) : (
+        <p className="muted">
+          {t("shop.creditsHintMember", { credits: creditsPreview, balance: customer.co2_credit_balance })}
+        </p>
+      )}
       <form className="editor-form" onSubmit={(event) => void handleSubmit(event)}>
         <label>
           {t("shop.fieldEmail")}
-          <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          <input
+            type="email"
+            required
+            value={form.email}
+            disabled={Boolean(customer)}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+          />
         </label>
         <label>
           {t("shop.fieldName")}
@@ -410,6 +471,150 @@ function ShopCheckoutPage({ config, base }: { config: ShopConfig | null; base: s
   );
 }
 
+function ShopAuthForm({
+  mode,
+  base,
+}: {
+  mode: "login" | "register";
+  base: string;
+}) {
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const { login, register } = useShopAuth();
+  const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      if (mode === "login") {
+        await login(email, password);
+      } else {
+        await register({ email, name, password, language: i18n.language });
+      }
+      navigate(`${base}/account`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section className="shop-checkout">
+      <h1>{mode === "login" ? t("shop.login") : t("shop.register")}</h1>
+      <p className="muted">{t("shop.accountSubtitle")}</p>
+      <form className="editor-form" onSubmit={(event) => void handleSubmit(event)}>
+        {mode === "register" ? (
+          <label>
+            {t("shop.fieldName")}
+            <input required value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+        ) : null}
+        <label>
+          {t("shop.fieldEmail")}
+          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        </label>
+        <label>
+          {t("auth.password")}
+          <input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
+        </label>
+        {error ? <p className="error-text">{error}</p> : null}
+        <button type="submit" className="primary-button" disabled={saving}>
+          {saving ? t("common.loading") : mode === "login" ? t("shop.login") : t("shop.register")}
+        </button>
+      </form>
+      <p className="muted" style={{ marginTop: "1rem" }}>
+        {mode === "login" ? (
+          <>
+            {t("shop.noAccount")} <Link to={`${base}/register`}>{t("shop.register")}</Link>
+          </>
+        ) : (
+          <>
+            {t("shop.hasAccount")} <Link to={`${base}/login`}>{t("shop.login")}</Link>
+          </>
+        )}
+      </p>
+    </section>
+  );
+}
+
+function ShopAccountPage({ base }: { base: string }) {
+  const { t, i18n } = useTranslation();
+  const { customer, loading } = useShopAuth();
+  const [orders, setOrders] = useState<ShopOrder[]>([]);
+  const [ledger, setLedger] = useState<ShopCreditLedgerEntry[]>([]);
+  const [balance, setBalance] = useState(0);
+
+  useEffect(() => {
+    if (!customer) return;
+    void (async () => {
+      try {
+        const [nextOrders, credits] = await Promise.all([fetchShopMyOrders(), fetchShopMyCredits()]);
+        setOrders(nextOrders);
+        setLedger(credits.ledger);
+        setBalance(credits.balance);
+      } catch {
+        /* ignore */
+      }
+    })();
+  }, [customer]);
+
+  if (loading) return <LoadingState />;
+  if (!customer) {
+    return (
+      <section>
+        <EmptyState message={t("shop.loginRequired")} icon="☺" />
+        <Link to={`${base}/login`} className="primary-button link-button">
+          {t("shop.login")}
+        </Link>
+      </section>
+    );
+  }
+
+  return (
+    <section className="shop-success">
+      <h1>{t("shop.account")}</h1>
+      <p>
+        {customer.name} · {customer.email}
+      </p>
+      <p>
+        {t("shop.co2Balance")}: <strong>{balance}</strong>
+      </p>
+      <h2>{t("shop.myOrders")}</h2>
+      {orders.length === 0 ? <p className="muted">{t("shop.noOrders")}</p> : null}
+      <ul>
+        {orders.map((order) => (
+          <li key={order.id}>
+            {order.order_number} · {t(`shop.statusValues.${order.status}`, { defaultValue: order.status })} ·{" "}
+            {formatMoney(order.total_cents, order.currency, i18n.language)}
+            {order.credits_earned ? ` · +${order.credits_earned} CO₂` : ""}
+          </li>
+        ))}
+      </ul>
+      <h2>{t("shop.creditHistory")}</h2>
+      {ledger.length === 0 ? <p className="muted">{t("shop.noCreditsYet")}</p> : null}
+      <ul>
+        {ledger.map((entry) => (
+          <li key={entry.id}>
+            {entry.delta_credits > 0 ? "+" : ""}
+            {entry.delta_credits} · {entry.reason}
+            {entry.note ? ` — ${entry.note}` : ""}
+          </li>
+        ))}
+      </ul>
+      <Link to={base || "/"} className="primary-button link-button">
+        {t("shop.continueShopping")}
+      </Link>
+    </section>
+  );
+}
+
 function ShopOrderSuccess({ base }: { base: string }) {
   const { t, i18n } = useTranslation();
   const [params] = useSearchParams();
@@ -461,6 +666,11 @@ function ShopOrderSuccess({ base }: { base: string }) {
         {t("shop.total")}: <strong>{formatMoney(order.total_cents, order.currency, i18n.language)}</strong>
       </p>
       {order.payment_method === "invoice" ? <p className="muted">{t("shop.invoiceHint")}</p> : null}
+      {order.credits_earned ? (
+        <p>
+          {t("shop.creditsEarned", { credits: order.credits_earned })}
+        </p>
+      ) : null}
       <Link to={base || "/"} className="primary-button link-button">
         {t("shop.continueShopping")}
       </Link>
@@ -503,6 +713,9 @@ function ShopRoutes({ config, base }: { config: ShopConfig | null; base: string 
       <Route path="/p/:slug" element={<ShopProductDetail config={config} base={base} />} />
       <Route path="/cart" element={<ShopCartPage config={config} base={base} />} />
       <Route path="/checkout" element={<ShopCheckoutPage config={config} base={base} />} />
+      <Route path="/login" element={<ShopAuthForm mode="login" base={base} />} />
+      <Route path="/register" element={<ShopAuthForm mode="register" base={base} />} />
+      <Route path="/account" element={<ShopAccountPage base={base} />} />
       <Route path="/order/success" element={<ShopOrderSuccess base={base} />} />
       <Route path="/legal/impressum" element={<ShopLegalPage config={config} kind="impressum" base={base} />} />
       <Route path="/legal/privacy" element={<ShopLegalPage config={config} kind="privacy" base={base} />} />
@@ -511,6 +724,9 @@ function ShopRoutes({ config, base }: { config: ShopConfig | null; base: string 
       <Route path="/shop/p/:slug" element={<ShopProductDetail config={config} base={base} />} />
       <Route path="/shop/cart" element={<ShopCartPage config={config} base={base} />} />
       <Route path="/shop/checkout" element={<ShopCheckoutPage config={config} base={base} />} />
+      <Route path="/shop/login" element={<ShopAuthForm mode="login" base={base} />} />
+      <Route path="/shop/register" element={<ShopAuthForm mode="register" base={base} />} />
+      <Route path="/shop/account" element={<ShopAccountPage base={base} />} />
       <Route path="/shop/order/success" element={<ShopOrderSuccess base={base} />} />
       <Route path="/shop/legal/impressum" element={<ShopLegalPage config={config} kind="impressum" base={base} />} />
       <Route path="/shop/legal/privacy" element={<ShopLegalPage config={config} kind="privacy" base={base} />} />
@@ -535,10 +751,12 @@ export function ShopApp() {
   }, []);
 
   return (
-    <ShopCartProvider>
-      <ShopShell config={config} base={base}>
-        <ShopRoutes config={config} base={base} />
-      </ShopShell>
-    </ShopCartProvider>
+    <ShopAuthProvider>
+      <ShopCartProvider>
+        <ShopShell config={config} base={base}>
+          <ShopRoutes config={config} base={base} />
+        </ShopShell>
+      </ShopCartProvider>
+    </ShopAuthProvider>
   );
 }

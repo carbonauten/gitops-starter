@@ -23,6 +23,25 @@ import { ProductsPage } from "./pages/ProductsPage";
 import { ProductEditorPage } from "./pages/ProductEditorPage";
 import { OrdersPage } from "./pages/OrdersPage";
 import { ShopApp } from "./pages/ShopApp";
+import { ShopCustomersPage } from "./pages/ShopCustomersPage";
+import { usePermissions } from "./hooks/usePermissions";
+
+function ShopManageRoute({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
+  const { user, loading } = useAuth();
+  const { canManageShop } = usePermissions();
+
+  if (loading) {
+    return (
+      <div className="center-screen" style={{ fontSize: "1.1rem", color: "#334155" }}>
+        {t("common.loading")}
+      </div>
+    );
+  }
+  if (!user) return <Navigate to="/login" replace />;
+  if (!canManageShop) return <Navigate to="/" replace />;
+  return <Layout>{children}</Layout>;
+}
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
@@ -123,33 +142,41 @@ export default function App() {
       <Route
         path="/products/new"
         element={
-          <ProtectedRoute>
+          <ShopManageRoute>
             <ProductEditorPage />
-          </ProtectedRoute>
+          </ShopManageRoute>
         }
       />
       <Route
         path="/products/:id/edit"
         element={
-          <ProtectedRoute>
+          <ShopManageRoute>
             <ProductEditorPage />
-          </ProtectedRoute>
+          </ShopManageRoute>
         }
       />
       <Route
         path="/products"
         element={
-          <ProtectedRoute>
+          <ShopManageRoute>
             <ProductsPage />
-          </ProtectedRoute>
+          </ShopManageRoute>
         }
       />
       <Route
         path="/orders"
         element={
-          <ProtectedRoute>
+          <ShopManageRoute>
             <OrdersPage />
-          </ProtectedRoute>
+          </ShopManageRoute>
+        }
+      />
+      <Route
+        path="/shop-customers"
+        element={
+          <ShopManageRoute>
+            <ShopCustomersPage />
+          </ShopManageRoute>
         }
       />
       <Route path="/shop/*" element={<ShopApp />} />

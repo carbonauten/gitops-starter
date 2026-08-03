@@ -8,6 +8,7 @@ export type User = {
   department_name?: string | null;
   language: string;
   is_active: boolean;
+  can_manage_shop?: boolean;
   last_login_at?: string | null;
 };
 
@@ -58,6 +59,12 @@ export function canApproveCertificates(role: User["role"]): boolean {
 
 export function canManageUsers(role: User["role"]): boolean {
   return role === "it_master";
+}
+
+export function canManageShop(user: Pick<User, "role" | "can_manage_shop"> | null | undefined): boolean {
+  if (!user) return false;
+  if (user.role === "it_master") return true;
+  return Boolean(user.can_manage_shop);
 }
 
 export type Article = {
@@ -267,8 +274,30 @@ export type ShopConfig = {
   stripe_enabled?: boolean;
   stripe_publishable_key?: string;
   invoice_enabled?: boolean;
+  require_account_checkout?: boolean;
+  co2_credits_per_euro?: number;
   bank?: { iban: string; bic: string; name: string; holder: string };
   legal?: { impressum: string; privacy: string; terms: string };
+};
+
+export type ShopCustomer = {
+  id: string;
+  email: string;
+  name: string;
+  language: string;
+  is_active: boolean;
+  co2_credit_balance: number;
+  created_at?: string | null;
+  last_login_at?: string | null;
+};
+
+export type ShopCreditLedgerEntry = {
+  id: string;
+  order_id?: string | null;
+  delta_credits: number;
+  reason: string;
+  note: string;
+  created_at?: string | null;
 };
 
 export type ShopOrder = {
@@ -282,6 +311,7 @@ export type ShopOrder = {
   shipping_cents: number;
   vat_cents: number;
   total_cents: number;
+  customer_id?: string | null;
   customer_email: string;
   customer_name: string;
   customer_phone?: string;
@@ -292,6 +322,7 @@ export type ShopOrder = {
   city: string;
   country: string;
   notes?: string;
+  credits_earned?: number;
   paid_at?: string | null;
   fulfilled_at?: string | null;
   created_at?: string | null;
@@ -1058,6 +1089,82 @@ export async function confirmShopOrder(
   return payload.order;
 }
 
+export async function registerShopCustomer(data: {
+  email: string;
+  name: string;
+  password: string;
+  language?: string;
+}): Promise<ShopCustomer> {
+  const payload = await request<{ customer: ShopCustomer }>("/api/shop/auth/register", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return payload.customer;
+}
+
+export async function loginShopCustomer(data: { email: string; password: string }): Promise<ShopCustomer> {
+  const payload = await request<{ customer: ShopCustomer }>("/api/shop/auth/login", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return payload.customer;
+}
+
+export async function logoutShopCustomer(): Promise<void> {
+  await request<{ ok: boolean }>("/api/shop/auth/logout", { method: "POST" });
+}
+
+export async function fetchShopCustomerMe(): Promise<ShopCustomer | null> {
+  try {
+    const payload = await request<{ customer: ShopCustomer }>("/api/shop/auth/me");
+    return payload.customer;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchShopMyCredits(): Promise<{ balance: number; ledger: ShopCreditLedgerEntry[] }> {
+  return request("/api/shop/auth/me/credits");
+}
+
+export async function fetchShopMyOrders(): Promise<ShopOrder[]> {
+  const payload = await request<{ orders: ShopOrder[] }>("/api/shop/auth/me/orders");
+  return payload.orders;
+}
+
+export async function fetchShopCustomersAdmin(): Promise<ShopCustomer[]> {
+  const payload = await request<{ customers: ShopCustomer[] }>("/api/shop-customers");
+  return payload.customers;
+}
+
+export async function fetchShopCustomerAdmin(customerId: string): Promise<{
+  customer: ShopCustomer;
+  ledger: ShopCreditLedgerEntry[];
+  orders: ShopOrder[];
+}> {
+  return request(`/api/shop-customers/${customerId}`);
+}
+
+export async function updateShopCustomerActive(customerId: string, isActive: boolean): Promise<ShopCustomer> {
+  const payload = await request<{ customer: ShopCustomer }>(`/api/shop-customers/${customerId}/active`, {
+    method: "PATCH",
+    body: JSON.stringify({ is_active: isActive }),
+  });
+  return payload.customer;
+}
+
+export async function adjustShopCustomerCredits(
+  customerId: string,
+  delta: number,
+  note = "",
+): Promise<ShopCustomer> {
+  const payload = await request<{ customer: ShopCustomer }>(`/api/shop-customers/${customerId}/credits`, {
+    method: "POST",
+    body: JSON.stringify({ delta, note }),
+  });
+  return payload.customer;
+}
+
 export async function fetchAdminOrders(status?: string): Promise<ShopOrder[]> {
   const params = new URLSearchParams();
   if (status) params.set("status", status);
@@ -1130,6 +1237,14 @@ export async function updateUserActive(userId: string, isActive: boolean): Promi
   const payload = await request<{ user: User }>(`/api/user/users/${userId}/active`, {
     method: "PATCH",
     body: JSON.stringify({ is_active: isActive }),
+  });
+  return payload.user;
+}
+
+export async function updateUserShopAccess(userId: string, canManageShopFlag: boolean): Promise<User> {
+  const payload = await request<{ user: User }>(`/api/user/users/${userId}/shop-access`, {
+    method: "PATCH",
+    body: JSON.stringify({ can_manage_shop: canManageShopFlag }),
   });
   return payload.user;
 }

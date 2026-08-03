@@ -27,6 +27,7 @@ from ..user_service import (
     update_user_department,
     update_user_password,
     update_user_role,
+    update_user_shop_access,
     users_to_sessions,
 )
 
@@ -55,10 +56,15 @@ class UserCreate(BaseModel):
     password: str = Field(..., min_length=8, max_length=200)
     role: str = Field(..., description="it_master, editor, certificate_manager, or viewer")
     department_id: Optional[str] = None
+    can_manage_shop: bool = False
 
 
 class PasswordUpdate(BaseModel):
     password: str = Field(..., min_length=8, max_length=200)
+
+
+class ShopAccessUpdate(BaseModel):
+    can_manage_shop: bool
 
 
 class InviteCreate(BaseModel):
@@ -121,6 +127,7 @@ def create_user(
         password=payload.password,
         role=payload.role,
         department_id=payload.department_id,
+        can_manage_shop=payload.can_manage_shop,
     )
     return {"user": enrich_user_session(db, user)}
 
@@ -135,6 +142,17 @@ def set_user_role(
     if payload.role not in ALL_ROLES:
         raise HTTPException(status_code=422, detail="validation")
     user = update_user_role(db, user_id, payload.role)
+    return {"user": enrich_user_session(db, user)}
+
+
+@router.patch("/users/{user_id}/shop-access")
+def set_user_shop_access(
+    user_id: str,
+    payload: ShopAccessUpdate,
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(require_it_master),
+) -> dict:
+    user = update_user_shop_access(db, user_id, payload.can_manage_shop)
     return {"user": enrich_user_session(db, user)}
 
 

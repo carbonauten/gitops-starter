@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from ..audit_service import log_audit
 from ..database import Product, get_db
-from ..dependencies import get_current_user, require_editor
+from ..dependencies import require_shop_access, require_shop_editor
 from ..product_service import (
     list_products,
     to_admin_dict,
@@ -31,7 +31,7 @@ def admin_list_products(
     q: Optional[str] = Query(default=None),
     published: Optional[bool] = Query(default=None),
     db: Session = Depends(get_db),
-    _user: dict = Depends(get_current_user),
+    _user: dict = Depends(require_shop_access),
 ) -> dict:
     products = list_products(db)
     if published is True:
@@ -54,7 +54,7 @@ def admin_list_products(
 def create_product(
     payload: ProductCreate,
     db: Session = Depends(get_db),
-    user: dict = Depends(require_editor),
+    user: dict = Depends(require_shop_editor),
 ) -> dict:
     validate_image_asset(db, payload.image_file_asset_id)
     slug = unique_slug(db, payload.slug or payload.name)
@@ -93,7 +93,7 @@ def create_product(
 def get_product(
     product_id: str,
     db: Session = Depends(get_db),
-    _user: dict = Depends(get_current_user),
+    _user: dict = Depends(require_shop_access),
 ) -> dict:
     product = _get_or_404(db, product_id)
     return {"product": ProductResponse(**to_admin_dict(product, db))}
@@ -104,7 +104,7 @@ def update_product(
     product_id: str,
     payload: ProductUpdate,
     db: Session = Depends(get_db),
-    user: dict = Depends(require_editor),
+    user: dict = Depends(require_shop_editor),
 ) -> dict:
     product = _get_or_404(db, product_id)
     data = payload.model_dump(exclude_unset=True)
@@ -152,7 +152,7 @@ def update_product(
 def delete_product(
     product_id: str,
     db: Session = Depends(get_db),
-    user: dict = Depends(require_editor),
+    user: dict = Depends(require_shop_editor),
 ):
     product = _get_or_404(db, product_id)
     log_audit(

@@ -12,10 +12,15 @@ from .config import Settings, get_settings
 from .i18n import normalize_language, translate
 
 SESSION_COOKIE = "content_hub_session"
+SHOP_SESSION_COOKIE = "fuckco2_shop_session"
 
 
 def _serializer(settings: Settings) -> URLSafeSerializer:
     return URLSafeSerializer(settings.session_secret, salt="content-hub-session")
+
+
+def _shop_serializer(settings: Settings) -> URLSafeSerializer:
+    return URLSafeSerializer(settings.session_secret, salt="fuckco2-shop-session")
 
 
 def get_session(request: Request) -> dict[str, Any] | None:
@@ -46,6 +51,36 @@ def set_session(response: Response, data: dict[str, Any]) -> None:
 
 def clear_session(response: Response) -> None:
     response.delete_cookie(SESSION_COOKIE)
+
+
+def get_shop_session(request: Request) -> dict[str, Any] | None:
+    token = request.cookies.get(SHOP_SESSION_COOKIE)
+    if not token:
+        return None
+    try:
+        data = _shop_serializer(get_settings()).loads(token)
+    except BadSignature:
+        return None
+    if not isinstance(data, dict):
+        return None
+    return data
+
+
+def set_shop_session(response: Response, data: dict[str, Any]) -> None:
+    settings = get_settings()
+    token = _shop_serializer(settings).dumps(data)
+    response.set_cookie(
+        SHOP_SESSION_COOKIE,
+        token,
+        httponly=True,
+        secure=settings.cookie_secure,
+        samesite="lax",
+        max_age=settings.session_max_age,
+    )
+
+
+def clear_shop_session(response: Response) -> None:
+    response.delete_cookie(SHOP_SESSION_COOKIE)
 
 
 def require_user(request: Request) -> dict[str, Any]:

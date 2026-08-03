@@ -52,12 +52,14 @@ def _seed_password_user(email: str = TEST_EMAIL, role: str = "editor") -> None:
                 role=role,
                 password_hash=hash_password(TEST_PASSWORD),
                 is_active=True,
+                can_manage_shop=True,
             )
             db.add(user)
         else:
             user.password_hash = hash_password(TEST_PASSWORD)
             user.role = role
             user.is_active = True
+            user.can_manage_shop = True
         db.commit()
     finally:
         db.close()

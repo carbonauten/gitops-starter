@@ -16,6 +16,7 @@ import {
   updateUserDepartment,
   updateUserPassword,
   updateUserRole,
+  updateUserShopAccess,
   type Department,
   type User,
   type UserInvite,
@@ -96,6 +97,18 @@ export function UsersAdminPage() {
     setBusyId(user.db_id);
     try {
       await updateUserActive(user.db_id, isActive);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleShopAccessChange(user: User, canManageShopFlag: boolean) {
+    setBusyId(user.db_id);
+    try {
+      await updateUserShopAccess(user.db_id, canManageShopFlag);
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
@@ -403,6 +416,7 @@ export function UsersAdminPage() {
                 <th>{t("users.columns.email")}</th>
                 <th>{t("users.columns.department")}</th>
                 <th>{t("users.columns.role")}</th>
+                <th>{t("users.columns.shopAccess")}</th>
                 <th>{t("users.columns.platformAccess")}</th>
                 <th>{t("users.columns.lastLogin")}</th>
                 <th>{t("departments.columns.actions")}</th>
@@ -449,6 +463,21 @@ export function UsersAdminPage() {
                           </option>
                         ))}
                       </select>
+                    </td>
+                    <td>
+                      <label className="access-toggle">
+                        <input
+                          type="checkbox"
+                          checked={locked || Boolean(user.can_manage_shop)}
+                          disabled={locked || isBusy}
+                          onChange={(event) => void handleShopAccessChange(user, event.target.checked)}
+                        />
+                        <span>
+                          {locked || user.can_manage_shop
+                            ? t("users.shopAccess.on")
+                            : t("users.shopAccess.off")}
+                        </span>
+                      </label>
                     </td>
                     <td>
                       <label className="access-toggle">

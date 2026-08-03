@@ -29,3 +29,10 @@ def can_approve_content(role: str) -> bool:
 
 def can_approve_certificate_renewal(role: str) -> bool:
     return role in CERT_APPROVAL_ROLES
+
+
+def can_manage_shop(role: str, flag: bool | None = None) -> bool:
+    """IT masters always; others need the per-user shop access flag."""
+    if role == ROLE_IT_MASTER:
+        return True
+    return bool(flag)

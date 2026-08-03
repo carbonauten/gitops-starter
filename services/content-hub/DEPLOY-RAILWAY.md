@@ -396,6 +396,12 @@ Der Shop läuft auf derselben Railway-App wie `app.carbonauten.com`.
 | `SHOP_FREE_SHIPPING_FROM_CENTS` | Gratisversand ab Betrag |
 | `SHOP_BANK_IBAN` / `SHOP_BANK_BIC` / `SHOP_BANK_NAME` / `SHOP_BANK_HOLDER` | Rechnungskauf |
 | `SHOP_IMPRESSUM` / `SHOP_PRIVACY` / `SHOP_TERMS` | Rechtstexte (Plaintext) |
+| `SHOP_CO2_CREDITS_PER_EURO` | CO₂ Credits je vollen Euro Bestellwert (Default `1`) |
+| `SHOP_REQUIRE_ACCOUNT_CHECKOUT` | `true` = Checkout nur mit Kundenkonto |
+
+**Shop-Kunden:** Registrierung unter `/shop/login` bzw. Domain-Root. Credits werden bei Status `paid`/`fulfilled` gutgeschrieben.
+
+**Mitarbeiter:** In der Mitarbeiterverwaltung Spalte **Shop-Produkte** (ein/aus) steuert Sichtbarkeit von Shop-Produkte, Bestellungen und Shop-Kunden.
 
 **Stripe Webhook:** `https://fuckco2.shop/api/shop/stripe/webhook` Event `checkout.session.completed`
 

@@ -19,7 +19,8 @@
     "adminSection": "Administration",
     "users": "Employee management",
     "openMenu": "Open menu",
-    "closeMenu": "Close menu"
+    "closeMenu": "Close menu",
+    "shopCustomers": "Shop customers"
   },
   "auth": {
     "signIn": "Sign in",
@@ -395,7 +396,8 @@
       "department": "Department",
       "role": "Role",
       "platformAccess": "Platform access",
-      "lastLogin": "Last login"
+      "lastLogin": "Last login",
+      "shopAccess": "Shop products"
     },
     "tabs": {
       "employees": "Employees",
@@ -444,6 +446,10 @@
       "revoke": "Revoke",
       "confirmRevoke": "Revoke invite for {{email}}?",
       "empty": "No pending invites."
+    },
+    "shopAccess": {
+      "on": "Shop visible",
+      "off": "Shop hidden"
     }
   },
   "invite": {
@@ -609,7 +615,23 @@
       "paid": "Paid",
       "fulfilled": "Shipped",
       "cancelled": "Cancelled"
-    }
+    },
+    "login": "Sign in",
+    "register": "Register",
+    "account": "My account",
+    "accountSubtitle": "With an account you earn CO₂ reward credits on every paid order.",
+    "noAccount": "No account yet?",
+    "hasAccount": "Already registered?",
+    "loginRequired": "Please sign in.",
+    "loginRequiredCheckout": "A customer account is required for checkout.",
+    "creditsHintGuest": "Guest checkout earns no credits. For CO₂ rewards:",
+    "creditsHintMember": "Estimated +{{credits}} CO₂ credits (current {{balance}}).",
+    "co2Balance": "CO₂ reward credits",
+    "myOrders": "My orders",
+    "noOrders": "No orders yet.",
+    "creditHistory": "Credit history",
+    "noCreditsYet": "No credits earned yet.",
+    "creditsEarned": "You earned +{{credits}} CO₂ reward credits."
   },
   "orders": {
     "title": "Shop orders",
@@ -674,5 +696,26 @@
       "file_asset_id": "File",
       "notes": "Notes"
     }
+  },
+  "shopCustomers": {
+    "title": "Shop customers",
+    "subtitle": "Registered customers and CO₂ reward credits from fuckco2.shop.",
+    "empty": "No shop customers yet.",
+    "columns": {
+      "name": "Name",
+      "email": "Email",
+      "credits": "CO₂ credits",
+      "status": "Status",
+      "lastLogin": "Last login"
+    },
+    "disable": "Disable",
+    "enable": "Enable",
+    "creditsUnit": "CO₂ credits",
+    "creditDelta": "Credit change (+/-)",
+    "creditNote": "Note",
+    "adjustCredits": "Adjust credits",
+    "ledger": "Credit history",
+    "ledgerEmpty": "No credit entries yet.",
+    "orders": "Orders"
   }
 }

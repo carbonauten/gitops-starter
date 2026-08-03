@@ -19,7 +19,8 @@
     "adminSection": "管理",
     "users": "员工管理",
     "openMenu": "打开菜单",
-    "closeMenu": "关闭菜单"
+    "closeMenu": "关闭菜单",
+    "shopCustomers": "商店客户"
   },
   "auth": {
     "signIn": "登录",
@@ -292,7 +293,8 @@
       "department": "部门",
       "role": "角色",
       "platformAccess": "平台访问",
-      "lastLogin": "上次登录"
+      "lastLogin": "上次登录",
+      "shopAccess": "商店产品"
     },
     "tabs": {
       "employees": "员工",
@@ -341,6 +343,10 @@
       "revoke": "撤销",
       "confirmRevoke": "确定撤销对 {{email}} 的邀请？",
       "empty": "没有待处理的邀请。"
+    },
+    "shopAccess": {
+      "on": "显示商店",
+      "off": "隐藏商店"
     }
   },
   "invite": {
@@ -609,7 +615,23 @@
       "paid": "已付款",
       "fulfilled": "已发货",
       "cancelled": "已取消"
-    }
+    },
+    "login": "登录",
+    "register": "注册",
+    "account": "我的账户",
+    "accountSubtitle": "注册后每笔已支付订单可获得 CO₂ 奖励积分。",
+    "noAccount": "还没有账户？",
+    "hasAccount": "已有账户？",
+    "loginRequired": "请先登录。",
+    "loginRequiredCheckout": "结账需要客户账户。",
+    "creditsHintGuest": "访客结账不获得积分。如需 CO₂ 奖励：",
+    "creditsHintMember": "预计 +{{credits}} CO₂ 积分（当前 {{balance}}）。",
+    "co2Balance": "CO₂ 奖励积分",
+    "myOrders": "我的订单",
+    "noOrders": "暂无订单。",
+    "creditHistory": "积分记录",
+    "noCreditsYet": "尚未获得积分。",
+    "creditsEarned": "您获得了 +{{credits}} CO₂ 奖励积分。"
   },
   "orders": {
     "title": "商店订单",
@@ -674,5 +696,26 @@
       "file_asset_id": "文件",
       "notes": "备注"
     }
+  },
+  "shopCustomers": {
+    "title": "商店客户",
+    "subtitle": "fuckco2.shop 的注册客户与 CO₂ 奖励积分。",
+    "empty": "暂无商店客户。",
+    "columns": {
+      "name": "姓名",
+      "email": "邮箱",
+      "credits": "CO₂ 积分",
+      "status": "状态",
+      "lastLogin": "上次登录"
+    },
+    "disable": "停用",
+    "enable": "启用",
+    "creditsUnit": "CO₂ 积分",
+    "creditDelta": "积分调整 (+/-)",
+    "creditNote": "备注",
+    "adjustCredits": "调整积分",
+    "ledger": "积分记录",
+    "ledgerEmpty": "暂无积分记录。",
+    "orders": "订单"
   }
 }

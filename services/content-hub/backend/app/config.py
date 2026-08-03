@@ -89,6 +89,9 @@ class Settings(BaseSettings):
     shop_bank_bic: str = ""
     shop_bank_name: str = ""
     shop_bank_holder: str = ""
+    # CO2 Reward Credits: credits awarded per full euro of paid order total
+    shop_co2_credits_per_euro: int = 1
+    shop_require_account_checkout: bool = False
 
     database_url: str = "sqlite:///./data/content_hub.db"
     upload_dir: str = "./data/uploads"

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import { canApproveCertificates, canApproveContent, canEditContent, canManageUsers, type User } from "../api/client";
+import { canApproveCertificates, canApproveContent, canEditContent, canManageShop, canManageUsers } from "../api/client";
 import { useAuth } from "./useAuth";
 
 export function usePermissions() {
@@ -11,6 +11,7 @@ export function usePermissions() {
       user,
       canEdit: user ? canEditContent(user.role) : false,
       canManageUsers: user ? canManageUsers(user.role) : false,
+      canManageShop: canManageShop(user),
       canApprove: user ? canApproveContent(user.role) : false,
       canApproveCertificates: user ? canApproveCertificates(user.role) : false,
       isViewer: user?.role === "viewer",

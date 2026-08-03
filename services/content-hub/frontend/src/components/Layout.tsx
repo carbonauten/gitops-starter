@@ -51,7 +51,7 @@ export function TopBar({ onMenuToggle }: { onMenuToggle: () => void }) {
 
 export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
   const { t } = useTranslation();
-  const { canManageUsers, canApprove, canApproveCertificates } = usePermissions();
+  const { canManageUsers, canManageShop, canApprove, canApproveCertificates } = usePermissions();
 
   const items = [
     { to: "/search", label: t("nav.search"), icon: "⌕" },
@@ -59,12 +59,21 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
     { to: "/articles", label: t("nav.articles"), icon: "✎" },
     { to: "/files", label: t("nav.files"), icon: "▣" },
     { to: "/certificates", label: t("nav.certificates"), icon: "◎" },
-    { to: "/products", label: t("nav.products"), icon: "◈" },
-    { to: "/orders", label: t("nav.orders"), icon: "☰" },
+  ];
+
+  if (canManageShop) {
+    items.push(
+      { to: "/products", label: t("nav.products"), icon: "◈" },
+      { to: "/orders", label: t("nav.orders"), icon: "☰" },
+      { to: "/shop-customers", label: t("nav.shopCustomers"), icon: "☺" },
+    );
+  }
+
+  items.push(
     { to: "/publish", label: t("nav.publish"), end: true, icon: "↗" },
     { to: "/calendar", label: t("nav.calendar"), icon: "▦" },
     { to: "/analytics", label: t("nav.analytics"), icon: "▥" },
-  ];
+  );
 
   if (canApprove || canApproveCertificates) {
     items.push({ to: "/workflow", label: t("nav.workflow"), icon: "✓" });

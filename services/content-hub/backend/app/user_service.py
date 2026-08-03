@@ -11,7 +11,7 @@ from .config import Settings, get_settings
 from .database import Department, UserAccount
 from .i18n import normalize_language
 from .password_service import hash_password, verify_password
-from .roles import ALL_ROLES, ROLE_EDITOR, ROLE_IT_MASTER
+from .roles import ALL_ROLES, ROLE_EDITOR, ROLE_IT_MASTER, can_manage_shop as role_can_manage_shop
 
 
 def sync_master_role_from_env(db: Session, user: UserAccount) -> UserAccount:
@@ -34,6 +34,7 @@ def resolve_role_for_email(email: str, settings: Settings | None = None) -> str:
 
 
 def user_to_session(user: UserAccount, department: Department | None = None) -> dict:
+    shop_access = role_can_manage_shop(user.role, getattr(user, "can_manage_shop", False))
     return {
         "id": user.entra_id,
         "db_id": user.id,
@@ -44,6 +45,7 @@ def user_to_session(user: UserAccount, department: Department | None = None) -> 
         "department_name": department.name if department else None,
         "language": user.language,
         "is_active": user.is_active,
+        "can_manage_shop": shop_access,
         "last_login_at": user.last_login_at.isoformat() if user.last_login_at else None,
     }
 
@@ -150,6 +152,7 @@ def ensure_initial_admin(db: Session) -> None:
             password_hash=password_hash,
             language=settings.default_language,
             is_active=True,
+            can_manage_shop=True,
             last_login_at=datetime.now(timezone.utc),
         )
         db.add(user)
@@ -158,6 +161,8 @@ def ensure_initial_admin(db: Session) -> None:
         user.name = display_name or user.name
         user.is_active = True
         sync_master_role_from_env(db, user)
+        if user.role == ROLE_IT_MASTER:
+            user.can_manage_shop = True
 
     db.commit()
 
@@ -170,6 +175,7 @@ def create_user_account(
     password: str,
     role: str,
     department_id: str | None = None,
+    can_manage_shop: bool = False,
 ) -> UserAccount:
     if role not in ALL_ROLES:
         raise HTTPException(status_code=422, detail="validation")
@@ -186,15 +192,17 @@ def create_user_account(
         if not department or not department.is_active:
             raise HTTPException(status_code=404, detail="not_found")
 
+    resolved_role = role if normalized_email not in get_settings().it_admin_emails_list else ROLE_IT_MASTER
     user = UserAccount(
         entra_id=f"local-{uuid4()}",
         email=normalized_email,
         name=normalized_name,
-        role=role if normalized_email not in get_settings().it_admin_emails_list else ROLE_IT_MASTER,
+        role=resolved_role,
         department_id=department_id,
         password_hash=hash_password(password),
         language=get_settings().default_language,
         is_active=True,
+        can_manage_shop=True if resolved_role == ROLE_IT_MASTER else bool(can_manage_shop),
     )
     db.add(user)
     db.commit()
@@ -231,6 +239,8 @@ def update_user_role(db: Session, user_id: str, role: str) -> UserAccount:
     if role != ROLE_IT_MASTER and user.email.lower() in get_settings().it_admin_emails_list:
         raise HTTPException(status_code=400, detail="it_role_locked")
     user.role = role
+    if role == ROLE_IT_MASTER:
+        user.can_manage_shop = True
     db.commit()
     db.refresh(user)
     return user
@@ -257,6 +267,19 @@ def update_user_department(db: Session, user_id: str, department_id: str | None)
         if not department or not department.is_active:
             raise HTTPException(status_code=404, detail="not_found")
     user.department_id = department_id
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+def update_user_shop_access(db: Session, user_id: str, can_manage_shop_flag: bool) -> UserAccount:
+    user = db.get(UserAccount, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="not_found")
+    if user.role == ROLE_IT_MASTER:
+        user.can_manage_shop = True
+    else:
+        user.can_manage_shop = bool(can_manage_shop_flag)
     db.commit()
     db.refresh(user)
     return user

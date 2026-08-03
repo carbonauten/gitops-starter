@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from .config import Settings, get_settings
 from .database import Product, ShopOrder, ShopOrderItem
 from .email_service import send_plain_email
+from .shop_customer_service import award_co2_credits_for_order
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,7 @@ def order_to_dict(order: ShopOrder, items: list[ShopOrderItem], *, include_token
         "shipping_cents": order.shipping_cents,
         "vat_cents": order.vat_cents,
         "total_cents": order.total_cents,
+        "customer_id": order.customer_id,
         "customer_email": order.customer_email,
         "customer_name": order.customer_name,
         "customer_phone": order.customer_phone,
@@ -84,6 +86,7 @@ def order_to_dict(order: ShopOrder, items: list[ShopOrderItem], *, include_token
         "city": order.city,
         "country": order.country,
         "notes": order.notes,
+        "credits_earned": int(order.credits_earned or 0),
         "paid_at": order.paid_at.isoformat() if order.paid_at else None,
         "fulfilled_at": order.fulfilled_at.isoformat() if order.fulfilled_at else None,
         "created_at": order.created_at.isoformat() if order.created_at else None,
@@ -121,6 +124,7 @@ def create_checkout_order(
     customer: dict[str, Any],
     payment_method: str,
     notes: str = "",
+    customer_id: Optional[str] = None,
     settings: Settings | None = None,
 ) -> tuple[ShopOrder, list[ShopOrderItem], Optional[str]]:
     settings = settings or get_settings()
@@ -130,6 +134,9 @@ def create_checkout_order(
     if payment_method == "stripe" and not settings.shop_stripe_configured:
         # Fall back to invoice when Stripe is not configured yet
         payment_method = "invoice"
+
+    if settings.shop_require_account_checkout and not customer_id:
+        raise HTTPException(status_code=401, detail="login_required")
 
     if not items:
         raise HTTPException(status_code=400, detail="empty_cart")
@@ -187,6 +194,7 @@ def create_checkout_order(
         shipping_cents=shipping,
         vat_cents=vat_total,
         total_cents=total,
+        customer_id=customer_id,
         customer_email=email,
         customer_name=name,
         customer_phone=(customer.get("phone") or "").strip(),
@@ -328,6 +336,7 @@ def retrieve_stripe_session(session_id: str, settings: Settings) -> dict[str, An
 
 def mark_order_paid(db: Session, order: ShopOrder, *, payment_intent: str = "", already_reserved: bool = False) -> ShopOrder:
     if order.status in {"paid", "fulfilled"}:
+        award_co2_credits_for_order(db, order)
         return order
     items = get_order_items(db, order.id)
     if not already_reserved and order.payment_method == "stripe":
@@ -338,6 +347,7 @@ def mark_order_paid(db: Session, order: ShopOrder, *, payment_intent: str = "", 
         order.stripe_payment_intent = payment_intent
     db.commit()
     db.refresh(order)
+    award_co2_credits_for_order(db, order)
     send_order_emails(db, order, items, settings=get_settings())
     return order
 
@@ -439,4 +449,6 @@ def update_order_status(db: Session, order: ShopOrder, status: str) -> ShopOrder
             order.paid_at = order.fulfilled_at
     db.commit()
     db.refresh(order)
+    if status in {"paid", "fulfilled"}:
+        award_co2_credits_for_order(db, order)
     return order

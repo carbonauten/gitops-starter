@@ -20,6 +20,7 @@ from ..shop_order_service import (
     order_to_dict,
 )
 from ..storage import read_upload
+from .shop_auth import get_optional_shop_customer
 
 router = APIRouter(prefix="/api/shop", tags=["shop"])
 
@@ -39,6 +40,8 @@ def shop_config() -> dict:
         "stripe_enabled": settings.shop_stripe_configured,
         "stripe_publishable_key": settings.shop_stripe_publishable_key,
         "invoice_enabled": True,
+        "require_account_checkout": settings.shop_require_account_checkout,
+        "co2_credits_per_euro": settings.shop_co2_credits_per_euro,
         "bank": {
             "iban": settings.shop_bank_iban,
             "bic": settings.shop_bank_bic,
@@ -95,13 +98,23 @@ def public_product_image(slug: str, db: Session = Depends(get_db)):
 
 
 @router.post("/checkout")
-def shop_checkout(payload: ShopCheckoutRequest, db: Session = Depends(get_db)) -> dict:
+def shop_checkout(
+    payload: ShopCheckoutRequest,
+    db: Session = Depends(get_db),
+    shop_customer: dict | None = Depends(get_optional_shop_customer),
+) -> dict:
+    customer_payload = payload.customer.model_dump()
+    if shop_customer:
+        customer_payload["email"] = shop_customer["email"]
+        if not (customer_payload.get("name") or "").strip():
+            customer_payload["name"] = shop_customer["name"]
     order, items, checkout_url = create_checkout_order(
         db,
         items=[item.model_dump() for item in payload.items],
-        customer=payload.customer.model_dump(),
+        customer=customer_payload,
         payment_method=payload.payment_method,
         notes=payload.notes,
+        customer_id=shop_customer["id"] if shop_customer else None,
     )
     return {
         "order": order_to_dict(order, items, include_token=True),

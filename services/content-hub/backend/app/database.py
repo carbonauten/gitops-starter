@@ -97,6 +97,7 @@ class UserAccount(Base):
     password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     language: Mapped[str] = mapped_column(String(10), default="en")
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    can_manage_shop: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -309,6 +310,39 @@ class Product(Base):
     )
 
 
+class ShopCustomer(Base):
+    """Public FuckCo2 shop customer account (separate from platform employees)."""
+
+    __tablename__ = "shop_customers"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    email: Mapped[str] = mapped_column(String(200), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(200))
+    password_hash: Mapped[str] = mapped_column(String(255))
+    language: Mapped[str] = mapped_column(String(10), default="en")
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    co2_credit_balance: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+    last_login_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ShopCreditLedger(Base):
+    __tablename__ = "shop_credit_ledger"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    customer_id: Mapped[str] = mapped_column(String(36), index=True)
+    order_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    delta_credits: Mapped[int] = mapped_column(Integer, default=0)
+    reason: Mapped[str] = mapped_column(String(50), default="order_paid")  # order_paid|adjust|redeem
+    note: Mapped[str] = mapped_column(String(500), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
 class ShopOrder(Base):
     __tablename__ = "shop_orders"
 
@@ -322,6 +356,7 @@ class ShopOrder(Base):
     shipping_cents: Mapped[int] = mapped_column(Integer, default=0)
     vat_cents: Mapped[int] = mapped_column(Integer, default=0)
     total_cents: Mapped[int] = mapped_column(Integer, default=0)
+    customer_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
     customer_email: Mapped[str] = mapped_column(String(200))
     customer_name: Mapped[str] = mapped_column(String(200))
     customer_phone: Mapped[str] = mapped_column(String(50), default="")
@@ -332,6 +367,8 @@ class ShopOrder(Base):
     city: Mapped[str] = mapped_column(String(120), default="")
     country: Mapped[str] = mapped_column(String(2), default="DE")
     notes: Mapped[str] = mapped_column(Text, default="")
+    credits_earned: Mapped[int] = mapped_column(Integer, default=0)
+    credits_awarded_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     stripe_session_id: Mapped[str] = mapped_column(String(200), default="")
     stripe_payment_intent: Mapped[str] = mapped_column(String(200), default="")
     paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -372,6 +409,24 @@ def ensure_schema_updates(engine, is_sqlite: bool) -> None:
         if "password_hash" not in columns:
             with engine.begin() as connection:
                 connection.execute(text("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255)"))
+        if "can_manage_shop" not in columns:
+            try:
+                with engine.begin() as connection:
+                    if is_sqlite:
+                        connection.execute(text("ALTER TABLE users ADD COLUMN can_manage_shop BOOLEAN DEFAULT 0"))
+                    else:
+                        connection.execute(
+                            text("ALTER TABLE users ADD COLUMN can_manage_shop BOOLEAN NOT NULL DEFAULT false")
+                        )
+                    # Preserve access for existing content editors after rollout
+                    connection.execute(
+                        text(
+                            "UPDATE users SET can_manage_shop = true "
+                            "WHERE role IN ('it_master', 'editor', 'certificate_manager')"
+                        )
+                    )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Could not add users.can_manage_shop: %s", exc)
     if inspector.has_table("file_assets"):
         columns = {column["name"] for column in inspector.get_columns("file_assets")}
         if "folder_id" not in columns:
@@ -454,6 +509,24 @@ def ensure_schema_updates(engine, is_sqlite: bool) -> None:
                         connection.execute(text(ddl_sqlite if is_sqlite else ddl_pg))
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("Could not add products.%s: %s", column_name, exc)
+
+    if inspector.has_table("shop_orders"):
+        columns = {column["name"] for column in inspector.get_columns("shop_orders")}
+        for column_name, ddl_sqlite, ddl_pg in (
+            ("customer_id", "ALTER TABLE shop_orders ADD COLUMN customer_id VARCHAR(36)", "ALTER TABLE shop_orders ADD COLUMN customer_id VARCHAR(36)"),
+            ("credits_earned", "ALTER TABLE shop_orders ADD COLUMN credits_earned INTEGER DEFAULT 0", "ALTER TABLE shop_orders ADD COLUMN credits_earned INTEGER NOT NULL DEFAULT 0"),
+            (
+                "credits_awarded_at",
+                "ALTER TABLE shop_orders ADD COLUMN credits_awarded_at DATETIME",
+                "ALTER TABLE shop_orders ADD COLUMN credits_awarded_at TIMESTAMP WITH TIME ZONE",
+            ),
+        ):
+            if column_name not in columns:
+                try:
+                    with engine.begin() as connection:
+                        connection.execute(text(ddl_sqlite if is_sqlite else ddl_pg))
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Could not add shop_orders.%s: %s", column_name, exc)
 
 
 DEFAULT_DEPARTMENTS: tuple[tuple[str, str, int], ...] = (
