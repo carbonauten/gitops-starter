@@ -108,6 +108,9 @@ class ProductCreate(BaseModel):
     is_published: bool = False
     sort_order: int = 0
     image_file_asset_id: Optional[str] = None
+    stock_qty: int = Field(default=0, ge=0)
+    track_inventory: bool = False
+    vat_rate_bps: int = Field(default=1900, ge=0, le=10000)
 
 
 class ProductUpdate(BaseModel):
@@ -121,6 +124,9 @@ class ProductUpdate(BaseModel):
     is_published: Optional[bool] = None
     sort_order: Optional[int] = None
     image_file_asset_id: Optional[str] = None
+    stock_qty: Optional[int] = Field(default=None, ge=0)
+    track_inventory: Optional[bool] = None
+    vat_rate_bps: Optional[int] = Field(default=None, ge=0, le=10000)
 
 
 class ProductResponse(BaseModel):
@@ -137,6 +143,9 @@ class ProductResponse(BaseModel):
     image_file_asset_id: Optional[str] = None
     image_name: Optional[str] = None
     image_url: Optional[str] = None
+    stock_qty: int = 0
+    track_inventory: bool = False
+    vat_rate_bps: int = 1900
     created_by_id: str
     created_by_name: str
     created_at: datetime
@@ -154,6 +163,34 @@ class ShopProductPublic(BaseModel):
     sku: str
     image_url: Optional[str] = None
     sort_order: int
+    vat_rate_bps: int = 1900
+    track_inventory: bool = False
+    stock_available: Optional[int] = None
+    in_stock: bool = True
+
+
+class ShopCheckoutItem(BaseModel):
+    product_id: str
+    quantity: int = Field(ge=1, le=999)
+
+
+class ShopCheckoutCustomer(BaseModel):
+    email: str = Field(min_length=3, max_length=200)
+    name: str = Field(min_length=1, max_length=200)
+    phone: str = Field(default="", max_length=50)
+    company: str = Field(default="", max_length=200)
+    address_line1: str = Field(min_length=1, max_length=300)
+    address_line2: str = Field(default="", max_length=300)
+    postal_code: str = Field(min_length=1, max_length=30)
+    city: str = Field(min_length=1, max_length=120)
+    country: str = Field(default="DE", min_length=2, max_length=2)
+
+
+class ShopCheckoutRequest(BaseModel):
+    items: list[ShopCheckoutItem]
+    customer: ShopCheckoutCustomer
+    payment_method: Literal["stripe", "invoice"] = "stripe"
+    notes: str = ""
 
 
 class CertificateUpdate(BaseModel):

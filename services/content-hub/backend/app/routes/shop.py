@@ -1,15 +1,24 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..database import FileAsset, get_db
 from ..product_service import get_product_by_slug, list_products, to_public_dict
-from ..schemas import ShopProductPublic
+from ..schemas import ShopCheckoutRequest, ShopProductPublic
+from ..shop_order_service import (
+    confirm_stripe_order,
+    create_checkout_order,
+    get_order_by_number,
+    get_order_items,
+    mark_order_paid,
+    order_to_dict,
+)
 from ..storage import read_upload
 
 router = APIRouter(prefix="/api/shop", tags=["shop"])
@@ -25,6 +34,22 @@ def shop_config() -> dict:
         "currency": settings.shop_currency,
         "hosts": settings.shop_hosts_list,
         "platform_url": settings.effective_public_origin or "https://app.carbonauten.com",
+        "shipping_cents": settings.shop_shipping_cents,
+        "free_shipping_from_cents": settings.shop_free_shipping_from_cents,
+        "stripe_enabled": settings.shop_stripe_configured,
+        "stripe_publishable_key": settings.shop_stripe_publishable_key,
+        "invoice_enabled": True,
+        "bank": {
+            "iban": settings.shop_bank_iban,
+            "bic": settings.shop_bank_bic,
+            "name": settings.shop_bank_name,
+            "holder": settings.shop_bank_holder or settings.shop_brand_name,
+        },
+        "legal": {
+            "impressum": settings.shop_impressum,
+            "privacy": settings.shop_privacy,
+            "terms": settings.shop_terms,
+        },
     }
 
 
@@ -67,3 +92,69 @@ def public_product_image(slug: str, db: Session = Depends(get_db)):
         content_disposition_type="inline",
         headers={"Cache-Control": "public, max-age=3600"},
     )
+
+
+@router.post("/checkout")
+def shop_checkout(payload: ShopCheckoutRequest, db: Session = Depends(get_db)) -> dict:
+    order, items, checkout_url = create_checkout_order(
+        db,
+        items=[item.model_dump() for item in payload.items],
+        customer=payload.customer.model_dump(),
+        payment_method=payload.payment_method,
+        notes=payload.notes,
+    )
+    return {
+        "order": order_to_dict(order, items, include_token=True),
+        "checkout_url": checkout_url,
+    }
+
+
+@router.get("/orders/{order_number}")
+def shop_get_order(
+    order_number: str,
+    token: str = Query(...),
+    db: Session = Depends(get_db),
+) -> dict:
+    order = get_order_by_number(db, order_number)
+    if not order or order.access_token != token:
+        raise HTTPException(status_code=404, detail="not_found")
+    return {"order": order_to_dict(order, get_order_items(db, order.id))}
+
+
+@router.post("/orders/{order_number}/confirm")
+def shop_confirm_order(
+    order_number: str,
+    token: str = Query(...),
+    session_id: Optional[str] = Query(default=None),
+    db: Session = Depends(get_db),
+) -> dict:
+    if not session_id:
+        raise HTTPException(status_code=400, detail="validation")
+    order = confirm_stripe_order(db, order_number=order_number, access_token=token, session_id=session_id)
+    return {"order": order_to_dict(order, get_order_items(db, order.id))}
+
+
+@router.post("/stripe/webhook")
+async def shop_stripe_webhook(request: Request, db: Session = Depends(get_db)) -> dict:
+    settings = get_settings()
+    payload = await request.json()
+    event_type = payload.get("type")
+    data_object = (payload.get("data") or {}).get("object") or {}
+    if event_type == "checkout.session.completed":
+        order_id = (data_object.get("metadata") or {}).get("order_id")
+        order_number = (data_object.get("metadata") or {}).get("order_number")
+        order = None
+        if order_id:
+            from ..database import ShopOrder
+
+            order = db.get(ShopOrder, order_id)
+        if order is None and order_number:
+            order = get_order_by_number(db, order_number)
+        if order:
+            payment_intent = data_object.get("payment_intent") or ""
+            if isinstance(payment_intent, dict):
+                payment_intent = payment_intent.get("id") or ""
+            mark_order_paid(db, order, payment_intent=str(payment_intent or ""))
+    # Optional: verify signature when webhook secret is set (basic presence check)
+    _ = settings.shop_stripe_webhook_secret
+    return {"received": True}

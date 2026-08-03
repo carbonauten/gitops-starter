@@ -229,6 +229,9 @@ export type Product = {
   image_file_asset_id: string | null;
   image_name?: string | null;
   image_url?: string | null;
+  stock_qty?: number;
+  track_inventory?: boolean;
+  vat_rate_bps?: number;
   created_by_id: string;
   created_by_name: string;
   created_at: string;
@@ -246,6 +249,10 @@ export type ShopProduct = {
   sku: string;
   image_url?: string | null;
   sort_order: number;
+  vat_rate_bps?: number;
+  track_inventory?: boolean;
+  stock_available?: number | null;
+  in_stock?: boolean;
 };
 
 export type ShopConfig = {
@@ -255,6 +262,49 @@ export type ShopConfig = {
   currency: string;
   hosts: string[];
   platform_url: string;
+  shipping_cents?: number;
+  free_shipping_from_cents?: number;
+  stripe_enabled?: boolean;
+  stripe_publishable_key?: string;
+  invoice_enabled?: boolean;
+  bank?: { iban: string; bic: string; name: string; holder: string };
+  legal?: { impressum: string; privacy: string; terms: string };
+};
+
+export type ShopOrder = {
+  id: string;
+  order_number: string;
+  access_token?: string;
+  status: string;
+  payment_method: string;
+  currency: string;
+  subtotal_cents: number;
+  shipping_cents: number;
+  vat_cents: number;
+  total_cents: number;
+  customer_email: string;
+  customer_name: string;
+  customer_phone?: string;
+  company?: string;
+  address_line1: string;
+  address_line2?: string;
+  postal_code: string;
+  city: string;
+  country: string;
+  notes?: string;
+  paid_at?: string | null;
+  fulfilled_at?: string | null;
+  created_at?: string | null;
+  items: Array<{
+    id: string;
+    product_id: string;
+    product_name: string;
+    product_sku: string;
+    unit_price_cents: number;
+    vat_rate_bps: number;
+    quantity: number;
+    line_total_cents: number;
+  }>;
 };
 
 export type AnalyticsChannelStat = {
@@ -928,6 +978,9 @@ export async function createProduct(data: {
   is_published?: boolean;
   sort_order?: number;
   image_file_asset_id?: string | null;
+  stock_qty?: number;
+  track_inventory?: boolean;
+  vat_rate_bps?: number;
 }): Promise<Product> {
   const payload = await request<{ product: Product }>("/api/products", {
     method: "POST",
@@ -960,6 +1013,65 @@ export async function fetchShopProducts(): Promise<ShopProduct[]> {
 export async function fetchShopProduct(slug: string): Promise<ShopProduct> {
   const payload = await request<{ product: ShopProduct }>(`/api/shop/products/${encodeURIComponent(slug)}`);
   return payload.product;
+}
+
+export async function checkoutShop(data: {
+  items: Array<{ product_id: string; quantity: number }>;
+  customer: {
+    email: string;
+    name: string;
+    phone?: string;
+    company?: string;
+    address_line1: string;
+    address_line2?: string;
+    postal_code: string;
+    city: string;
+    country: string;
+  };
+  payment_method: "stripe" | "invoice";
+  notes?: string;
+}): Promise<{ order: ShopOrder; checkout_url: string | null }> {
+  return request("/api/shop/checkout", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchShopOrder(orderNumber: string, token: string): Promise<ShopOrder> {
+  const params = new URLSearchParams({ token });
+  const payload = await request<{ order: ShopOrder }>(
+    `/api/shop/orders/${encodeURIComponent(orderNumber)}?${params}`,
+  );
+  return payload.order;
+}
+
+export async function confirmShopOrder(
+  orderNumber: string,
+  token: string,
+  sessionId: string,
+): Promise<ShopOrder> {
+  const params = new URLSearchParams({ token, session_id: sessionId });
+  const payload = await request<{ order: ShopOrder }>(
+    `/api/shop/orders/${encodeURIComponent(orderNumber)}/confirm?${params}`,
+    { method: "POST" },
+  );
+  return payload.order;
+}
+
+export async function fetchAdminOrders(status?: string): Promise<ShopOrder[]> {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  const query = params.toString();
+  const payload = await request<{ orders: ShopOrder[] }>(`/api/orders${query ? `?${query}` : ""}`);
+  return payload.orders;
+}
+
+export async function updateAdminOrderStatus(orderId: string, status: string): Promise<ShopOrder> {
+  const payload = await request<{ order: ShopOrder }>(`/api/orders/${orderId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+  return payload.order;
 }
 
 export function formatMoney(cents: number, currency = "EUR", locale = "de-DE"): string {

@@ -296,6 +296,9 @@ class Product(Base):
     is_published: Mapped[bool] = mapped_column(Boolean, default=False)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     image_file_asset_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    stock_qty: Mapped[int] = mapped_column(Integer, default=0)
+    track_inventory: Mapped[bool] = mapped_column(Boolean, default=False)
+    vat_rate_bps: Mapped[int] = mapped_column(Integer, default=1900)  # 19.00%
     created_by_id: Mapped[str] = mapped_column(String(100), default="")
     created_by_name: Mapped[str] = mapped_column(String(200), default="")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -304,6 +307,55 @@ class Product(Base):
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
+
+
+class ShopOrder(Base):
+    __tablename__ = "shop_orders"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    order_number: Mapped[str] = mapped_column(String(40), unique=True, index=True)
+    access_token: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    status: Mapped[str] = mapped_column(String(30), default="pending")  # pending|awaiting_payment|paid|fulfilled|cancelled
+    payment_method: Mapped[str] = mapped_column(String(30), default="stripe")  # stripe|invoice
+    currency: Mapped[str] = mapped_column(String(3), default="EUR")
+    subtotal_cents: Mapped[int] = mapped_column(Integer, default=0)
+    shipping_cents: Mapped[int] = mapped_column(Integer, default=0)
+    vat_cents: Mapped[int] = mapped_column(Integer, default=0)
+    total_cents: Mapped[int] = mapped_column(Integer, default=0)
+    customer_email: Mapped[str] = mapped_column(String(200))
+    customer_name: Mapped[str] = mapped_column(String(200))
+    customer_phone: Mapped[str] = mapped_column(String(50), default="")
+    company: Mapped[str] = mapped_column(String(200), default="")
+    address_line1: Mapped[str] = mapped_column(String(300), default="")
+    address_line2: Mapped[str] = mapped_column(String(300), default="")
+    postal_code: Mapped[str] = mapped_column(String(30), default="")
+    city: Mapped[str] = mapped_column(String(120), default="")
+    country: Mapped[str] = mapped_column(String(2), default="DE")
+    notes: Mapped[str] = mapped_column(Text, default="")
+    stripe_session_id: Mapped[str] = mapped_column(String(200), default="")
+    stripe_payment_intent: Mapped[str] = mapped_column(String(200), default="")
+    paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    fulfilled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class ShopOrderItem(Base):
+    __tablename__ = "shop_order_items"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    order_id: Mapped[str] = mapped_column(String(36), index=True)
+    product_id: Mapped[str] = mapped_column(String(36), index=True)
+    product_name: Mapped[str] = mapped_column(String(500))
+    product_sku: Mapped[str] = mapped_column(String(100), default="")
+    unit_price_cents: Mapped[int] = mapped_column(Integer, default=0)
+    vat_rate_bps: Mapped[int] = mapped_column(Integer, default=1900)
+    quantity: Mapped[int] = mapped_column(Integer, default=1)
+    line_total_cents: Mapped[int] = mapped_column(Integer, default=0)
 
 
 def scheduled_publish_column_type(is_sqlite: bool) -> str:
@@ -388,6 +440,20 @@ def ensure_schema_updates(engine, is_sqlite: bool) -> None:
                         connection.execute(text(ddl_sqlite if is_sqlite else ddl_pg))
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("Could not add certificates.%s: %s", column_name, exc)
+
+    if inspector.has_table("products"):
+        columns = {column["name"] for column in inspector.get_columns("products")}
+        for column_name, ddl_sqlite, ddl_pg in (
+            ("stock_qty", "ALTER TABLE products ADD COLUMN stock_qty INTEGER DEFAULT 0", "ALTER TABLE products ADD COLUMN stock_qty INTEGER NOT NULL DEFAULT 0"),
+            ("track_inventory", "ALTER TABLE products ADD COLUMN track_inventory BOOLEAN DEFAULT 0", "ALTER TABLE products ADD COLUMN track_inventory BOOLEAN NOT NULL DEFAULT false"),
+            ("vat_rate_bps", "ALTER TABLE products ADD COLUMN vat_rate_bps INTEGER DEFAULT 1900", "ALTER TABLE products ADD COLUMN vat_rate_bps INTEGER NOT NULL DEFAULT 1900"),
+        ):
+            if column_name not in columns:
+                try:
+                    with engine.begin() as connection:
+                        connection.execute(text(ddl_sqlite if is_sqlite else ddl_pg))
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Could not add products.%s: %s", column_name, exc)
 
 
 DEFAULT_DEPARTMENTS: tuple[tuple[str, str, int], ...] = (

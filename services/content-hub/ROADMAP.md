@@ -69,7 +69,7 @@ flowchart LR
 | D | 2–4 Tage | ✅ Abgeschlossen | Version Restore für Artikel & Zertifikate |
 | E | 2–4 Tage | ✅ Abgeschlossen | Analytics Dashboard (Publish & Zertifikate) |
 | F | 2–4 Tage | ✅ Abgeschlossen | SharePoint-Zertifikat-Import |
-| G | 3–5 Tage | ✅ Abgeschlossen (MVP) | FuckCo2 Shop + Produktverwaltung |
+| G | 3–5 Tage | ✅ Abgeschlossen (Produktiv) | FuckCo2 Shop + Checkout + Bestellungen |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -499,31 +499,27 @@ flowchart LR
 
 ---
 
-## Sprint G — FuckCo2 Shop ✅ (MVP)
+## Sprint G — FuckCo2 Shop ✅ (Produktiv)
 
-**Ziel:** Öffentlicher Shop auf `fuckco2.shop`; Produkte werden in der Unified Platform verwaltet.
+**Ziel:** Produktiv shoppen auf `fuckco2.shop`; Produkte & Bestellungen in der Unified Platform.
 
 ### Deliverables
 
-- [x] `Product`-Modell (Name, Slug, Preis, Beschreibung, Bild, Veröffentlicht)
-- [x] API `/api/products` (Auth) + öffentliche `/api/shop/*`
-- [x] UI **Shop-Produkte** in der Platform-Navigation
-- [x] Öffentlicher Storefront für Host `fuckco2.shop` (+ Vorschau `/shop` auf der Platform)
-- [x] Produktbild-Upload + öffentlicher Image-Endpoint
-- [x] Anfrage-CTA per E-Mail (Checkout/Payment bewusst später)
+- [x] Produktverwaltung inkl. Lagerbestand, MwSt., Bild, Veröffentlichen
+- [x] Öffentlicher Storefront mit Warenkorb & Checkout
+- [x] Zahlarten: **Stripe** (Karte) und **Rechnung** (IBAN)
+- [x] Bestell-E-Mails an Kunde + Shop-Postfach
+- [x] Admin **Bestellungen** (bezahlt / versendet / storniert)
+- [x] Rechtstexte Impressum / Datenschutz / AGB (Env)
+- [x] DNS/Railway-Doku für `fuckco2.shop`
 - [x] DE / EN / 中文
 
 ### Akzeptanzkriterien
 
-- [x] Redakteur legt Produkt inkl. Bild und Preis in der Platform an
-- [x] Nur `is_published`-Produkte erscheinen im Shop
-- [x] `fuckco2.shop` zeigt denselben Storefront (DNS → Railway)
-
-### DNS / Railway
-
-1. Railway Custom Domain: `fuckco2.shop` (+ optional `www`)
-2. STRATO DNS: CNAME/ALIAS auf Railway-Target
-3. Optional: `SHOP_CONTACT_EMAIL`, `SHOP_BRAND_NAME`
+- [x] Kunde kann Produkte in den Warenkorb legen und bestellen
+- [x] Mit Stripe-Key: Redirect zur Stripe Checkout Session
+- [x] Ohne Stripe: Rechnungskauf mit Bestellnummer + E-Mail
+- [x] Redaktion sieht und bearbeitet Bestellungen in der Platform
 
 ---
 
@@ -534,7 +530,8 @@ flowchart LR
 | Zertifikat-Ketten | Abhängigkeiten zwischen Zertifikaten (Parent/Child) | ~~Hoch~~ ✅ Sprint B |
 | Version Restore | Alte Version wiederherstellen | ~~Mittel~~ ✅ Sprint D |
 | Auto-Import CA | Let's Encrypt / Azure Key Vault Sync | Mittel |
-| Shop Checkout | Zahlung / Warenkorb für fuckco2.shop | Mittel |
+| Shop Checkout | Zahlung / Warenkorb für fuckco2.shop | ~~Mittel~~ ✅ Sprint G |
+| Shop Retouren | Retourenportal / Gutschriften | Niedrig |
 | KI-Assistenz | Zusammenfassung, Übersetzung DE↔EN↔中文 | ~~Mittel~~ ✅ Sprint A |
 | SharePoint | Zertifikate aus SharePoint-Bibliothek importieren | ~~Mittel~~ ✅ Sprint F |
 | Mobile | Responsive Optimierung / PWA | ~~Niedrig~~ Teilweise (UI Sprint) |
@@ -595,6 +592,6 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ## Nächster Schritt
 
-**Sprint H (Vorschlag):** Shop-Checkout/Payment oder Auto-Import CA — siehe Backlog.
+**Sprint H (Vorschlag):** Auto-Import CA oder Shop-Retouren — siehe Backlog.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.

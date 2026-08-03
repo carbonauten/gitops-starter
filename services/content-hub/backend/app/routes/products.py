@@ -69,6 +69,9 @@ def create_product(
         is_published=payload.is_published,
         sort_order=payload.sort_order,
         image_file_asset_id=payload.image_file_asset_id,
+        stock_qty=payload.stock_qty,
+        track_inventory=payload.track_inventory,
+        vat_rate_bps=payload.vat_rate_bps,
         created_by_id=user["id"],
         created_by_name=user["name"],
     )
@@ -126,6 +129,12 @@ def update_product(
         product.is_published = data["is_published"]
     if "sort_order" in data and data["sort_order"] is not None:
         product.sort_order = data["sort_order"]
+    if "stock_qty" in data and data["stock_qty"] is not None:
+        product.stock_qty = data["stock_qty"]
+    if "track_inventory" in data and data["track_inventory"] is not None:
+        product.track_inventory = data["track_inventory"]
+    if "vat_rate_bps" in data and data["vat_rate_bps"] is not None:
+        product.vat_rate_bps = data["vat_rate_bps"]
     db.commit()
     db.refresh(product)
     log_audit(

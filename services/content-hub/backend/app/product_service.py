@@ -11,6 +11,12 @@ from sqlalchemy.orm import Session
 from .database import FileAsset, Product
 
 
+def product_available_qty(product: Product) -> Optional[int]:
+    if not getattr(product, "track_inventory", False):
+        return None
+    return max(0, int(getattr(product, "stock_qty", 0) or 0))
+
+
 def slugify(value: str) -> str:
     normalized = unicodedata.normalize("NFKD", value.strip().lower())
     ascii_text = normalized.encode("ascii", "ignore").decode("ascii")
@@ -65,6 +71,9 @@ def to_admin_dict(product: Product, db: Session) -> dict:
         "image_file_asset_id": product.image_file_asset_id,
         "image_name": image_name(db, product.image_file_asset_id),
         "image_url": product_image_url(product.slug, product.image_file_asset_id),
+        "stock_qty": product.stock_qty,
+        "track_inventory": product.track_inventory,
+        "vat_rate_bps": product.vat_rate_bps,
         "created_by_id": product.created_by_id,
         "created_by_name": product.created_by_name,
         "created_at": product.created_at,
@@ -73,6 +82,7 @@ def to_admin_dict(product: Product, db: Session) -> dict:
 
 
 def to_public_dict(product: Product) -> dict:
+    available = product_available_qty(product)
     return {
         "id": product.id,
         "name": product.name,
@@ -84,6 +94,10 @@ def to_public_dict(product: Product) -> dict:
         "sku": product.sku,
         "image_url": product_image_url(product.slug, product.image_file_asset_id),
         "sort_order": product.sort_order,
+        "vat_rate_bps": product.vat_rate_bps,
+        "track_inventory": product.track_inventory,
+        "stock_available": available,
+        "in_stock": True if available is None else available > 0,
     }
 
 

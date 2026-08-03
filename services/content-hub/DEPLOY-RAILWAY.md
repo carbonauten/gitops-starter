@@ -376,21 +376,34 @@ Oder manuell: Service → **Deployments** → **Redeploy**.
 
 ---
 
-## 11. Shop-Domain fuckco2.shop
+## 11. Shop-Domain fuckco2.shop (produktiv)
 
-Der öffentliche Shop läuft auf derselben Railway-App wie `app.carbonauten.com`.
+Der Shop läuft auf derselben Railway-App wie `app.carbonauten.com`.
 
-1. Railway → Service → **Settings → Networking → Custom Domain** → `fuckco2.shop` (optional `www.fuckco2.shop`)
-2. STRATO DNS: CNAME/ALIAS auf den von Railway angezeigten Target setzen (STRATO-Platzhalterseite verschwindet nach DNS-Propagierung)
-3. Optional Env:
-   - `SHOP_CONTACT_EMAIL` (Anfragen-Button)
-   - `SHOP_BRAND_NAME=FuckCo2`
-   - `SHOP_HOSTS=fuckco2.shop,www.fuckco2.shop`
+### DNS
+1. Railway → **Custom Domain** → `fuckco2.shop` (+ optional `www`)
+2. STRATO DNS: CNAME/ALIAS auf Railway-Target
 
-**Verwaltung:** Platform → **Shop-Produkte** (`/products`)  
-**Vorschau ohne DNS:** `https://app.carbonauten.com/shop`
+### Produktive Env-Variablen
 
-Checkout/Payment ist bewusst noch nicht im MVP (Anfrage per E-Mail).
+| Variable | Zweck |
+|----------|--------|
+| `SHOP_CONTACT_EMAIL` | Bestellbenachrichtigungen |
+| `SHOP_STRIPE_SECRET_KEY` | Stripe Kartenzahlung (`sk_live_…`) |
+| `SHOP_STRIPE_PUBLISHABLE_KEY` | optional, Frontend-Info |
+| `SHOP_STRIPE_WEBHOOK_SECRET` | optional, Webhook |
+| `SHOP_SHIPPING_CENTS` | Versandkosten in Cent (z. B. `590`) |
+| `SHOP_FREE_SHIPPING_FROM_CENTS` | Gratisversand ab Betrag |
+| `SHOP_BANK_IBAN` / `SHOP_BANK_BIC` / `SHOP_BANK_NAME` / `SHOP_BANK_HOLDER` | Rechnungskauf |
+| `SHOP_IMPRESSUM` / `SHOP_PRIVACY` / `SHOP_TERMS` | Rechtstexte (Plaintext) |
+
+**Stripe Webhook:** `https://fuckco2.shop/api/shop/stripe/webhook` Event `checkout.session.completed`
+
+### Betrieb
+- Produkte: Platform → **Shop-Produkte**
+- Bestellungen: Platform → **Bestellungen**
+- Vorschau: `https://app.carbonauten.com/shop`
+- Ohne Stripe-Key fällt Kartenzahlung auf **Rechnung** zurück
 
 ---
 

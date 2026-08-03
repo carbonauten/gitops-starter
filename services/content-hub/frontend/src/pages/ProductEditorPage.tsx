@@ -26,6 +26,9 @@ export function ProductEditorPage() {
   const [sku, setSku] = useState("");
   const [isPublished, setIsPublished] = useState(false);
   const [sortOrder, setSortOrder] = useState(0);
+  const [trackInventory, setTrackInventory] = useState(false);
+  const [stockQty, setStockQty] = useState(0);
+  const [vatRate, setVatRate] = useState("19");
   const [imageFileAssetId, setImageFileAssetId] = useState<string | null>(null);
   const [imageName, setImageName] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -48,6 +51,9 @@ export function ProductEditorPage() {
         setSku(product.sku);
         setIsPublished(product.is_published);
         setSortOrder(product.sort_order);
+        setTrackInventory(Boolean(product.track_inventory));
+        setStockQty(product.stock_qty || 0);
+        setVatRate(String(((product.vat_rate_bps || 1900) / 100).toFixed(0)));
         setImageFileAssetId(product.image_file_asset_id);
         setImageName(product.image_name || null);
         setImageUrl(product.image_url || null);
@@ -100,6 +106,9 @@ export function ProductEditorPage() {
       is_published: isPublished,
       sort_order: sortOrder,
       image_file_asset_id: imageFileAssetId,
+      track_inventory: trackInventory,
+      stock_qty: stockQty,
+      vat_rate_bps: Math.round(Number.parseFloat(vatRate.replace(",", ".")) * 100) || 1900,
     };
     try {
       if (isNew) {
@@ -210,6 +219,32 @@ export function ProductEditorPage() {
           />
           {t("products.fieldPublished")}
         </label>
+
+        <label className="checkbox-row">
+          <input
+            type="checkbox"
+            checked={trackInventory}
+            onChange={(event) => setTrackInventory(event.target.checked)}
+          />
+          {t("products.fieldTrackInventory")}
+        </label>
+
+        <div className="form-grid">
+          <label>
+            {t("products.fieldStock")}
+            <input
+              type="number"
+              min={0}
+              value={stockQty}
+              onChange={(event) => setStockQty(Number(event.target.value) || 0)}
+              disabled={!trackInventory}
+            />
+          </label>
+          <label>
+            {t("products.fieldVat")}
+            <input value={vatRate} onChange={(event) => setVatRate(event.target.value)} />
+          </label>
+        </div>
 
         <label>
           {t("products.fieldImage")}

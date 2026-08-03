@@ -75,6 +75,20 @@ class Settings(BaseSettings):
     shop_tagline: str = "FuckCo2 goes international"
     shop_contact_email: str = ""
     shop_currency: str = "EUR"
+    shop_shipping_cents: int = 0
+    shop_free_shipping_from_cents: int = 0
+    shop_stripe_secret_key: str = ""
+    shop_stripe_webhook_secret: str = ""
+    shop_stripe_publishable_key: str = ""
+    shop_success_path: str = "/order/success"
+    shop_cancel_path: str = "/cart"
+    shop_impressum: str = ""
+    shop_privacy: str = ""
+    shop_terms: str = ""
+    shop_bank_iban: str = ""
+    shop_bank_bic: str = ""
+    shop_bank_name: str = ""
+    shop_bank_holder: str = ""
 
     database_url: str = "sqlite:///./data/content_hub.db"
     upload_dir: str = "./data/uploads"
@@ -211,6 +225,18 @@ class Settings(BaseSettings):
     @property
     def shop_contact(self) -> str:
         return self.shop_contact_email.strip() or self.initial_admin_email.strip() or "hello@carbonauten.com"
+
+    @property
+    def shop_stripe_configured(self) -> bool:
+        return bool(self.shop_stripe_secret_key.strip())
+
+    @property
+    def shop_public_origin(self) -> str:
+        # Prefer first shop host when app_public_url is the platform domain
+        hosts = self.shop_hosts_list
+        if hosts:
+            return f"https://{hosts[0]}"
+        return self.effective_public_origin or "https://fuckco2.shop"
 
     @property
     def sync_configured(self) -> bool:

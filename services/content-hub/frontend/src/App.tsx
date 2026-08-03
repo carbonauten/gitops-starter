@@ -21,6 +21,7 @@ import { PublishCalendarPage } from "./pages/PublishCalendarPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { ProductsPage } from "./pages/ProductsPage";
 import { ProductEditorPage } from "./pages/ProductEditorPage";
+import { OrdersPage } from "./pages/OrdersPage";
 import { ShopApp } from "./pages/ShopApp";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -143,8 +144,15 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/orders"
+        element={
+          <ProtectedRoute>
+            <OrdersPage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="/shop/*" element={<ShopApp />} />
-      <Route path="/shop" element={<ShopApp />} />
       <Route
         path="/users"
         element={
