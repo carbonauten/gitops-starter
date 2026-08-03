@@ -280,6 +280,32 @@ class ContentRevision(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class Product(Base):
+    """Shop product managed in the platform, sold on the public FuckCo2 storefront."""
+
+    __tablename__ = "products"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    name: Mapped[str] = mapped_column(String(500))
+    slug: Mapped[str] = mapped_column(String(200), unique=True, index=True)
+    short_description: Mapped[str] = mapped_column(String(500), default="")
+    description: Mapped[str] = mapped_column(Text, default="")
+    price_cents: Mapped[int] = mapped_column(Integer, default=0)
+    currency: Mapped[str] = mapped_column(String(3), default="EUR")
+    sku: Mapped[str] = mapped_column(String(100), default="")
+    is_published: Mapped[bool] = mapped_column(Boolean, default=False)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    image_file_asset_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    created_by_id: Mapped[str] = mapped_column(String(100), default="")
+    created_by_name: Mapped[str] = mapped_column(String(200), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
 def scheduled_publish_column_type(is_sqlite: bool) -> str:
     return "DATETIME" if is_sqlite else "TIMESTAMP WITH TIME ZONE"
 

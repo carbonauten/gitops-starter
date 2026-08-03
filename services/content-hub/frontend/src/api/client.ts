@@ -211,6 +211,50 @@ export type DashboardStats = {
   expiring_30: number;
   expiring_60: number;
   expiring_90: number;
+  products?: number;
+  products_published?: number;
+};
+
+export type Product = {
+  id: string;
+  name: string;
+  slug: string;
+  short_description: string;
+  description: string;
+  price_cents: number;
+  currency: string;
+  sku: string;
+  is_published: boolean;
+  sort_order: number;
+  image_file_asset_id: string | null;
+  image_name?: string | null;
+  image_url?: string | null;
+  created_by_id: string;
+  created_by_name: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ShopProduct = {
+  id: string;
+  name: string;
+  slug: string;
+  short_description: string;
+  description: string;
+  price_cents: number;
+  currency: string;
+  sku: string;
+  image_url?: string | null;
+  sort_order: number;
+};
+
+export type ShopConfig = {
+  brand_name: string;
+  tagline: string;
+  contact_email: string;
+  currency: string;
+  hosts: string[];
+  platform_url: string;
 };
 
 export type AnalyticsChannelStat = {
@@ -857,6 +901,69 @@ export async function updateCertificate(id: string, data: Partial<Certificate>):
 
 export async function deleteCertificate(id: string): Promise<void> {
   await request<void>(`/api/certificates/${id}`, { method: "DELETE" });
+}
+
+export async function fetchProducts(q?: string, published?: boolean): Promise<Product[]> {
+  const params = new URLSearchParams();
+  if (q) params.set("q", q);
+  if (published !== undefined) params.set("published", String(published));
+  const query = params.toString();
+  const payload = await request<{ products: Product[] }>(`/api/products${query ? `?${query}` : ""}`);
+  return payload.products;
+}
+
+export async function fetchProduct(id: string): Promise<Product> {
+  const payload = await request<{ product: Product }>(`/api/products/${id}`);
+  return payload.product;
+}
+
+export async function createProduct(data: {
+  name: string;
+  slug?: string;
+  short_description?: string;
+  description?: string;
+  price_cents: number;
+  currency?: string;
+  sku?: string;
+  is_published?: boolean;
+  sort_order?: number;
+  image_file_asset_id?: string | null;
+}): Promise<Product> {
+  const payload = await request<{ product: Product }>("/api/products", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return payload.product;
+}
+
+export async function updateProduct(id: string, data: Partial<Product>): Promise<Product> {
+  const payload = await request<{ product: Product }>(`/api/products/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+  return payload.product;
+}
+
+export async function deleteProduct(id: string): Promise<void> {
+  await request<void>(`/api/products/${id}`, { method: "DELETE" });
+}
+
+export async function fetchShopConfig(): Promise<ShopConfig> {
+  return request<ShopConfig>("/api/shop/config");
+}
+
+export async function fetchShopProducts(): Promise<ShopProduct[]> {
+  const payload = await request<{ products: ShopProduct[] }>("/api/shop/products");
+  return payload.products;
+}
+
+export async function fetchShopProduct(slug: string): Promise<ShopProduct> {
+  const payload = await request<{ product: ShopProduct }>(`/api/shop/products/${encodeURIComponent(slug)}`);
+  return payload.product;
+}
+
+export function formatMoney(cents: number, currency = "EUR", locale = "de-DE"): string {
+  return new Intl.NumberFormat(locale, { style: "currency", currency }).format(cents / 100);
 }
 
 export function certificatesExportUrl(): string {

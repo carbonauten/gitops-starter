@@ -69,6 +69,7 @@ flowchart LR
 | D | 2–4 Tage | ✅ Abgeschlossen | Version Restore für Artikel & Zertifikate |
 | E | 2–4 Tage | ✅ Abgeschlossen | Analytics Dashboard (Publish & Zertifikate) |
 | F | 2–4 Tage | ✅ Abgeschlossen | SharePoint-Zertifikat-Import |
+| G | 3–5 Tage | ✅ Abgeschlossen (MVP) | FuckCo2 Shop + Produktverwaltung |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -498,6 +499,34 @@ flowchart LR
 
 ---
 
+## Sprint G — FuckCo2 Shop ✅ (MVP)
+
+**Ziel:** Öffentlicher Shop auf `fuckco2.shop`; Produkte werden in der Unified Platform verwaltet.
+
+### Deliverables
+
+- [x] `Product`-Modell (Name, Slug, Preis, Beschreibung, Bild, Veröffentlicht)
+- [x] API `/api/products` (Auth) + öffentliche `/api/shop/*`
+- [x] UI **Shop-Produkte** in der Platform-Navigation
+- [x] Öffentlicher Storefront für Host `fuckco2.shop` (+ Vorschau `/shop` auf der Platform)
+- [x] Produktbild-Upload + öffentlicher Image-Endpoint
+- [x] Anfrage-CTA per E-Mail (Checkout/Payment bewusst später)
+- [x] DE / EN / 中文
+
+### Akzeptanzkriterien
+
+- [x] Redakteur legt Produkt inkl. Bild und Preis in der Platform an
+- [x] Nur `is_published`-Produkte erscheinen im Shop
+- [x] `fuckco2.shop` zeigt denselben Storefront (DNS → Railway)
+
+### DNS / Railway
+
+1. Railway Custom Domain: `fuckco2.shop` (+ optional `www`)
+2. STRATO DNS: CNAME/ALIAS auf Railway-Target
+3. Optional: `SHOP_CONTACT_EMAIL`, `SHOP_BRAND_NAME`
+
+---
+
 ## Backlog (Sprint 8+)
 
 | Thema | Beschreibung | Priorität |
@@ -505,6 +534,7 @@ flowchart LR
 | Zertifikat-Ketten | Abhängigkeiten zwischen Zertifikaten (Parent/Child) | ~~Hoch~~ ✅ Sprint B |
 | Version Restore | Alte Version wiederherstellen | ~~Mittel~~ ✅ Sprint D |
 | Auto-Import CA | Let's Encrypt / Azure Key Vault Sync | Mittel |
+| Shop Checkout | Zahlung / Warenkorb für fuckco2.shop | Mittel |
 | KI-Assistenz | Zusammenfassung, Übersetzung DE↔EN↔中文 | ~~Mittel~~ ✅ Sprint A |
 | SharePoint | Zertifikate aus SharePoint-Bibliothek importieren | ~~Mittel~~ ✅ Sprint F |
 | Mobile | Responsive Optimierung / PWA | ~~Niedrig~~ Teilweise (UI Sprint) |
@@ -565,6 +595,6 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ## Nächster Schritt
 
-**Sprint G (Vorschlag):** Auto-Import CA (Let's Encrypt / Azure Key Vault) — siehe Backlog.
+**Sprint H (Vorschlag):** Shop-Checkout/Payment oder Auto-Import CA — siehe Backlog.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.

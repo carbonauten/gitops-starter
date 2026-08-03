@@ -70,6 +70,12 @@ class Settings(BaseSettings):
     sharepoint_drive_id: str = ""
     sharepoint_display_name: str = "SharePoint"
 
+    shop_hosts: str = "fuckco2.shop,www.fuckco2.shop"
+    shop_brand_name: str = "FuckCo2"
+    shop_tagline: str = "FuckCo2 goes international"
+    shop_contact_email: str = ""
+    shop_currency: str = "EUR"
+
     database_url: str = "sqlite:///./data/content_hub.db"
     upload_dir: str = "./data/uploads"
     max_upload_bytes: int = 25 * 1024 * 1024
@@ -197,6 +203,14 @@ class Settings(BaseSettings):
             and self.oss_access_key_id.strip()
             and self.oss_access_key_secret.strip()
         )
+
+    @property
+    def shop_hosts_list(self) -> list[str]:
+        return [host.strip().lower() for host in self.shop_hosts.split(",") if host.strip()]
+
+    @property
+    def shop_contact(self) -> str:
+        return self.shop_contact_email.strip() or self.initial_admin_email.strip() or "hello@carbonauten.com"
 
     @property
     def sync_configured(self) -> bool:

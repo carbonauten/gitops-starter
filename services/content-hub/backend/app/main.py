@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from .config import get_settings
 from .database import ensure_upload_dir, init_database
 from .i18n import parse_accept_language, translate
-from .routes import ai, analytics, articles, audit, auth, certificates, dashboard, departments, files, health, integrations, monitor, publish, search, sync, user, versions, workflow
+from .routes import ai, analytics, articles, audit, auth, certificates, dashboard, departments, files, health, integrations, monitor, products, publish, search, shop, sync, user, versions, workflow
 from .static_assets import media_type_for, resolve_asset_path, resolve_root_file
 
 logger = logging.getLogger(__name__)
@@ -127,6 +127,8 @@ def create_app() -> FastAPI:
     app.include_router(articles.router)
     app.include_router(files.router)
     app.include_router(certificates.router)
+    app.include_router(products.router)
+    app.include_router(shop.router)
     app.include_router(search.router)
     app.include_router(ai.router)
     app.include_router(dashboard.router)

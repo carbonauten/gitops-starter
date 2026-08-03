@@ -376,6 +376,24 @@ Oder manuell: Service → **Deployments** → **Redeploy**.
 
 ---
 
+## 11. Shop-Domain fuckco2.shop
+
+Der öffentliche Shop läuft auf derselben Railway-App wie `app.carbonauten.com`.
+
+1. Railway → Service → **Settings → Networking → Custom Domain** → `fuckco2.shop` (optional `www.fuckco2.shop`)
+2. STRATO DNS: CNAME/ALIAS auf den von Railway angezeigten Target setzen (STRATO-Platzhalterseite verschwindet nach DNS-Propagierung)
+3. Optional Env:
+   - `SHOP_CONTACT_EMAIL` (Anfragen-Button)
+   - `SHOP_BRAND_NAME=FuckCo2`
+   - `SHOP_HOSTS=fuckco2.shop,www.fuckco2.shop`
+
+**Verwaltung:** Platform → **Shop-Produkte** (`/products`)  
+**Vorschau ohne DNS:** `https://app.carbonauten.com/shop`
+
+Checkout/Payment ist bewusst noch nicht im MVP (Anfrage per E-Mail).
+
+---
+
 ## Troubleshooting
 
 | Problem | Lösung |

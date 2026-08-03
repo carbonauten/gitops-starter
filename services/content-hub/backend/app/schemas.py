@@ -97,6 +97,65 @@ class SharePointFileImport(BaseModel):
     folder: str = Field(default="certificates", max_length=200)
 
 
+class ProductCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=500)
+    slug: Optional[str] = Field(default=None, max_length=200)
+    short_description: str = Field(default="", max_length=500)
+    description: str = ""
+    price_cents: int = Field(default=0, ge=0)
+    currency: str = Field(default="EUR", min_length=3, max_length=3)
+    sku: str = Field(default="", max_length=100)
+    is_published: bool = False
+    sort_order: int = 0
+    image_file_asset_id: Optional[str] = None
+
+
+class ProductUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1, max_length=500)
+    slug: Optional[str] = Field(default=None, max_length=200)
+    short_description: Optional[str] = Field(default=None, max_length=500)
+    description: Optional[str] = None
+    price_cents: Optional[int] = Field(default=None, ge=0)
+    currency: Optional[str] = Field(default=None, min_length=3, max_length=3)
+    sku: Optional[str] = Field(default=None, max_length=100)
+    is_published: Optional[bool] = None
+    sort_order: Optional[int] = None
+    image_file_asset_id: Optional[str] = None
+
+
+class ProductResponse(BaseModel):
+    id: str
+    name: str
+    slug: str
+    short_description: str
+    description: str
+    price_cents: int
+    currency: str
+    sku: str
+    is_published: bool
+    sort_order: int
+    image_file_asset_id: Optional[str] = None
+    image_name: Optional[str] = None
+    image_url: Optional[str] = None
+    created_by_id: str
+    created_by_name: str
+    created_at: datetime
+    updated_at: datetime
+
+
+class ShopProductPublic(BaseModel):
+    id: str
+    name: str
+    slug: str
+    short_description: str
+    description: str
+    price_cents: int
+    currency: str
+    sku: str
+    image_url: Optional[str] = None
+    sort_order: int
+
+
 class CertificateUpdate(BaseModel):
     name: Optional[str] = Field(default=None, max_length=500)
     category: Optional[Literal["compliance", "product", "training", "ssl"]] = None
@@ -158,3 +217,5 @@ class DashboardStats(BaseModel):
     expiring_30: int = 0
     expiring_60: int = 0
     expiring_90: int = 0
+    products: int = 0
+    products_published: int = 0

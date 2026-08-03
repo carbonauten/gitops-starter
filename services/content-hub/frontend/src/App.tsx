@@ -19,6 +19,9 @@ import { UsersAdminPage } from "./pages/UsersAdminPage";
 import { SearchPage } from "./pages/SearchPage";
 import { PublishCalendarPage } from "./pages/PublishCalendarPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
+import { ProductsPage } from "./pages/ProductsPage";
+import { ProductEditorPage } from "./pages/ProductEditorPage";
+import { ShopApp } from "./pages/ShopApp";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
@@ -116,6 +119,32 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/products/new"
+        element={
+          <ProtectedRoute>
+            <ProductEditorPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/products/:id/edit"
+        element={
+          <ProtectedRoute>
+            <ProductEditorPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/products"
+        element={
+          <ProtectedRoute>
+            <ProductsPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/shop/*" element={<ShopApp />} />
+      <Route path="/shop" element={<ShopApp />} />
       <Route
         path="/users"
         element={

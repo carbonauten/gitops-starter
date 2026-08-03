@@ -11,6 +11,7 @@ from ..dashboard_service import build_home_dashboard, build_publish_calendar
 from ..database import Article, Certificate, FileAsset, get_db
 from ..dependencies import get_current_user
 from ..outlook_service import fetch_outlook_calendar_events, outlook_status
+from ..product_service import count_products
 from ..schemas import DashboardStats
 
 router = APIRouter(prefix="/api/dashboard", tags=["dashboard"])
@@ -59,6 +60,8 @@ def dashboard_stats(
         expiring_30=_count_expiring(db, 30, today),
         expiring_60=_count_expiring(db, 60, today),
         expiring_90=_count_expiring(db, 90, today),
+        products=count_products(db),
+        products_published=count_products(db, published_only=True),
     )
     return {"stats": stats}
 

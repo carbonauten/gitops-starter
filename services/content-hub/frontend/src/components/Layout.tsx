@@ -59,6 +59,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
     { to: "/articles", label: t("nav.articles"), icon: "✎" },
     { to: "/files", label: t("nav.files"), icon: "▣" },
     { to: "/certificates", label: t("nav.certificates"), icon: "◎" },
+    { to: "/products", label: t("nav.products"), icon: "◈" },
     { to: "/publish", label: t("nav.publish"), end: true, icon: "↗" },
     { to: "/calendar", label: t("nav.calendar"), icon: "▦" },
     { to: "/analytics", label: t("nav.analytics"), icon: "▥" },
