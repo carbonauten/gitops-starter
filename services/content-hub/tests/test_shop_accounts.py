@@ -178,6 +178,8 @@ def test_platform_employee_can_login_to_shop(client):
         assert shop.json()["customer"]["email"] == "nikhil@carbonauten.com"
         assert shop.json()["customer"]["name"] == "Nikhil"
 
+
+def test_platform_master_can_login_to_shop(client, monkeypatch):
     monkeypatch.setenv("INITIAL_ADMIN_EMAIL", "master@carbonauten.com")
     monkeypatch.setenv("INITIAL_ADMIN_PASSWORD", "master-pass-123")
     monkeypatch.setenv("INITIAL_ADMIN_NAME", "Master Admin")
