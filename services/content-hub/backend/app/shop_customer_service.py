@@ -103,47 +103,47 @@ def ensure_initial_shop_admin(db: Session) -> None:
     db.commit()
 
 
+def _sync_platform_user_to_shop_customer(db: Session, platform_user, customer: ShopCustomer | None) -> ShopCustomer:
+    settings = get_settings()
+    if not platform_user.password_hash:
+        raise HTTPException(status_code=401, detail="invalid_credentials")
+    if customer is None:
+        customer = ShopCustomer(
+            id=str(uuid4()),
+            email=platform_user.email.strip().lower(),
+            name=platform_user.name,
+            password_hash=platform_user.password_hash,
+            language=platform_user.language or settings.default_language,
+            is_active=True,
+            co2_credit_balance=0,
+        )
+        db.add(customer)
+    else:
+        customer.password_hash = platform_user.password_hash
+        customer.name = platform_user.name or customer.name
+        customer.is_active = True
+    customer.last_login_at = _utc_now()
+    db.commit()
+    db.refresh(customer)
+    return customer
+
+
 def authenticate_customer(db: Session, email: str, password: str) -> ShopCustomer:
     normalized_email = email.strip().lower()
     customer = get_customer_by_email(db, normalized_email)
 
-    # Allow platform IT masters / INITIAL_ADMIN to use the same credentials in the shop.
+    # Any active platform employee can use the same email/password in the shop.
     if customer is None or not verify_password(password, customer.password_hash):
         from .user_service import get_user_by_email
 
         platform_user = get_user_by_email(db, normalized_email)
-        settings = get_settings()
-        is_master = bool(
+        if (
             platform_user
             and platform_user.is_active
             and platform_user.password_hash
-            and (
-                platform_user.role == "it_master"
-                or normalized_email in settings.it_admin_emails_list
-                or normalized_email == settings.initial_admin_email.strip().lower()
-            )
             and verify_password(password, platform_user.password_hash)
-        )
-        if is_master and platform_user is not None:
-            if customer is None:
-                customer = ShopCustomer(
-                    id=str(uuid4()),
-                    email=normalized_email,
-                    name=platform_user.name,
-                    password_hash=platform_user.password_hash,
-                    language=platform_user.language or settings.default_language,
-                    is_active=True,
-                    co2_credit_balance=0,
-                )
-                db.add(customer)
-            else:
-                customer.password_hash = platform_user.password_hash
-                customer.name = platform_user.name or customer.name
-                customer.is_active = True
-            customer.last_login_at = _utc_now()
-            db.commit()
-            db.refresh(customer)
-            return customer
+        ):
+            return _sync_platform_user_to_shop_customer(db, platform_user, customer)
 
     if not customer or not customer.password_hash:
         raise HTTPException(status_code=401, detail="invalid_credentials")

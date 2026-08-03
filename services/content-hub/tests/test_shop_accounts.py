@@ -141,7 +141,43 @@ def test_employee_shop_access_toggle(it_auth_client):
     assert enabled.json()["user"]["can_manage_shop"] is True
 
 
-def test_platform_master_can_login_to_shop(client, monkeypatch):
+def test_platform_employee_can_login_to_shop(client):
+    from app.database import UserAccount, _SessionLocal
+    from app.password_service import hash_password
+    from sqlalchemy import select
+
+    with client:
+        client.get("/api/health")
+        db = _SessionLocal()
+        try:
+            user = db.scalar(select(UserAccount).where(UserAccount.email == "nikhil@carbonauten.com"))
+            if user is None:
+                user = UserAccount(
+                    entra_id="local-nikhil",
+                    email="nikhil@carbonauten.com",
+                    name="Nikhil",
+                    role="editor",
+                    password_hash=hash_password("nikhil-pass-123"),
+                    is_active=True,
+                    can_manage_shop=True,
+                )
+                db.add(user)
+            else:
+                user.password_hash = hash_password("nikhil-pass-123")
+                user.role = "editor"
+                user.is_active = True
+            db.commit()
+        finally:
+            db.close()
+
+        shop = client.post(
+            "/api/shop/auth/login",
+            json={"email": "nikhil@carbonauten.com", "password": "nikhil-pass-123"},
+        )
+        assert shop.status_code == 200
+        assert shop.json()["customer"]["email"] == "nikhil@carbonauten.com"
+        assert shop.json()["customer"]["name"] == "Nikhil"
+
     monkeypatch.setenv("INITIAL_ADMIN_EMAIL", "master@carbonauten.com")
     monkeypatch.setenv("INITIAL_ADMIN_PASSWORD", "master-pass-123")
     monkeypatch.setenv("INITIAL_ADMIN_NAME", "Master Admin")

@@ -402,6 +402,8 @@ Der Shop läuft auf derselben Railway-App wie `app.carbonauten.com`.
 
 **Master-Konto:** Dein Platform-IT-Master (`INITIAL_ADMIN_EMAIL` + Passwort) gilt auch für den Shop-Login unter `https://www.fuckco2.shop/login`.
 
+**Mitarbeiter:** Jeder aktive Platform-Mitarbeiter mit Passwort kann sich im Shop mit derselben E-Mail/Passwort anmelden (Konto wird beim ersten Login angelegt).
+
 **Shop-Kunden:** Registrierung unter `/shop/login` bzw. Domain-Root. Credits werden bei Status `paid`/`fulfilled` gutgeschrieben.
 
 **Mitarbeiter:** In der Mitarbeiterverwaltung Spalte **Shop-Produkte** (ein/aus) steuert Sichtbarkeit von Shop-Produkte, Bestellungen und Shop-Kunden.
