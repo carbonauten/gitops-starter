@@ -30,6 +30,7 @@ def shop_config() -> dict:
     settings = get_settings()
     return {
         "brand_name": settings.shop_brand_name,
+        "company_name": settings.shop_company_name,
         "tagline": settings.shop_tagline,
         "contact_email": settings.shop_contact,
         "currency": settings.shop_currency,

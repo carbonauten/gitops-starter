@@ -569,7 +569,7 @@
     "heroSubtitle": "Order climate-positive products — card or invoice.",
     "empty": "Coming soon. Please check back shortly.",
     "contact": "Contact",
-    "footerNote": "Production shop of the Unified Carbonauten Platform",
+    "footerNote": "FuckCo2 is the shop brand of Carbonauten GmbH.",
     "back": "All products",
     "notFound": "Product not found.",
     "noShortDescription": "Product overview coming soon.",
@@ -664,7 +664,9 @@
     },
     "browseProducts": "Browse products",
     "catalogTitle": "Products",
-    "catalogSubtitle": "Straight from Carbonauten production."
+    "catalogSubtitle": "Products from Carbonauten GmbH production.",
+    "companyLine": "A shop by {{company}}",
+    "companyAttribution": "{{company}} — operator of FuckCo2"
   },
   "orders": {
     "title": "Shop orders",

@@ -264,6 +264,7 @@ export type ShopProduct = {
 
 export type ShopConfig = {
   brand_name: string;
+  company_name?: string;
   tagline: string;
   contact_email: string;
   currency: string;

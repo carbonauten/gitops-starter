@@ -569,7 +569,7 @@
     "heroSubtitle": "订购气候友好产品 — 支持银行卡或发票。",
     "empty": "即将上线，请稍后查看。",
     "contact": "联系",
-    "footerNote": "Unified Carbonauten Platform 正式商店",
+    "footerNote": "FuckCo2 是 Carbonauten GmbH 的商店品牌。",
     "back": "全部产品",
     "notFound": "未找到产品。",
     "noShortDescription": "产品简介即将更新。",
@@ -664,7 +664,9 @@
     },
     "browseProducts": "浏览产品",
     "catalogTitle": "产品",
-    "catalogSubtitle": "来自 Carbonauten 生产。"
+    "catalogSubtitle": "来自 Carbonauten GmbH 的产品。",
+    "companyLine": "由 {{company}} 运营的商店",
+    "companyAttribution": "{{company}} — FuckCo2 运营方"
   },
   "orders": {
     "title": "商店订单",

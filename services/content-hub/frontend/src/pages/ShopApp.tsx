@@ -21,8 +21,13 @@ import { EmptyState } from "../components/EmptyState";
 import { LanguageSwitch } from "../components/LanguageSwitch";
 import { LoadingState } from "../components/LoadingState";
 import { clearShopConsentDecision, saveShopConsent, ShopConsentBanner } from "../components/ShopConsentBanner";
+import { ShopLogo } from "../components/ShopLogo";
 import { ShopAuthProvider, useShopAuth } from "../hooks/useShopAuth";
 import { ShopCartProvider, useShopCart } from "../hooks/useShopCart";
+
+function shopCompany(config: ShopConfig | null): string {
+  return config?.company_name?.trim() || "Carbonauten GmbH";
+}
 
 function shopBasePath(): string {
   const host = window.location.hostname.toLowerCase();
@@ -144,11 +149,12 @@ function ShopShell({
   const cart = useShopCart();
   const { customer, logout } = useShopAuth();
   const brand = config?.brand_name || "FuckCo2";
+  const company = shopCompany(config);
   return (
     <div className="shop-shell">
       <header className="shop-topbar">
-        <Link to={base || "/"} className="shop-brand">
-          <span className="shop-brand-mark">{brand}</span>
+        <Link to={base || "/"} className="shop-brand" aria-label={`${brand} — ${company}`}>
+          <ShopLogo brand={brand} company={company} size="sm" showCompany />
         </Link>
         <div className="shop-topbar-actions">
           <LanguageSwitch />
@@ -181,7 +187,8 @@ function ShopShell({
       <main className="shop-main">{children}</main>
       <footer className="shop-footer">
         <div className="shop-footer-inner">
-          <strong className="shop-footer-brand">{brand}</strong>
+          <ShopLogo brand={brand} company={company} size="md" stacked showCompany />
+          <p className="shop-footer-company">{t("shop.companyAttribution", { company })}</p>
           <nav className="shop-footer-links">
             <Link to={`${base}/legal/impressum`}>{t("shop.impressum")}</Link>
             <Link to={`${base}/legal/privacy`}>{t("shop.privacy")}</Link>
@@ -211,6 +218,7 @@ function ShopHome({ config, base }: { config: ShopConfig | null; base: string })
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const brand = config?.brand_name || "FuckCo2";
+  const company = shopCompany(config);
 
   useEffect(() => {
     void (async () => {
@@ -229,9 +237,10 @@ function ShopHome({ config, base }: { config: ShopConfig | null; base: string })
       <section className="shop-hero-bleed">
         <div className="shop-hero-atmosphere" aria-hidden="true" />
         <div className="shop-hero-inner">
-          <p className="shop-hero-brand">{brand}</p>
+          <ShopLogo brand={brand} company={company} size="hero" stacked showCompany />
           <h1 className="shop-hero-title">{config?.tagline || t("shop.tagline")}</h1>
           <p className="shop-hero-copy">{t("shop.heroSubtitle")}</p>
+          <p className="shop-hero-company">{t("shop.companyLine", { company })}</p>
           <div className="shop-hero-cta">
             <a href="#shop-catalog" className="shop-btn shop-btn-primary">
               {t("shop.browseProducts")}
@@ -246,7 +255,7 @@ function ShopHome({ config, base }: { config: ShopConfig | null; base: string })
       <section id="shop-catalog" className="shop-catalog">
         <header className="shop-section-head">
           <h2>{t("shop.catalogTitle")}</h2>
-          <p>{t("shop.catalogSubtitle")}</p>
+          <p>{t("shop.catalogSubtitle", { company })}</p>
         </header>
         {loading ? <LoadingState /> : null}
         {error ? <p className="error-text">{error}</p> : null}
@@ -305,7 +314,12 @@ function ShopProductDetail({ config, base }: { config: ShopConfig | null; base: 
           {product.image_url ? <img src={product.image_url} alt={product.name} /> : <div className="shop-card-placeholder" />}
         </div>
         <div>
-          <p className="shop-detail-brand">{config?.brand_name || "FuckCo2"}</p>
+          <ShopLogo
+            brand={config?.brand_name || "FuckCo2"}
+            company={shopCompany(config)}
+            size="sm"
+            showCompany
+          />
           <h1>{product.name}</h1>
           <p className="shop-price">{formatMoney(product.price_cents, product.currency, i18n.language)}</p>
           <p className="muted">{t("shop.inclVat")}</p>
@@ -646,9 +660,16 @@ function ShopAuthForm({
   return (
     <section className="shop-auth-landing">
       <div className="shop-auth-hero">
-        <p className="shop-detail-brand">{config?.brand_name || "FuckCo2"}</p>
+        <ShopLogo
+          brand={config?.brand_name || "FuckCo2"}
+          company={shopCompany(config)}
+          size="lg"
+          stacked
+          showCompany
+        />
         <h1>{mode === "login" ? t("shop.authLandingLoginTitle") : t("shop.authLandingRegisterTitle")}</h1>
         <p className="muted">{t("shop.accountSubtitle")}</p>
+        <p className="shop-hero-company">{t("shop.companyLine", { company: shopCompany(config) })}</p>
         <ul className="shop-auth-benefits">
           <li>{t("shop.authBenefit1")}</li>
           <li>{t("shop.authBenefit2")}</li>
