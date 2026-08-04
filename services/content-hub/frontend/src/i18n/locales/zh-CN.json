@@ -21,6 +21,7 @@
     "openMenu": "打开菜单",
     "closeMenu": "关闭菜单",
     "shopCustomers": "客户账户",
+    "shopMonitoring": "监控",
     "overviewSection": "概览",
     "contentSection": "内容",
     "shopSection": "商店",
@@ -644,6 +645,7 @@
     "authBenefit3": "使用账户信息更快结账",
     "privacyConsentLabel": "我已阅读隐私政策并同意处理我的数据。",
     "privacyConsentRequired": "请先同意隐私政策。",
+    "captchaRequired": "请完成验证码。",
     "marketingConsentLabel": "可选：我希望通过电子邮件接收优惠与资讯。",
     "cmp": {
       "title": "隐私与 Cookie",
@@ -752,5 +754,24 @@
     "ledger": "积分记录",
     "ledgerEmpty": "暂无积分记录。",
     "orders": "订单"
+  },
+  "shopMonitoring": {
+    "eyebrow": "FuckCo2 商店",
+    "title": "商店监控",
+    "subtitle": "公开商店的页面浏览与流量。",
+    "rangeLabel": "时间范围",
+    "rangeDays": "{{days}} 天",
+    "viewsToday": "今日浏览",
+    "views7d": "近 7 日浏览",
+    "viewsPeriod": "区间浏览",
+    "uniquePeriod": "独立访客",
+    "trafficTitle": "流量",
+    "trafficSubtitle": "每日页面浏览",
+    "topPages": "热门页面",
+    "recentTitle": "最近浏览",
+    "colWhen": "时间",
+    "colPath": "页面",
+    "colReferrer": "来源",
+    "empty": "尚无页面浏览记录。"
   }
 }

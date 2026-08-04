@@ -44,5 +44,10 @@
   "errors.renewal_not_requested": "请先启用续期，再申请审批。",
   "errors.has_children": "该证书仍有子证书，无法删除。",
   "errors.invalid_parent": "无效的父级关联（循环或自引用）。",
+  "errors.bot_detected": "请求被拒绝。",
+  "errors.rate_limited": "请求过于频繁，请稍后再试。",
+  "errors.captcha_required": "需要完成验证码。",
+  "errors.captcha_failed": "验证码校验失败。",
+  "errors.captcha_unavailable": "验证码暂时不可用。",
   "messages.language_updated": "语言已更新。"
 }

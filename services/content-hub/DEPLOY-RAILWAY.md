@@ -399,6 +399,9 @@ Der Shop läuft auf derselben Railway-App wie `app.carbonauten.com`.
 | `SHOP_CO2_CREDITS_PER_EURO` | CO₂ Credits je vollen Euro Bestellwert (Default `1`) |
 | `SHOP_REQUIRE_ACCOUNT_CHECKOUT` | `true` = Checkout nur mit Kundenkonto |
 | `SHOP_ADMIN_EMAIL` / `SHOP_ADMIN_PASSWORD` / `SHOP_ADMIN_NAME` | optional; sonst = `INITIAL_ADMIN_*` — Master-Konto für Shop-Login |
+| `SHOP_BOT_PROTECTION_ENABLED` | Bot-Schutz an/aus (Default `true`) — Rate-Limit + Honeypot |
+| `SHOP_TURNSTILE_SITE_KEY` / `SHOP_TURNSTILE_SECRET_KEY` | optional Cloudflare Turnstile Captcha |
+| `SHOP_ANALYTICS_ENABLED` | Shop-Seitenaufrufe speichern (Default `true`, nur mit CMP-Analytics-Consent) |
 
 **Master-Konto:** Dein Platform-IT-Master (`INITIAL_ADMIN_EMAIL` + Passwort) gilt auch für den Shop-Login unter `https://www.fuckco2.shop/login`.
 
@@ -406,13 +409,18 @@ Der Shop läuft auf derselben Railway-App wie `app.carbonauten.com`.
 
 **Shop-Kunden:** Registrierung unter `/shop/login` bzw. Domain-Root. Credits werden bei Status `paid`/`fulfilled` gutgeschrieben.
 
-**Mitarbeiter:** In der Mitarbeiterverwaltung Spalte **Shop-Produkte** (ein/aus) steuert Sichtbarkeit von Shop-Produkte, Bestellungen und Shop-Kunden.
+**Mitarbeiter:** In der Mitarbeiterverwaltung Spalte **Shop-Produkte** (ein/aus) steuert Sichtbarkeit von Shop-Produkte, Bestellungen, Shop-Kunden und Monitoring.
+
+**Bot-Schutz:** Login, Register und Checkout sind rate-limitiert; Honeypot-Felder blocken einfache Bots. Optional Turnstile per Env.
+
+**Monitoring:** Platform → Shop → **Monitoring** zeigt Seitenaufrufe (nur wenn Besucher Analytics im Cookie-Banner erlaubt haben).
 
 **Stripe Webhook:** `https://fuckco2.shop/api/shop/stripe/webhook` Event `checkout.session.completed`
 
 ### Betrieb
 - Produkte: Platform → **Shop-Produkte**
 - Bestellungen: Platform → **Bestellungen**
+- Monitoring: Platform → **Monitoring**
 - Vorschau: `https://app.carbonauten.com/shop`
 - Ohne Stripe-Key fällt Kartenzahlung auf **Rechnung** zurück
 

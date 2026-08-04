@@ -44,5 +44,10 @@
   "errors.renewal_not_requested": "Bitte Erneuerung aktivieren, bevor eine Freigabe angefordert wird.",
   "errors.has_children": "Zertifikat hat abhängige Kind-Zertifikate und kann nicht gelöscht werden.",
   "errors.invalid_parent": "Ungültige Parent-Zuordnung (Zyklus oder Selbstbezug).",
+  "errors.bot_detected": "Anfrage abgelehnt.",
+  "errors.rate_limited": "Zu viele Anfragen. Bitte kurz warten und erneut versuchen.",
+  "errors.captcha_required": "Captcha erforderlich.",
+  "errors.captcha_failed": "Captcha-Prüfung fehlgeschlagen.",
+  "errors.captcha_unavailable": "Captcha vorübergehend nicht verfügbar.",
   "messages.language_updated": "Sprache wurde aktualisiert."
 }

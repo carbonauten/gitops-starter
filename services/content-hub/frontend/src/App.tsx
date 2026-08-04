@@ -24,6 +24,7 @@ import { ProductEditorPage } from "./pages/ProductEditorPage";
 import { OrdersPage } from "./pages/OrdersPage";
 import { ShopApp } from "./pages/ShopApp";
 import { ShopCustomersPage } from "./pages/ShopCustomersPage";
+import { ShopMonitoringPage } from "./pages/ShopMonitoringPage";
 import { usePermissions } from "./hooks/usePermissions";
 
 function ShopManageRoute({ children }: { children: React.ReactNode }) {
@@ -176,6 +177,14 @@ export default function App() {
         element={
           <ShopManageRoute>
             <ShopCustomersPage />
+          </ShopManageRoute>
+        }
+      />
+      <Route
+        path="/shop-monitoring"
+        element={
+          <ShopManageRoute>
+            <ShopMonitoringPage />
           </ShopManageRoute>
         }
       />

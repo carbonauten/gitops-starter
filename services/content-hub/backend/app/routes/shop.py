@@ -9,8 +9,11 @@ from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..database import FileAsset, get_db
+from ..dependencies import require_shop_access
 from ..product_service import get_product_by_slug, list_products, to_public_dict
-from ..schemas import ShopCheckoutRequest, ShopProductPublic
+from ..schemas import ShopCheckoutRequest, ShopPageViewRequest, ShopProductPublic
+from ..shop_analytics_service import monitoring_summary, record_page_view
+from ..shop_bot_protection import client_ip, protect_shop_action
 from ..shop_order_service import (
     confirm_stripe_order,
     create_checkout_order,
@@ -43,6 +46,12 @@ def shop_config() -> dict:
         "invoice_enabled": True,
         "require_account_checkout": settings.shop_require_account_checkout,
         "co2_credits_per_euro": settings.shop_co2_credits_per_euro,
+        "analytics_enabled": settings.shop_analytics_enabled,
+        "bot_protection": {
+            "enabled": settings.shop_bot_protection_enabled,
+            "turnstile_site_key": settings.shop_turnstile_site_key if settings.shop_turnstile_configured else "",
+            "turnstile_required": settings.shop_turnstile_configured,
+        },
         "bank": {
             "iban": settings.shop_bank_iban,
             "bic": settings.shop_bank_bic,
@@ -101,9 +110,18 @@ def public_product_image(slug: str, db: Session = Depends(get_db)):
 @router.post("/checkout")
 def shop_checkout(
     payload: ShopCheckoutRequest,
+    request: Request,
     db: Session = Depends(get_db),
     shop_customer: dict | None = Depends(get_optional_shop_customer),
 ) -> dict:
+    settings = get_settings()
+    protect_shop_action(
+        request,
+        bucket="shop_checkout",
+        honeypot=payload.website,
+        turnstile_token=payload.turnstile_token,
+        limit=settings.shop_bot_checkout_rate_limit,
+    )
     customer_payload = payload.customer.model_dump()
     if shop_customer:
         customer_payload["email"] = shop_customer["email"]
@@ -121,6 +139,44 @@ def shop_checkout(
         "order": order_to_dict(order, items, include_token=True),
         "checkout_url": checkout_url,
     }
+
+
+@router.post("/analytics/pageview")
+def shop_record_pageview(
+    payload: ShopPageViewRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    shop_customer: dict | None = Depends(get_optional_shop_customer),
+) -> dict:
+    settings = get_settings()
+    if not settings.shop_analytics_enabled:
+        return {"ok": True, "recorded": False}
+    protect_shop_action(
+        request,
+        bucket="shop_pageview",
+        honeypot=payload.website,
+        limit=settings.shop_bot_pageview_rate_limit,
+        window_seconds=60,
+    )
+    record_page_view(
+        db,
+        path=payload.path,
+        referrer=payload.referrer,
+        session_id=payload.session_id,
+        ip=client_ip(request),
+        user_agent=request.headers.get("user-agent", ""),
+        customer_id=shop_customer["id"] if shop_customer else None,
+    )
+    return {"ok": True, "recorded": True}
+
+
+@router.get("/monitoring/summary")
+def shop_monitoring_summary(
+    days: int = Query(default=30, ge=1, le=365),
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_shop_access),
+) -> dict:
+    return monitoring_summary(db, days=days)
 
 
 @router.get("/orders/{order_number}")

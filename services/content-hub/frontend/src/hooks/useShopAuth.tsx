@@ -8,12 +8,19 @@ import {
   type ShopCustomer,
 } from "../api/client";
 
+type ShopAuthExtras = {
+  website?: string;
+  turnstile_token?: string;
+};
+
 type ShopAuthContextValue = {
   customer: ShopCustomer | null;
   loading: boolean;
   refresh: () => Promise<void>;
-  login: (email: string, password: string) => Promise<void>;
-  register: (data: { email: string; name: string; password: string; language?: string }) => Promise<void>;
+  login: (email: string, password: string, extras?: ShopAuthExtras) => Promise<void>;
+  register: (
+    data: { email: string; name: string; password: string; language?: string } & ShopAuthExtras,
+  ) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -43,8 +50,8 @@ export function ShopAuthProvider({ children }: { children: React.ReactNode }) {
       customer,
       loading,
       refresh,
-      async login(email, password) {
-        const next = await loginShopCustomer({ email, password });
+      async login(email, password, extras) {
+        const next = await loginShopCustomer({ email, password, ...extras });
         setCustomer(next);
       },
       async register(data) {

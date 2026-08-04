@@ -21,6 +21,7 @@
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "shopCustomers": "Customer accounts",
+    "shopMonitoring": "Monitoring",
     "overviewSection": "Overview",
     "contentSection": "Content",
     "shopSection": "Shop",
@@ -644,6 +645,7 @@
     "authBenefit3": "Faster checkout with your account details",
     "privacyConsentLabel": "I have read the privacy policy and agree to the processing of my data.",
     "privacyConsentRequired": "Please accept the privacy policy.",
+    "captchaRequired": "Please complete the captcha.",
     "marketingConsentLabel": "Optional: I want to receive offers and news by email.",
     "cmp": {
       "title": "Privacy & cookies",
@@ -752,5 +754,24 @@
     "ledger": "Credit history",
     "ledgerEmpty": "No credit entries yet.",
     "orders": "Orders"
+  },
+  "shopMonitoring": {
+    "eyebrow": "FuckCo2 shop",
+    "title": "Shop monitoring",
+    "subtitle": "Page views and traffic on the public storefront.",
+    "rangeLabel": "Range",
+    "rangeDays": "{{days}} days",
+    "viewsToday": "Views today",
+    "views7d": "Views (7 days)",
+    "viewsPeriod": "Views in range",
+    "uniquePeriod": "Unique visitors",
+    "trafficTitle": "Traffic",
+    "trafficSubtitle": "Page views per day",
+    "topPages": "Top pages",
+    "recentTitle": "Recent views",
+    "colWhen": "When",
+    "colPath": "Page",
+    "colReferrer": "Referrer",
+    "empty": "No page views recorded yet."
   }
 }

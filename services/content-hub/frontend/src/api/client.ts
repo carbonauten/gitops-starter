@@ -277,8 +277,33 @@ export type ShopConfig = {
   invoice_enabled?: boolean;
   require_account_checkout?: boolean;
   co2_credits_per_euro?: number;
+  analytics_enabled?: boolean;
+  bot_protection?: {
+    enabled?: boolean;
+    turnstile_site_key?: string;
+    turnstile_required?: boolean;
+  };
   bank?: { iban: string; bic: string; name: string; holder: string };
   legal?: { impressum: string; privacy: string; terms: string };
+};
+
+export type ShopMonitoringSummary = {
+  days: number;
+  views_today: number;
+  views_7d: number;
+  views_period: number;
+  unique_visitors_today: number;
+  unique_visitors_7d: number;
+  unique_visitors_period: number;
+  by_day: Array<{ day: string; count: number }>;
+  top_paths: Array<{ path: string; count: number }>;
+  recent: Array<{
+    id: string;
+    path: string;
+    referrer: string;
+    session_id: string;
+    created_at?: string | null;
+  }>;
 };
 
 export type ShopCustomer = {
@@ -1062,11 +1087,34 @@ export async function checkoutShop(data: {
   };
   payment_method: "stripe" | "invoice";
   notes?: string;
+  website?: string;
+  turnstile_token?: string;
 }): Promise<{ order: ShopOrder; checkout_url: string | null }> {
   return request("/api/shop/checkout", {
     method: "POST",
     body: JSON.stringify(data),
   });
+}
+
+export async function trackShopPageView(data: {
+  path: string;
+  referrer?: string;
+  session_id: string;
+  website?: string;
+}): Promise<void> {
+  try {
+    await request<{ ok: boolean }>("/api/shop/analytics/pageview", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  } catch {
+    // Non-blocking analytics
+  }
+}
+
+export async function fetchShopMonitoringSummary(days = 30): Promise<ShopMonitoringSummary> {
+  const params = new URLSearchParams({ days: String(days) });
+  return request<ShopMonitoringSummary>(`/api/shop/monitoring/summary?${params}`);
 }
 
 export async function fetchShopOrder(orderNumber: string, token: string): Promise<ShopOrder> {
@@ -1095,6 +1143,8 @@ export async function registerShopCustomer(data: {
   name: string;
   password: string;
   language?: string;
+  website?: string;
+  turnstile_token?: string;
 }): Promise<ShopCustomer> {
   const payload = await request<{ customer: ShopCustomer }>("/api/shop/auth/register", {
     method: "POST",
@@ -1103,7 +1153,12 @@ export async function registerShopCustomer(data: {
   return payload.customer;
 }
 
-export async function loginShopCustomer(data: { email: string; password: string }): Promise<ShopCustomer> {
+export async function loginShopCustomer(data: {
+  email: string;
+  password: string;
+  website?: string;
+  turnstile_token?: string;
+}): Promise<ShopCustomer> {
   const payload = await request<{ customer: ShopCustomer }>("/api/shop/auth/login", {
     method: "POST",
     body: JSON.stringify(data),

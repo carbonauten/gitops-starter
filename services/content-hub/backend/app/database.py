@@ -395,6 +395,25 @@ class ShopOrderItem(Base):
     line_total_cents: Mapped[int] = mapped_column(Integer, default=0)
 
 
+class ShopPageView(Base):
+    """Consent-gated storefront page view for shop monitoring."""
+
+    __tablename__ = "shop_page_views"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    path: Mapped[str] = mapped_column(String(500), index=True)
+    referrer: Mapped[str] = mapped_column(String(500), default="")
+    session_id: Mapped[str] = mapped_column(String(64), default="", index=True)
+    visitor_hash: Mapped[str] = mapped_column(String(64), default="", index=True)
+    user_agent: Mapped[str] = mapped_column(String(300), default="")
+    customer_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        index=True,
+    )
+
+
 def scheduled_publish_column_type(is_sqlite: bool) -> str:
     return "DATETIME" if is_sqlite else "TIMESTAMP WITH TIME ZONE"
 

@@ -1,6 +1,6 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, Route, Routes, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { Link, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import {
   checkoutShop,
@@ -12,6 +12,7 @@ import {
   fetchShopProduct,
   fetchShopProducts,
   formatMoney,
+  trackShopPageView,
   type ShopConfig,
   type ShopCreditLedgerEntry,
   type ShopOrder,
@@ -20,10 +21,18 @@ import {
 import { EmptyState } from "../components/EmptyState";
 import { LanguageSwitch } from "../components/LanguageSwitch";
 import { LoadingState } from "../components/LoadingState";
-import { clearShopConsentDecision, saveShopConsent, ShopConsentBanner } from "../components/ShopConsentBanner";
+import { ShopHoneypot, ShopTurnstile } from "../components/ShopBotFields";
+import {
+  clearShopConsentDecision,
+  loadShopConsent,
+  saveShopConsent,
+  ShopConsentBanner,
+} from "../components/ShopConsentBanner";
 import { ShopLogo } from "../components/ShopLogo";
 import { ShopAuthProvider, useShopAuth } from "../hooks/useShopAuth";
 import { ShopCartProvider, useShopCart } from "../hooks/useShopCart";
+
+const SHOP_SESSION_KEY = "fuckco2-shop-session-v1";
 
 function shopCompany(config: ShopConfig | null): string {
   return config?.company_name?.trim() || "carbonauten GmbH";
@@ -34,6 +43,31 @@ function shopBasePath(): string {
   if (host === "fuckco2.shop" || host === "www.fuckco2.shop") return "";
   if (new URLSearchParams(window.location.search).get("shop") === "1") return "";
   return "/shop";
+}
+
+function getOrCreateShopSessionId(): string {
+  try {
+    const existing = window.sessionStorage.getItem(SHOP_SESSION_KEY);
+    if (existing && existing.length >= 8) return existing;
+    const next =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID()
+        : `s-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    window.sessionStorage.setItem(SHOP_SESSION_KEY, next);
+    return next;
+  } catch {
+    return `s-${Date.now()}`;
+  }
+}
+
+function storefrontPath(pathname: string, base: string): string {
+  if (!base) return pathname || "/";
+  if (pathname === base) return "/";
+  if (pathname.startsWith(`${base}/`)) {
+    const rest = pathname.slice(base.length) || "/";
+    return rest.startsWith("/") ? rest : `/${rest}`;
+  }
+  return pathname || "/";
 }
 
 function clampQty(value: number, max = 999) {
@@ -146,10 +180,25 @@ function ShopShell({
   base: string;
 }) {
   const { t } = useTranslation();
+  const location = useLocation();
   const cart = useShopCart();
   const { customer, logout } = useShopAuth();
   const brand = config?.brand_name || "FuckCo2";
   const company = shopCompany(config);
+
+  useEffect(() => {
+    if (config && config.analytics_enabled === false) return;
+    const consent = loadShopConsent();
+    if (!consent?.analytics) return;
+    const path = storefrontPath(location.pathname, base);
+    void trackShopPageView({
+      path,
+      referrer: document.referrer || "",
+      session_id: getOrCreateShopSessionId(),
+      website: "",
+    });
+  }, [location.pathname, base, config]);
+
   return (
     <div className="shop-shell">
       <header className="shop-topbar">
@@ -433,6 +482,10 @@ function ShopCheckoutPage({ config, base }: { config: ShopConfig | null; base: s
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [website, setWebsite] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const onTurnstileToken = useCallback((token: string) => setTurnstileToken(token), []);
+  const turnstileKey = config?.bot_protection?.turnstile_site_key || "";
   const [form, setForm] = useState({
     email: "",
     name: "",
@@ -487,11 +540,18 @@ function ShopCheckoutPage({ config, base }: { config: ShopConfig | null; base: s
     setSaving(true);
     setError("");
     try {
+      if (config?.bot_protection?.turnstile_required && !turnstileToken) {
+        setError(t("shop.captchaRequired"));
+        setSaving(false);
+        return;
+      }
       const result = await checkoutShop({
         items: cart.items.map((item) => ({ product_id: item.product_id, quantity: item.quantity })),
         customer: form,
         payment_method: paymentMethod,
         notes: form.notes,
+        website,
+        turnstile_token: turnstileToken,
       });
       cart.clear();
       if (result.checkout_url) {
@@ -577,6 +637,8 @@ function ShopCheckoutPage({ config, base }: { config: ShopConfig | null; base: s
           {t("shop.fieldNotes")}
           <textarea rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
         </label>
+        <ShopHoneypot value={website} onChange={setWebsite} />
+        {turnstileKey ? <ShopTurnstile siteKey={turnstileKey} onToken={onTurnstileToken} /> : null}
 
         <fieldset className="shop-payment-methods">
           <legend>{t("shop.paymentMethod")}</legend>
@@ -622,6 +684,10 @@ function ShopAuthForm({
   const [password, setPassword] = useState("");
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [marketingOptIn, setMarketingOptIn] = useState(false);
+  const [website, setWebsite] = useState("");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const onTurnstileToken = useCallback((token: string) => setTurnstileToken(token), []);
+  const turnstileKey = config?.bot_protection?.turnstile_site_key || "";
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -641,10 +707,16 @@ function ShopAuthForm({
         setSaving(false);
         return;
       }
+      if (config?.bot_protection?.turnstile_required && !turnstileToken) {
+        setError(t("shop.captchaRequired"));
+        setSaving(false);
+        return;
+      }
+      const extras = { website, turnstile_token: turnstileToken };
       if (mode === "login") {
-        await login(email, password);
+        await login(email, password, extras);
       } else {
-        await register({ email, name, password, language: i18n.language });
+        await register({ email, name, password, language: i18n.language, ...extras });
         if (marketingOptIn) {
           saveShopConsent({ preferences: true, analytics: true, marketing: true });
         }
@@ -736,6 +808,8 @@ function ShopAuthForm({
               </label>
             </>
           ) : null}
+          <ShopHoneypot value={website} onChange={setWebsite} />
+          {turnstileKey ? <ShopTurnstile siteKey={turnstileKey} onToken={onTurnstileToken} /> : null}
           {error ? <p className="error-text">{error}</p> : null}
           <button type="submit" className="shop-btn shop-btn-primary" disabled={saving}>
             {saving ? t("common.loading") : mode === "login" ? t("shop.login") : t("shop.register")}

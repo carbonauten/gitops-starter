@@ -97,6 +97,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
         { to: "/products", label: t("nav.products"), icon: "◈" },
         { to: "/orders", label: t("nav.orders"), icon: "☰" },
         { to: "/shop-customers", label: t("nav.shopCustomers"), icon: "☺" },
+        { to: "/shop-monitoring", label: t("nav.shopMonitoring"), icon: "▥" },
       ]
     : [];
 

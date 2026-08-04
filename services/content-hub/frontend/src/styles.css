@@ -2178,6 +2178,19 @@ a {
   border: 0;
 }
 
+.shop-hp {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.shop-turnstile {
+  margin: 0.75rem 0;
+}
+
 .shop-logo {
   display: inline-flex;
   align-items: center;

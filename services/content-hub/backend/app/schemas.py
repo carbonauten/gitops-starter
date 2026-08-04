@@ -191,6 +191,15 @@ class ShopCheckoutRequest(BaseModel):
     customer: ShopCheckoutCustomer
     payment_method: Literal["stripe", "invoice"] = "stripe"
     notes: str = ""
+    website: str = ""  # honeypot — must stay empty
+    turnstile_token: str = ""
+
+
+class ShopPageViewRequest(BaseModel):
+    path: str = Field(..., min_length=1, max_length=500)
+    referrer: str = Field(default="", max_length=500)
+    session_id: str = Field(..., min_length=8, max_length=64)
+    website: str = ""  # honeypot
 
 
 class CertificateUpdate(BaseModel):

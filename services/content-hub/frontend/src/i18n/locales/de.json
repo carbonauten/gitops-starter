@@ -21,6 +21,7 @@
     "openMenu": "Menü öffnen",
     "closeMenu": "Menü schließen",
     "shopCustomers": "Benutzerverwaltung",
+    "shopMonitoring": "Monitoring",
     "overviewSection": "Übersicht",
     "contentSection": "Inhalte",
     "shopSection": "Shop",
@@ -644,6 +645,7 @@
     "authBenefit3": "Schnellerer Checkout mit gespeicherten Kontodaten",
     "privacyConsentLabel": "Ich habe die Datenschutzerklärung gelesen und stimme der Verarbeitung meiner Daten zu.",
     "privacyConsentRequired": "Bitte stimmen Sie der Datenschutzerklärung zu.",
+    "captchaRequired": "Bitte bestätigen Sie das Captcha.",
     "marketingConsentLabel": "Optional: Ich möchte Angebote und Neuigkeiten per E-Mail erhalten.",
     "cmp": {
       "title": "Datenschutz & Cookies",
@@ -752,5 +754,24 @@
     "ledger": "Credit-Verlauf",
     "ledgerEmpty": "Noch keine Credit-Buchungen.",
     "orders": "Bestellungen"
+  },
+  "shopMonitoring": {
+    "eyebrow": "FuckCo2 Shop",
+    "title": "Shop-Monitoring",
+    "subtitle": "Seitenaufrufe und Traffic im öffentlichen Shop.",
+    "rangeLabel": "Zeitraum",
+    "rangeDays": "{{days}} Tage",
+    "viewsToday": "Aufrufe heute",
+    "views7d": "Aufrufe (7 Tage)",
+    "viewsPeriod": "Aufrufe im Zeitraum",
+    "uniquePeriod": "Unique Visitors",
+    "trafficTitle": "Traffic",
+    "trafficSubtitle": "Seitenaufrufe pro Tag",
+    "topPages": "Top-Seiten",
+    "recentTitle": "Letzte Aufrufe",
+    "colWhen": "Zeit",
+    "colPath": "Seite",
+    "colReferrer": "Referrer",
+    "empty": "Noch keine Seitenaufrufe erfasst."
   }
 }

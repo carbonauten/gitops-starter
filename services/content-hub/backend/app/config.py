@@ -97,6 +97,16 @@ class Settings(BaseSettings):
     # CO2 Reward Credits: credits awarded per full euro of paid order total
     shop_co2_credits_per_euro: int = 1
     shop_require_account_checkout: bool = False
+    # Bot protection (rate limit + honeypot; optional Cloudflare Turnstile)
+    shop_bot_protection_enabled: bool = True
+    shop_bot_rate_limit: int = 30
+    shop_bot_rate_window_seconds: int = 60
+    shop_bot_auth_rate_limit: int = 12
+    shop_bot_checkout_rate_limit: int = 10
+    shop_bot_pageview_rate_limit: int = 120
+    shop_turnstile_site_key: str = ""
+    shop_turnstile_secret_key: str = ""
+    shop_analytics_enabled: bool = True
 
     database_url: str = "sqlite:///./data/content_hub.db"
     upload_dir: str = "./data/uploads"
@@ -237,6 +247,10 @@ class Settings(BaseSettings):
     @property
     def shop_stripe_configured(self) -> bool:
         return bool(self.shop_stripe_secret_key.strip())
+
+    @property
+    def shop_turnstile_configured(self) -> bool:
+        return bool(self.shop_turnstile_site_key.strip() and self.shop_turnstile_secret_key.strip())
 
     @property
     def shop_public_origin(self) -> str:

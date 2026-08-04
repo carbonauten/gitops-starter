@@ -44,5 +44,10 @@
   "errors.renewal_not_requested": "Enable renewal in progress before requesting approval.",
   "errors.has_children": "Certificate has dependent child certificates and cannot be deleted.",
   "errors.invalid_parent": "Invalid parent link (cycle or self-reference).",
+  "errors.bot_detected": "Request rejected.",
+  "errors.rate_limited": "Too many requests. Please wait and try again.",
+  "errors.captcha_required": "Captcha is required.",
+  "errors.captcha_failed": "Captcha verification failed.",
+  "errors.captcha_unavailable": "Captcha is temporarily unavailable.",
   "messages.language_updated": "Language updated."
 }
