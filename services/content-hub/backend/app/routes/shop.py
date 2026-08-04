@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..database import FileAsset, get_db
-from ..dependencies import require_shop_access
+from ..dependencies import require_it_master
 from ..product_service import get_product_by_slug, list_products, to_public_dict
 from ..schemas import ShopCheckoutRequest, ShopPageViewRequest, ShopProductPublic
 from ..shop_analytics_service import monitoring_summary, record_page_view
@@ -174,7 +174,7 @@ def shop_record_pageview(
 def shop_monitoring_summary(
     days: int = Query(default=30, ge=1, le=365),
     db: Session = Depends(get_db),
-    _user: dict = Depends(require_shop_access),
+    _user: dict = Depends(require_it_master),
 ) -> dict:
     return monitoring_summary(db, days=days)
 

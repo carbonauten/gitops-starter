@@ -41,7 +41,7 @@ def test_honeypot_blocks_pageview(client):
     assert response.json()["code"] == "bot_detected"
 
 
-def test_pageview_and_monitoring_summary(auth_client, client):
+def test_pageview_and_monitoring_summary(it_auth_client, client):
     reset_rate_limits_for_tests()
     recorded = client.post(
         "/api/shop/analytics/pageview",
@@ -63,7 +63,7 @@ def test_pageview_and_monitoring_summary(auth_client, client):
     )
     assert home.status_code == 200
 
-    summary = auth_client.get("/api/shop/monitoring/summary?days=7")
+    summary = it_auth_client.get("/api/shop/monitoring/summary?days=7")
     assert summary.status_code == 200
     payload = summary.json()
     assert payload["views_period"] >= 2
@@ -78,6 +78,12 @@ def test_pageview_and_monitoring_summary(auth_client, client):
 def test_monitoring_requires_auth(client):
     response = client.get("/api/shop/monitoring/summary")
     assert response.status_code == 401
+
+
+def test_monitoring_forbidden_for_shop_editor(auth_client):
+    response = auth_client.get("/api/shop/monitoring/summary")
+    assert response.status_code == 403
+    assert response.json()["code"] == "forbidden"
 
 
 def test_auth_rate_limit(client, monkeypatch):

@@ -409,11 +409,11 @@ Der Shop läuft auf derselben Railway-App wie `app.carbonauten.com`.
 
 **Shop-Kunden:** Registrierung unter `/shop/login` bzw. Domain-Root. Credits werden bei Status `paid`/`fulfilled` gutgeschrieben.
 
-**Mitarbeiter:** In der Mitarbeiterverwaltung Spalte **Shop-Produkte** (ein/aus) steuert Sichtbarkeit von Shop-Produkte, Bestellungen, Shop-Kunden und Monitoring.
+**Mitarbeiter:** In der Mitarbeiterverwaltung Spalte **Shop-Produkte** (ein/aus) steuert Sichtbarkeit von Shop-Produkte, Bestellungen und Shop-Kunden.
 
 **Bot-Schutz:** Login, Register und Checkout sind rate-limitiert; Honeypot-Felder blocken einfache Bots. Optional Turnstile per Env.
 
-**Monitoring:** Platform → Shop → **Monitoring** zeigt Seitenaufrufe (nur wenn Besucher Analytics im Cookie-Banner erlaubt haben).
+**Monitoring:** Platform → Shop → **Monitoring** (nur IT-Master/Admins) zeigt Seitenaufrufe (nur wenn Besucher Analytics im Cookie-Banner erlaubt haben).
 
 **Stripe Webhook:** `https://fuckco2.shop/api/shop/stripe/webhook` Event `checkout.session.completed`
 

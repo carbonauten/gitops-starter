@@ -183,9 +183,9 @@ export default function App() {
       <Route
         path="/shop-monitoring"
         element={
-          <ShopManageRoute>
+          <MasterRoute>
             <ShopMonitoringPage />
-          </ShopManageRoute>
+          </MasterRoute>
         }
       />
       <Route path="/shop/*" element={<ShopApp />} />
