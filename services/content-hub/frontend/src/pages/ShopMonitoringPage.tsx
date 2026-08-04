@@ -52,6 +52,7 @@ export function ShopMonitoringPage() {
   const sparkDays = useMemo(() => summary?.by_day.slice(-30) ?? [], [summary]);
   const sparkPeak = maxCount(sparkDays);
   const pathPeak = maxCount(summary?.top_paths ?? [{ count: 1 }]);
+  const ipPeak = maxCount(summary?.top_ips ?? [{ count: 1 }]);
 
   return (
     <section className="page">
@@ -146,6 +147,34 @@ export function ShopMonitoringPage() {
                 </ul>
               )}
             </section>
+
+            <section className="home-panel">
+              <div className="home-panel-head">
+                <h2>{t("shopMonitoring.topIps")}</h2>
+              </div>
+              {(summary.top_ips || []).length === 0 ? (
+                <p className="muted">{t("shopMonitoring.empty")}</p>
+              ) : (
+                <ul className="analytics-bar-list">
+                  {(summary.top_ips || []).map((item) => (
+                    <li key={item.ip}>
+                      <div className="analytics-bar-meta">
+                        <span>
+                          <code>{item.ip}</code>
+                        </span>
+                        <strong>{item.count}</strong>
+                      </div>
+                      <div className="analytics-bar-track" aria-hidden="true">
+                        <div
+                          className="analytics-bar-fill"
+                          style={{ width: `${Math.round((item.count / ipPeak) * 100)}%` }}
+                        />
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           </div>
 
           <section className="home-panel" style={{ marginTop: "1.5rem" }}>
@@ -161,6 +190,7 @@ export function ShopMonitoringPage() {
                     <tr>
                       <th>{t("shopMonitoring.colWhen")}</th>
                       <th>{t("shopMonitoring.colPath")}</th>
+                      <th>{t("shopMonitoring.colIp")}</th>
                       <th>{t("shopMonitoring.colReferrer")}</th>
                     </tr>
                   </thead>
@@ -170,6 +200,9 @@ export function ShopMonitoringPage() {
                         <td>{formatWhen(row.created_at, i18n.language)}</td>
                         <td>
                           <code>{row.path}</code>
+                        </td>
+                        <td>
+                          <code>{row.ip_address || "—"}</code>
                         </td>
                         <td className="muted">{row.referrer || "—"}</td>
                       </tr>

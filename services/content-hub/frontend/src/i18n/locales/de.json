@@ -768,9 +768,11 @@
     "trafficTitle": "Traffic",
     "trafficSubtitle": "Seitenaufrufe pro Tag",
     "topPages": "Top-Seiten",
+    "topIps": "Top-IPs",
     "recentTitle": "Letzte Aufrufe",
     "colWhen": "Zeit",
     "colPath": "Seite",
+    "colIp": "IP",
     "colReferrer": "Referrer",
     "empty": "Noch keine Seitenaufrufe erfasst."
   }

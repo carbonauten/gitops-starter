@@ -768,9 +768,11 @@
     "trafficTitle": "Traffic",
     "trafficSubtitle": "Page views per day",
     "topPages": "Top pages",
+    "topIps": "Top IPs",
     "recentTitle": "Recent views",
     "colWhen": "When",
     "colPath": "Page",
+    "colIp": "IP",
     "colReferrer": "Referrer",
     "empty": "No page views recorded yet."
   }

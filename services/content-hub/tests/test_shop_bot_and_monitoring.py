@@ -51,6 +51,7 @@ def test_pageview_and_monitoring_summary(auth_client, client):
             "session_id": "session-monitor-1",
             "website": "",
         },
+        headers={"X-Forwarded-For": "203.0.113.50"},
     )
     assert recorded.status_code == 200
     assert recorded.json()["recorded"] is True
@@ -58,6 +59,7 @@ def test_pageview_and_monitoring_summary(auth_client, client):
     home = client.post(
         "/api/shop/analytics/pageview",
         json={"path": "/", "session_id": "session-monitor-2", "website": ""},
+        headers={"X-Forwarded-For": "203.0.113.50"},
     )
     assert home.status_code == 200
 
@@ -67,6 +69,8 @@ def test_pageview_and_monitoring_summary(auth_client, client):
     assert payload["views_period"] >= 2
     assert payload["views_today"] >= 2
     assert any(item["path"] == "/p/biochar" for item in payload["top_paths"])
+    assert any(item["ip"] == "203.0.113.50" for item in payload["top_ips"])
+    assert any(item.get("ip_address") == "203.0.113.50" for item in payload["recent"])
     assert len(payload["by_day"]) == 7
     assert len(payload["recent"]) >= 2
 

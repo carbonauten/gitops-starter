@@ -42,11 +42,13 @@ def record_page_view(
     user_agent: str = "",
     customer_id: str | None = None,
 ) -> ShopPageView:
+    cleaned_ip = (ip or "").strip()[:64]
     view = ShopPageView(
         path=normalize_path(path),
         referrer=(referrer or "")[:500],
         session_id=(session_id or "")[:64],
-        visitor_hash=visitor_hash(ip=ip, user_agent=user_agent, session_id=session_id),
+        visitor_hash=visitor_hash(ip=cleaned_ip, user_agent=user_agent, session_id=session_id),
+        ip_address=cleaned_ip,
         user_agent=(user_agent or "")[:300],
         customer_id=customer_id,
     )
@@ -79,12 +81,15 @@ def monitoring_summary(db: Session, *, days: int = 30) -> dict[str, Any]:
     unique_period: set[str] = set()
     by_day: dict[str, int] = defaultdict(int)
     path_counts: Counter[str] = Counter()
+    ip_counts: Counter[str] = Counter()
 
     for row in rows:
         created = _as_utc(row.created_at) if row.created_at else now
         day_key = created.date().isoformat()
         by_day[day_key] += 1
         path_counts[row.path] += 1
+        if row.ip_address:
+            ip_counts[row.ip_address] += 1
         unique_period.add(row.visitor_hash)
         if created >= since_7:
             views_7d += 1
@@ -106,6 +111,7 @@ def monitoring_summary(db: Session, *, days: int = 30) -> dict[str, Any]:
             "path": row.path,
             "referrer": row.referrer,
             "session_id": row.session_id,
+            "ip_address": row.ip_address or "",
             "created_at": _as_utc(row.created_at).isoformat() if row.created_at else None,
         }
         for row in db.scalars(select(ShopPageView).order_by(ShopPageView.created_at.desc()).limit(40)).all()
@@ -121,5 +127,6 @@ def monitoring_summary(db: Session, *, days: int = 30) -> dict[str, Any]:
         "unique_visitors_period": len(unique_period),
         "by_day": day_series,
         "top_paths": [{"path": path, "count": count} for path, count in path_counts.most_common(15)],
+        "top_ips": [{"ip": ip, "count": count} for ip, count in ip_counts.most_common(15)],
         "recent": recent,
     }

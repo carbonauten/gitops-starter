@@ -297,11 +297,13 @@ export type ShopMonitoringSummary = {
   unique_visitors_period: number;
   by_day: Array<{ day: string; count: number }>;
   top_paths: Array<{ path: string; count: number }>;
+  top_ips?: Array<{ ip: string; count: number }>;
   recent: Array<{
     id: string;
     path: string;
     referrer: string;
     session_id: string;
+    ip_address?: string;
     created_at?: string | null;
   }>;
 };

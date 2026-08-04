@@ -768,9 +768,11 @@
     "trafficTitle": "流量",
     "trafficSubtitle": "每日页面浏览",
     "topPages": "热门页面",
+    "topIps": "热门 IP",
     "recentTitle": "最近浏览",
     "colWhen": "时间",
     "colPath": "页面",
+    "colIp": "IP",
     "colReferrer": "来源",
     "empty": "尚无页面浏览记录。"
   }

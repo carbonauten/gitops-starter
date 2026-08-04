@@ -405,6 +405,7 @@ class ShopPageView(Base):
     referrer: Mapped[str] = mapped_column(String(500), default="")
     session_id: Mapped[str] = mapped_column(String(64), default="", index=True)
     visitor_hash: Mapped[str] = mapped_column(String(64), default="", index=True)
+    ip_address: Mapped[str] = mapped_column(String(64), default="", index=True)
     user_agent: Mapped[str] = mapped_column(String(300), default="")
     customer_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(
@@ -546,6 +547,24 @@ def ensure_schema_updates(engine, is_sqlite: bool) -> None:
                         connection.execute(text(ddl_sqlite if is_sqlite else ddl_pg))
                 except Exception as exc:  # noqa: BLE001
                     logger.warning("Could not add shop_orders.%s: %s", column_name, exc)
+
+    if inspector.has_table("shop_page_views"):
+        columns = {column["name"] for column in inspector.get_columns("shop_page_views")}
+        if "ip_address" not in columns:
+            try:
+                with engine.begin() as connection:
+                    if is_sqlite:
+                        connection.execute(
+                            text("ALTER TABLE shop_page_views ADD COLUMN ip_address VARCHAR(64) DEFAULT ''")
+                        )
+                    else:
+                        connection.execute(
+                            text(
+                                "ALTER TABLE shop_page_views ADD COLUMN ip_address VARCHAR(64) NOT NULL DEFAULT ''"
+                            )
+                        )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Could not add shop_page_views.ip_address: %s", exc)
 
 
 DEFAULT_DEPARTMENTS: tuple[tuple[str, str, int], ...] = (
