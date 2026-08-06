@@ -3,14 +3,25 @@ from __future__ import annotations
 import csv
 import io
 from datetime import date, timedelta
+from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
 from ..audit_service import log_audit
+from ..ca_sync_service import (
+    SOURCE_SSL_FILE,
+    ca_sync_status,
+    maybe_enrich_from_file_asset,
+    parse_file_asset,
+    store_pem_as_file_asset,
+    sync_key_vault,
+    sync_letsencrypt_dir,
+    upsert_ssl_certificate,
+)
 from ..certificate_service import (
     build_audit_export_zip,
     build_certificate_chains,
@@ -33,6 +44,8 @@ from ..sharepoint_import_service import (
     guess_certificate_name,
     import_sharepoint_item_as_file_asset,
 )
+from ..ssl_cert_parser import looks_like_ssl_bytes, parse_ssl_certificate, try_parse_ssl_certificate
+from ..storage import read_upload
 from ..version_service import certificate_snapshot, record_revision
 
 router = APIRouter(prefix="/api/certificates", tags=["certificates"])
@@ -88,6 +101,9 @@ def _to_response(certificate: Certificate, db: Session, today: Optional[date] = 
         file_asset_id=certificate.file_asset_id,
         file_name=_file_name(db, certificate.file_asset_id),
         notes=certificate.notes,
+        fingerprint=getattr(certificate, "fingerprint", "") or "",
+        external_source=getattr(certificate, "external_source", "") or "",
+        external_id=getattr(certificate, "external_id", "") or "",
         created_by_id=certificate.created_by_id,
         created_by_name=certificate.created_by_name,
         created_at=certificate.created_at,
@@ -212,6 +228,129 @@ def certificate_chains(
     return {"chains": build_certificate_chains(db)}
 
 
+@router.get("/ca-sync/status")
+def certificate_ca_sync_status(_user: dict = Depends(get_current_user)) -> dict:
+    return ca_sync_status()
+
+
+@router.post("/parse-ssl")
+async def parse_ssl_certificate_endpoint(
+    upload: UploadFile | None = File(default=None),
+    file_asset_id: Optional[str] = Query(default=None),
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_editor),
+) -> dict:
+    if file_asset_id:
+        parsed = parse_file_asset(db, file_asset_id)
+        return {"parsed": parsed.to_dict(), "file_asset_id": file_asset_id}
+    if not upload:
+        raise HTTPException(status_code=422, detail="validation")
+    content = await upload.read()
+    if not content:
+        raise HTTPException(status_code=422, detail="invalid_ssl_certificate")
+    preferred = Path(upload.filename or "certificate").stem.replace("_", " ").replace("-", " ")
+    parsed = parse_ssl_certificate(content, preferred_name=preferred)
+    return {"parsed": parsed.to_dict()}
+
+
+@router.post("/import-ssl", status_code=201)
+async def import_ssl_certificate(
+    upload: UploadFile | None = File(default=None),
+    file_asset_id: Optional[str] = Query(default=None),
+    db: Session = Depends(get_db),
+    user: dict = Depends(require_editor),
+) -> dict:
+    if file_asset_id:
+        asset = db.get(FileAsset, file_asset_id)
+        if not asset:
+            raise HTTPException(status_code=404, detail="not_found")
+        content = read_upload(asset.storage_path)
+        preferred = Path(asset.original_name).stem.replace("_", " ").replace("-", " ")
+        parsed = parse_ssl_certificate(content, preferred_name=preferred)
+        asset_id = asset.id
+    else:
+        if not upload:
+            raise HTTPException(status_code=422, detail="validation")
+        content = await upload.read()
+        if not content:
+            raise HTTPException(status_code=422, detail="invalid_ssl_certificate")
+        preferred = Path(upload.filename or "certificate").stem.replace("_", " ").replace("-", " ")
+        parsed = parse_ssl_certificate(content, preferred_name=preferred)
+        asset = store_pem_as_file_asset(
+            db,
+            pem=content,
+            filename=upload.filename or f"{parsed.name}.pem",
+            user=user,
+        )
+        asset_id = asset.id
+
+    certificate, created = upsert_ssl_certificate(
+        db,
+        parsed=parsed,
+        user=user,
+        source=SOURCE_SSL_FILE if parsed.is_lets_encrypt is False else SOURCE_SSL_FILE,
+        external_id=f"fp:{parsed.fingerprint_sha256}",
+        file_asset_id=asset_id,
+        notes="Let's Encrypt" if parsed.is_lets_encrypt else "SSL-Dateiimport",
+    )
+    if created:
+        record_revision(
+            db,
+            entity_type="certificate",
+            entity_id=certificate.id,
+            snapshot=certificate_snapshot(certificate),
+            actor=user,
+        )
+        db.commit()
+    log_audit(
+        db,
+        entity_type="certificate",
+        entity_id=certificate.id,
+        action="import_ssl" if created else "update_ssl",
+        actor=user,
+        details={"fingerprint": parsed.fingerprint_sha256, "name": certificate.name},
+    )
+    return {
+        "certificate": _to_response(certificate, db),
+        "created": created,
+        "parsed": parsed.to_dict(),
+    }
+
+
+@router.post("/ca-sync/letsencrypt")
+def sync_letsencrypt_certificates(
+    db: Session = Depends(get_db),
+    user: dict = Depends(require_editor),
+) -> dict:
+    result = sync_letsencrypt_dir(db, user=user)
+    log_audit(
+        db,
+        entity_type="certificate",
+        entity_id="*",
+        action="ca_sync_letsencrypt",
+        actor=user,
+        details=result,
+    )
+    return result
+
+
+@router.post("/ca-sync/key-vault")
+async def sync_key_vault_certificates(
+    db: Session = Depends(get_db),
+    user: dict = Depends(require_editor),
+) -> dict:
+    result = await sync_key_vault(db, user=user)
+    log_audit(
+        db,
+        entity_type="certificate",
+        entity_id="*",
+        action="ca_sync_key_vault",
+        actor=user,
+        details={k: v for k, v in result.items() if k != "errors"},
+    )
+    return result
+
+
 @router.post("/import-from-sharepoint", status_code=201)
 async def import_certificate_from_sharepoint(
     payload: SharePointCertificateImport,
@@ -228,11 +367,37 @@ async def import_certificate_from_sharepoint(
     today = date.today()
     valid_from = payload.valid_from or today
     valid_to = payload.valid_to or (today + timedelta(days=365))
+    name = (payload.name or "").strip() or guess_certificate_name(original_name)
+    category = payload.category or guess_certificate_category(original_name)
+    issuer = payload.issuer
+    fingerprint = ""
+    external_source = ""
+    external_id = ""
+
+    try:
+        content = read_upload(file_asset.storage_path)
+    except Exception:  # noqa: BLE001
+        content = b""
+    if content and looks_like_ssl_bytes(content, original_name):
+        parsed = try_parse_ssl_certificate(content, preferred_name=name)
+        if parsed:
+            if not payload.valid_from:
+                valid_from = parsed.valid_from
+            if not payload.valid_to:
+                valid_to = parsed.valid_to
+            if not payload.issuer:
+                issuer = parsed.issuer
+            if not payload.name:
+                name = parsed.name
+            if not payload.category:
+                category = "ssl"
+            fingerprint = parsed.fingerprint_sha256
+            external_source = SOURCE_SSL_FILE
+            external_id = f"fp:{parsed.fingerprint_sha256}"
+
     _validate_dates(valid_from, valid_to)
     validate_parent_id(db, certificate_id=None, parent_id=payload.parent_id)
 
-    name = (payload.name or "").strip() or guess_certificate_name(original_name)
-    category = payload.category or guess_certificate_category(original_name)
     if category not in VALID_CATEGORIES:
         category = "compliance"
 
@@ -248,7 +413,7 @@ async def import_certificate_from_sharepoint(
     certificate = Certificate(
         name=name,
         category=category,
-        issuer=payload.issuer,
+        issuer=issuer,
         valid_from=valid_from,
         valid_to=valid_to,
         renewal_in_progress=payload.renewal_in_progress,
@@ -258,6 +423,9 @@ async def import_certificate_from_sharepoint(
         parent_id=payload.parent_id,
         file_asset_id=file_asset.id,
         notes=notes,
+        fingerprint=fingerprint,
+        external_source=external_source,
+        external_id=external_id,
         created_by_id=user["id"],
         created_by_name=user["name"],
     )
@@ -311,12 +479,30 @@ def create_certificate(
     _validate_dates(payload.valid_from, payload.valid_to)
     _validate_file_asset(db, payload.file_asset_id)
     validate_parent_id(db, certificate_id=None, parent_id=payload.parent_id)
+    fingerprint = ""
+    external_source = ""
+    external_id = ""
+    name = payload.name
+    category = payload.category
+    issuer = payload.issuer
+    valid_from = payload.valid_from
+    valid_to = payload.valid_to
+    parsed = maybe_enrich_from_file_asset(db, payload.file_asset_id)
+    if parsed:
+        fingerprint = parsed.fingerprint_sha256
+        external_source = SOURCE_SSL_FILE
+        external_id = f"fp:{parsed.fingerprint_sha256}"
+        if not issuer:
+            issuer = parsed.issuer
+        if category == "ssl":
+            # Keep provided dates; fingerprint enables CA sync upserts later
+            pass
     certificate = Certificate(
-        name=payload.name,
-        category=payload.category,
-        issuer=payload.issuer,
-        valid_from=payload.valid_from,
-        valid_to=payload.valid_to,
+        name=name,
+        category=category,
+        issuer=issuer,
+        valid_from=valid_from,
+        valid_to=valid_to,
         renewal_in_progress=payload.renewal_in_progress,
         responsible_name=payload.responsible_name,
         responsible_email=payload.responsible_email,
@@ -324,6 +510,9 @@ def create_certificate(
         parent_id=payload.parent_id,
         file_asset_id=payload.file_asset_id,
         notes=payload.notes,
+        fingerprint=fingerprint,
+        external_source=external_source,
+        external_id=external_id,
         created_by_id=user["id"],
         created_by_name=user["name"],
     )

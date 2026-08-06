@@ -46,6 +46,9 @@ def certificate_snapshot(certificate: Certificate) -> dict[str, Any]:
         "parent_id": certificate.parent_id,
         "file_asset_id": certificate.file_asset_id,
         "notes": certificate.notes,
+        "fingerprint": getattr(certificate, "fingerprint", "") or "",
+        "external_source": getattr(certificate, "external_source", "") or "",
+        "external_id": getattr(certificate, "external_id", "") or "",
     }
 
 

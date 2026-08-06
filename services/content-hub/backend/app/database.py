@@ -232,6 +232,9 @@ class Certificate(Base):
     reminder_30_sent_on: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     file_asset_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     notes: Mapped[str] = mapped_column(Text, default="")
+    fingerprint: Mapped[str] = mapped_column(String(128), default="", index=True)
+    external_source: Mapped[str] = mapped_column(String(50), default="")  # ssl_file|letsencrypt|key_vault
+    external_id: Mapped[str] = mapped_column(String(200), default="", index=True)
     created_by_id: Mapped[str] = mapped_column(String(100))
     created_by_name: Mapped[str] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -508,6 +511,29 @@ def ensure_schema_updates(engine, is_sqlite: bool) -> None:
             ("reminder_90_sent_on", "ALTER TABLE certificates ADD COLUMN reminder_90_sent_on DATE", "ALTER TABLE certificates ADD COLUMN reminder_90_sent_on DATE"),
             ("reminder_60_sent_on", "ALTER TABLE certificates ADD COLUMN reminder_60_sent_on DATE", "ALTER TABLE certificates ADD COLUMN reminder_60_sent_on DATE"),
             ("reminder_30_sent_on", "ALTER TABLE certificates ADD COLUMN reminder_30_sent_on DATE", "ALTER TABLE certificates ADD COLUMN reminder_30_sent_on DATE"),
+        ):
+            if column_name not in columns:
+                try:
+                    with engine.begin() as connection:
+                        connection.execute(text(ddl_sqlite if is_sqlite else ddl_pg))
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Could not add certificates.%s: %s", column_name, exc)
+        for column_name, ddl_sqlite, ddl_pg in (
+            (
+                "fingerprint",
+                "ALTER TABLE certificates ADD COLUMN fingerprint VARCHAR(128) DEFAULT ''",
+                "ALTER TABLE certificates ADD COLUMN fingerprint VARCHAR(128) NOT NULL DEFAULT ''",
+            ),
+            (
+                "external_source",
+                "ALTER TABLE certificates ADD COLUMN external_source VARCHAR(50) DEFAULT ''",
+                "ALTER TABLE certificates ADD COLUMN external_source VARCHAR(50) NOT NULL DEFAULT ''",
+            ),
+            (
+                "external_id",
+                "ALTER TABLE certificates ADD COLUMN external_id VARCHAR(200) DEFAULT ''",
+                "ALTER TABLE certificates ADD COLUMN external_id VARCHAR(200) NOT NULL DEFAULT ''",
+            ),
         ):
             if column_name not in columns:
                 try:

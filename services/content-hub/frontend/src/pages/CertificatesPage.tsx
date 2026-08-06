@@ -6,8 +6,13 @@ import {
   certificatesAuditExportUrl,
   certificatesExportUrl,
   deleteCertificate,
+  fetchCaSyncStatus,
   fetchCertificates,
   importCertificateFromSharePoint,
+  importSslCertificateFile,
+  syncCertificatesFromKeyVault,
+  syncCertificatesFromLetsEncrypt,
+  type CaSyncStatus,
   type Certificate,
   type FileBrowseItem,
 } from "../api/client";
@@ -32,6 +37,9 @@ export function CertificatesPage() {
   const [error, setError] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<CaSyncStatus | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [notice, setNotice] = useState("");
 
   async function load() {
     setLoading(true);
@@ -53,6 +61,17 @@ export function CertificatesPage() {
   useEffect(() => {
     void load();
   }, [query, category, status]);
+
+  useEffect(() => {
+    if (!canEdit) return;
+    void (async () => {
+      try {
+        setSyncStatus(await fetchCaSyncStatus());
+      } catch {
+        setSyncStatus(null);
+      }
+    })();
+  }, [canEdit]);
 
   async function handleDelete(id: string) {
     if (!window.confirm(t("certificates.confirmDelete"))) return;
@@ -77,10 +96,66 @@ export function CertificatesPage() {
     }
   }
 
+  async function handleSslFileImport(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setImporting(true);
+    setError("");
+    setNotice("");
+    try {
+      const result = await importSslCertificateFile(file);
+      setNotice(
+        t(result.created ? "certificates.sslImported" : "certificates.sslUpdated", {
+          name: result.certificate.name,
+        }),
+      );
+      await load();
+      navigate(`/certificates/${result.certificate.id}/edit`, {
+        state: { notice: "ssl-imported" },
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setImporting(false);
+      event.target.value = "";
+    }
+  }
+
+  async function handleKeyVaultSync() {
+    setSyncing(true);
+    setError("");
+    setNotice("");
+    try {
+      const result = await syncCertificatesFromKeyVault();
+      setNotice(t("certificates.syncDone", { created: result.created, updated: result.updated }));
+      setSyncStatus(await fetchCaSyncStatus());
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setSyncing(false);
+    }
+  }
+
+  async function handleLetsEncryptSync() {
+    setSyncing(true);
+    setError("");
+    setNotice("");
+    try {
+      const result = await syncCertificatesFromLetsEncrypt();
+      setNotice(t("certificates.syncDone", { created: result.created, updated: result.updated }));
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   const categoryCounts = CATEGORIES.map((item) => ({
     key: item,
     label: t(`certificates.categories.${item}`),
-    count: certificates.filter((certificate) => certificate.category === item).length,
+    count: certificates.filter((cert) => cert.category === item).length,
   }));
 
   return (
@@ -99,6 +174,36 @@ export function CertificatesPage() {
           </a>
           {canEdit ? (
             <>
+              <label className="ghost-button" style={{ cursor: importing ? "wait" : "pointer" }}>
+                {t("certificates.importSsl")}
+                <input
+                  type="file"
+                  accept=".pem,.crt,.cer,.der,.cert"
+                  hidden
+                  disabled={importing || syncing}
+                  onChange={(event) => void handleSslFileImport(event)}
+                />
+              </label>
+              {syncStatus?.letsencrypt_configured ? (
+                <button
+                  type="button"
+                  className="ghost-button"
+                  disabled={syncing || importing}
+                  onClick={() => void handleLetsEncryptSync()}
+                >
+                  {syncing ? t("common.loading") : t("certificates.syncLetsEncrypt")}
+                </button>
+              ) : null}
+              {syncStatus?.key_vault_configured || syncStatus?.key_vault_mock ? (
+                <button
+                  type="button"
+                  className="ghost-button"
+                  disabled={syncing || importing}
+                  onClick={() => void handleKeyVaultSync()}
+                >
+                  {syncing ? t("common.loading") : t("certificates.syncKeyVault")}
+                </button>
+              ) : null}
               <button type="button" className="ghost-button" onClick={() => setPickerOpen(true)}>
                 {t("certificates.importFromSharePoint")}
               </button>
@@ -109,6 +214,8 @@ export function CertificatesPage() {
           ) : null}
         </div>
       </header>
+
+      {notice ? <p className="success-text">{notice}</p> : null}
 
       <SharePointImportPicker
         open={pickerOpen}

@@ -8,6 +8,8 @@ import {
   fetchCertificates,
   fileDownloadUrl,
   importFileFromSharePoint,
+  parseSslCertificateAsset,
+  parseSslCertificateFile,
   requestCertificateRenewal,
   updateCertificate,
   uploadFile,
@@ -80,6 +82,9 @@ export function CertificateEditorPage() {
     } else if (state?.notice === "sharepoint-imported") {
       setNotice(t("certificates.sharepointImported"));
       navigate(location.pathname, { replace: true, state: null });
+    } else if (state?.notice === "ssl-imported") {
+      setNotice(t("certificates.sslParsed"));
+      navigate(location.pathname, { replace: true, state: null });
     }
   }, [location.pathname, location.state, navigate, t]);
 
@@ -121,7 +126,22 @@ export function CertificateEditorPage() {
       const uploaded = await uploadFile(file, "certificates");
       setFileAssetId(uploaded.id);
       setFileName(uploaded.original_name);
-      setNotice(t("certificates.fileUploaded"));
+      const lower = file.name.toLowerCase();
+      if (lower.endsWith(".pem") || lower.endsWith(".crt") || lower.endsWith(".cer") || lower.endsWith(".der")) {
+        try {
+          const parsed = await parseSslCertificateFile(file);
+          setCategory("ssl");
+          if (!name.trim()) setName(parsed.name);
+          setIssuer(parsed.issuer);
+          setValidFrom(parsed.valid_from);
+          setValidTo(parsed.valid_to);
+          setNotice(t("certificates.sslParsed"));
+        } catch {
+          setNotice(t("certificates.fileUploaded"));
+        }
+      } else {
+        setNotice(t("certificates.fileUploaded"));
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
@@ -145,8 +165,18 @@ export function CertificateEditorPage() {
           .trim();
         if (stem) setName(stem);
       }
+      try {
+        const parsed = await parseSslCertificateAsset(imported.file.id);
+        setCategory("ssl");
+        if (!name.trim()) setName(parsed.name);
+        setIssuer(parsed.issuer);
+        setValidFrom(parsed.valid_from);
+        setValidTo(parsed.valid_to);
+        setNotice(t("certificates.sslParsed"));
+      } catch {
+        setNotice(t("certificates.sharepointFileAttached"));
+      }
       setPickerOpen(false);
-      setNotice(t("certificates.sharepointFileAttached"));
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
     } finally {

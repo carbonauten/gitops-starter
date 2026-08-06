@@ -155,11 +155,11 @@ frontend/src/pages/FilesPage.tsx (erweitert)
 - [x] Dashboard-Widget: „Läuft in 30/60/90 Tagen ab“
 - [x] Ampel-Status: gültig / läuft ab / abgelaufen
 - [x] Verantwortliche Person + E-Mail zuweisen
-- [ ] Erinnerungen per **Outlook** (E-Mail) und **Teams** (Nachricht) — Sprint 4
+- [x] Erinnerungen per **Outlook** (E-Mail) und **Teams** (Nachricht) — Sprint 4
 - [x] Erneuerungs-Workflow: in Bearbeitung markieren
 - [x] Filter & Suche nach Kategorie, Status, Aussteller
 - [x] Export-Liste (CSV) für Audits
-- [ ] Optional: SSL-Zertifikat-Import (.pem / .crt) mit automatischer Ablauf-Erkennung
+- [x] Optional: SSL-Zertifikat-Import (.pem / .crt) mit automatischer Ablauf-Erkennung
 
 ### Akzeptanzkriterien
 
@@ -529,7 +529,7 @@ flowchart LR
 |-------|--------------|-----------|
 | Zertifikat-Ketten | Abhängigkeiten zwischen Zertifikaten (Parent/Child) | ~~Hoch~~ ✅ Sprint B |
 | Version Restore | Alte Version wiederherstellen | ~~Mittel~~ ✅ Sprint D |
-| Auto-Import CA | Let's Encrypt / Azure Key Vault Sync | Mittel |
+| Auto-Import CA | Let's Encrypt / Azure Key Vault Sync | ~~Mittel~~ ✅ Sprint H |
 | Shop Checkout | Zahlung / Warenkorb für fuckco2.shop | ~~Mittel~~ ✅ Sprint G |
 | Shop Retouren | Retourenportal / Gutschriften | Niedrig |
 | KI-Assistenz | Zusammenfassung, Übersetzung DE↔EN↔中文 | ~~Mittel~~ ✅ Sprint A |
@@ -590,8 +590,32 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ---
 
+## Sprint H — Auto-Import CA ✅ (MVP)
+
+**Ziel:** SSL/TLS-Zertifikate automatisch erkennen und aus Datei, Let's Encrypt oder Azure Key Vault übernehmen.
+
+### Deliverables
+
+- [x] PEM/CRT/CER/DER-Parser (`cryptography`) mit Ablaufdatum, Aussteller, Fingerprint, SAN
+- [x] API `POST /api/certificates/parse-ssl` und `POST /api/certificates/import-ssl`
+- [x] Upsert nach Fingerprint (kein Duplikat bei erneutem Import)
+- [x] SharePoint-Import: SSL-Dateien füllen Datum/Aussteller automatisch
+- [x] Editor: Upload von `.pem/.crt/.cer` füllt Formularfelder
+- [x] Let's Encrypt Sync aus `LETSENCRYPT_LIVE_DIR` (`cert.pem` / `fullchain.pem`)
+- [x] Azure Key Vault Sync (`AZURE_KEY_VAULT_URL` + Entra) inkl. `KEY_VAULT_MOCK_MODE`
+- [x] Felder `fingerprint`, `external_source`, `external_id`
+- [x] DE / EN / 中文 + Tests
+
+### Akzeptanzkriterien
+
+- [x] Redakteur importiert PEM und sieht korrekte Gültigkeit ohne manuelle Datums-Eingabe
+- [x] Erneuter Import derselben Datei aktualisiert statt zu duplizieren
+- [x] Key-Vault-Mock-Sync legt SSL-Zertifikate in der Platform an
+
+---
+
 ## Nächster Schritt
 
-**Sprint H (Vorschlag):** Auto-Import CA oder Shop-Retouren — siehe Backlog.
+**Sprint I (Vorschlag):** Shop-Retouren / Gutschriften — siehe Backlog.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.

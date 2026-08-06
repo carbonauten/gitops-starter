@@ -49,5 +49,10 @@
   "errors.captcha_required": "Captcha erforderlich.",
   "errors.captcha_failed": "Captcha-Prüfung fehlgeschlagen.",
   "errors.captcha_unavailable": "Captcha vorübergehend nicht verfügbar.",
+  "errors.invalid_ssl_certificate": "Die SSL-Datei konnte nicht gelesen werden (PEM/CRT/CER).",
+  "errors.letsencrypt_not_configured": "Let's Encrypt-Verzeichnis ist nicht konfiguriert oder fehlt.",
+  "errors.key_vault_not_configured": "Azure Key Vault ist nicht konfiguriert.",
+  "errors.key_vault_token_failed": "Anmeldung bei Azure Key Vault fehlgeschlagen.",
+  "errors.key_vault_list_failed": "Zertifikate aus Key Vault konnten nicht geladen werden.",
   "messages.language_updated": "Sprache wurde aktualisiert."
 }

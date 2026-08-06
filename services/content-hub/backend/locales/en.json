@@ -49,5 +49,10 @@
   "errors.captcha_required": "Captcha is required.",
   "errors.captcha_failed": "Captcha verification failed.",
   "errors.captcha_unavailable": "Captcha is temporarily unavailable.",
+  "errors.invalid_ssl_certificate": "Could not read the SSL file (PEM/CRT/CER).",
+  "errors.letsencrypt_not_configured": "Let's Encrypt directory is not configured or missing.",
+  "errors.key_vault_not_configured": "Azure Key Vault is not configured.",
+  "errors.key_vault_token_failed": "Azure Key Vault authentication failed.",
+  "errors.key_vault_list_failed": "Could not list certificates from Key Vault.",
   "messages.language_updated": "Language updated."
 }

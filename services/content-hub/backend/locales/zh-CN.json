@@ -49,5 +49,10 @@
   "errors.captcha_required": "需要完成验证码。",
   "errors.captcha_failed": "验证码校验失败。",
   "errors.captcha_unavailable": "验证码暂时不可用。",
+  "errors.invalid_ssl_certificate": "无法读取 SSL 证书文件（PEM/CRT/CER）。",
+  "errors.letsencrypt_not_configured": "未配置 Let's Encrypt 目录或目录不存在。",
+  "errors.key_vault_not_configured": "未配置 Azure Key Vault。",
+  "errors.key_vault_token_failed": "Azure Key Vault 身份验证失败。",
+  "errors.key_vault_list_failed": "无法从 Key Vault 列出证书。",
   "messages.language_updated": "语言已更新。"
 }

@@ -246,6 +246,9 @@ class CertificateResponse(BaseModel):
     file_asset_id: Optional[str]
     file_name: Optional[str] = None
     notes: str
+    fingerprint: str = ""
+    external_source: str = ""
+    external_id: str = ""
     created_by_id: str
     created_by_name: str
     created_at: datetime

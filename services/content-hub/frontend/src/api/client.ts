@@ -201,10 +201,44 @@ export type Certificate = {
   file_asset_id: string | null;
   file_name: string | null;
   notes: string;
+  fingerprint?: string;
+  external_source?: string;
+  external_id?: string;
   created_by_id: string;
   created_by_name: string;
   created_at: string;
   updated_at: string;
+};
+
+export type ParsedSslCertificate = {
+  name: string;
+  issuer: string;
+  valid_from: string;
+  valid_to: string;
+  fingerprint_sha256: string;
+  serial_number: string;
+  subject: string;
+  sans: string[];
+  is_lets_encrypt: boolean;
+  category: "ssl";
+};
+
+export type CaSyncStatus = {
+  ssl_file_import: boolean;
+  letsencrypt_configured: boolean;
+  letsencrypt_live_dir: string;
+  key_vault_configured: boolean;
+  key_vault_url: string;
+  key_vault_mock: boolean;
+};
+
+export type CaSyncResult = {
+  source: string;
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: string[];
+  mock?: boolean;
 };
 
 export type DashboardStats = {
@@ -998,6 +1032,49 @@ export async function importCertificateFromSharePoint(
     body: JSON.stringify(data),
   });
   return payload.certificate;
+}
+
+export async function parseSslCertificateFile(file: File): Promise<ParsedSslCertificate> {
+  const body = new FormData();
+  body.append("upload", file);
+  const payload = await request<{ parsed: ParsedSslCertificate }>("/api/certificates/parse-ssl", {
+    method: "POST",
+    body,
+  });
+  return payload.parsed;
+}
+
+export async function parseSslCertificateAsset(fileAssetId: string): Promise<ParsedSslCertificate> {
+  const params = new URLSearchParams({ file_asset_id: fileAssetId });
+  const payload = await request<{ parsed: ParsedSslCertificate }>(`/api/certificates/parse-ssl?${params}`, {
+    method: "POST",
+  });
+  return payload.parsed;
+}
+
+export async function importSslCertificateFile(file: File): Promise<{
+  certificate: Certificate;
+  created: boolean;
+  parsed: ParsedSslCertificate;
+}> {
+  const body = new FormData();
+  body.append("upload", file);
+  return request("/api/certificates/import-ssl", {
+    method: "POST",
+    body,
+  });
+}
+
+export async function fetchCaSyncStatus(): Promise<CaSyncStatus> {
+  return request<CaSyncStatus>("/api/certificates/ca-sync/status");
+}
+
+export async function syncCertificatesFromLetsEncrypt(): Promise<CaSyncResult> {
+  return request<CaSyncResult>("/api/certificates/ca-sync/letsencrypt", { method: "POST" });
+}
+
+export async function syncCertificatesFromKeyVault(): Promise<CaSyncResult> {
+  return request<CaSyncResult>("/api/certificates/ca-sync/key-vault", { method: "POST" });
 }
 
 export async function updateCertificate(id: string, data: Partial<Certificate>): Promise<Certificate> {

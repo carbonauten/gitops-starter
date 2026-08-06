@@ -108,6 +108,11 @@ class Settings(BaseSettings):
     shop_turnstile_secret_key: str = ""
     shop_analytics_enabled: bool = True
 
+    # CA Auto-Import (SSL / Let's Encrypt / Azure Key Vault)
+    letsencrypt_live_dir: str = ""
+    azure_key_vault_url: str = ""
+    key_vault_mock_mode: bool = False
+
     database_url: str = "sqlite:///./data/content_hub.db"
     upload_dir: str = "./data/uploads"
     max_upload_bytes: int = 25 * 1024 * 1024
