@@ -21,6 +21,7 @@
     "openMenu": "Menü öffnen",
     "closeMenu": "Menü schließen",
     "shopCustomers": "Benutzerverwaltung",
+    "shopReturns": "Retouren",
     "shopMonitoring": "Monitoring",
     "overviewSection": "Übersicht",
     "contentSection": "Inhalte",
@@ -626,7 +627,8 @@
       "awaiting_payment": "Wartet auf Zahlung",
       "paid": "Bezahlt",
       "fulfilled": "Versendet",
-      "cancelled": "Storniert"
+      "cancelled": "Storniert",
+      "returned": "Retourniert"
     },
     "login": "Anmelden",
     "register": "Registrieren",
@@ -641,6 +643,13 @@
     "co2Balance": "CO₂ Reward Credits",
     "myOrders": "Meine Bestellungen",
     "noOrders": "Noch keine Bestellungen.",
+    "myReturns": "Meine Retouren",
+    "noReturns": "Noch keine Retouren.",
+    "requestReturn": "Retoure anfragen",
+    "submitReturn": "Retoure absenden",
+    "returnReason": "Grund",
+    "returnNote": "Notiz (optional)",
+    "returnRequested": "Retourenanfrage wurde gesendet.",
     "creditHistory": "Credit-Verlauf",
     "noCreditsYet": "Noch keine Credits gesammelt.",
     "creditsEarned": "Sie haben +{{credits}} CO₂ Reward Credits erhalten.",
@@ -782,5 +791,31 @@
     "colIp": "IP",
     "colReferrer": "Referrer",
     "empty": "Noch keine Seitenaufrufe erfasst."
+  },
+  "shopReturns": {
+    "title": "Shop-Retouren",
+    "subtitle": "Kundenretouren prüfen, genehmigen und abschließen (Lager + CO₂-Gutschrift).",
+    "empty": "Keine Retouren in diesem Filter.",
+    "allStatuses": "Alle Status",
+    "adminNote": "Admin-Notiz",
+    "approve": "Genehmigen",
+    "reject": "Ablehnen",
+    "complete": "Abschließen (Lager + CO₂)",
+    "resolved": "Retoure aktualisiert: {{status}}",
+    "stockRestored": "Lager wiederhergestellt",
+    "stockNotRestored": "Lager nicht geändert",
+    "statusValues": {
+      "requested": "Angefragt",
+      "approved": "Genehmigt",
+      "rejected": "Abgelehnt",
+      "completed": "Abgeschlossen"
+    },
+    "reasons": {
+      "damaged": "Beschädigt",
+      "wrong_item": "Falscher Artikel",
+      "not_as_described": "Nicht wie beschrieben",
+      "changed_mind": "Meinungsänderung",
+      "other": "Sonstiges"
+    }
   }
 }

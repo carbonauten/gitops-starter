@@ -311,6 +311,7 @@ export type ShopConfig = {
   invoice_enabled?: boolean;
   require_account_checkout?: boolean;
   co2_credits_per_euro?: number;
+  return_window_days?: number;
   analytics_enabled?: boolean;
   bot_protection?: {
     enabled?: boolean;
@@ -1265,6 +1266,67 @@ export async function fetchShopMyCredits(): Promise<{ balance: number; ledger: S
 export async function fetchShopMyOrders(): Promise<ShopOrder[]> {
   const payload = await request<{ orders: ShopOrder[] }>("/api/shop/auth/me/orders");
   return payload.orders;
+}
+
+export type ShopReturn = {
+  id: string;
+  return_number: string;
+  order_id: string;
+  customer_id?: string | null;
+  status: "requested" | "approved" | "rejected" | "completed" | string;
+  reason: string;
+  customer_note: string;
+  admin_note: string;
+  refund_method: string;
+  credits_reversed: number;
+  inventory_restored: boolean;
+  requested_at?: string | null;
+  resolved_at?: string | null;
+  completed_at?: string | null;
+  resolved_by_name?: string;
+  order_number?: string;
+  order_status?: string;
+  order_total_cents?: number;
+  order_currency?: string;
+  customer_email?: string;
+  customer_name?: string;
+  credits_earned?: number;
+  created_at?: string | null;
+};
+
+export async function fetchShopMyReturns(): Promise<ShopReturn[]> {
+  const payload = await request<{ returns: ShopReturn[] }>("/api/shop/auth/me/returns");
+  return payload.returns;
+}
+
+export async function requestShopReturn(
+  orderId: string,
+  data: { reason: string; customer_note?: string },
+): Promise<ShopReturn> {
+  const payload = await request<{ return: ShopReturn }>(`/api/shop/auth/me/orders/${orderId}/returns`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return payload.return;
+}
+
+export async function fetchAdminShopReturns(status?: string): Promise<ShopReturn[]> {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  const query = params.toString();
+  const payload = await request<{ returns: ShopReturn[] }>(`/api/shop-returns${query ? `?${query}` : ""}`);
+  return payload.returns;
+}
+
+export async function resolveAdminShopReturn(
+  returnId: string,
+  data: { status: "approved" | "rejected" | "completed"; admin_note?: string },
+): Promise<ShopReturn> {
+  const payload = await request<{ return: ShopReturn }>(`/api/shop-returns/${returnId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+  return payload.return;
 }
 
 export async function fetchShopCustomersAdmin(): Promise<ShopCustomer[]> {

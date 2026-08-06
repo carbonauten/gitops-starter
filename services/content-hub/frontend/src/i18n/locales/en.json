@@ -21,6 +21,7 @@
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "shopCustomers": "Customer accounts",
+    "shopReturns": "Returns",
     "shopMonitoring": "Monitoring",
     "overviewSection": "Overview",
     "contentSection": "Content",
@@ -626,7 +627,8 @@
       "awaiting_payment": "Awaiting payment",
       "paid": "Paid",
       "fulfilled": "Shipped",
-      "cancelled": "Cancelled"
+      "cancelled": "Cancelled",
+      "returned": "Returned"
     },
     "login": "Sign in",
     "register": "Register",
@@ -641,6 +643,13 @@
     "co2Balance": "CO₂ reward credits",
     "myOrders": "My orders",
     "noOrders": "No orders yet.",
+    "myReturns": "My returns",
+    "noReturns": "No returns yet.",
+    "requestReturn": "Request return",
+    "submitReturn": "Submit return",
+    "returnReason": "Reason",
+    "returnNote": "Note (optional)",
+    "returnRequested": "Return request submitted.",
     "creditHistory": "Credit history",
     "noCreditsYet": "No credits earned yet.",
     "creditsEarned": "You earned +{{credits}} CO₂ reward credits.",
@@ -782,5 +791,31 @@
     "colIp": "IP",
     "colReferrer": "Referrer",
     "empty": "No page views recorded yet."
+  },
+  "shopReturns": {
+    "title": "Shop returns",
+    "subtitle": "Review, approve, and complete customer returns (stock + CO₂ clawback).",
+    "empty": "No returns in this filter.",
+    "allStatuses": "All statuses",
+    "adminNote": "Admin note",
+    "approve": "Approve",
+    "reject": "Reject",
+    "complete": "Complete (stock + CO₂)",
+    "resolved": "Return updated: {{status}}",
+    "stockRestored": "Stock restored",
+    "stockNotRestored": "Stock unchanged",
+    "statusValues": {
+      "requested": "Requested",
+      "approved": "Approved",
+      "rejected": "Rejected",
+      "completed": "Completed"
+    },
+    "reasons": {
+      "damaged": "Damaged",
+      "wrong_item": "Wrong item",
+      "not_as_described": "Not as described",
+      "changed_mind": "Changed mind",
+      "other": "Other"
+    }
   }
 }

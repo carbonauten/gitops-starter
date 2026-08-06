@@ -54,5 +54,10 @@
   "errors.key_vault_not_configured": "未配置 Azure Key Vault。",
   "errors.key_vault_token_failed": "Azure Key Vault 身份验证失败。",
   "errors.key_vault_list_failed": "无法从 Key Vault 列出证书。",
+  "errors.return_not_allowed": "此订单不允许退货。",
+  "errors.return_window_expired": "退货期限已过。",
+  "errors.return_already_open": "此订单已有进行中的退货。",
+  "errors.return_already_completed": "此退货已完成。",
+  "errors.return_already_resolved": "此退货已处理。",
   "messages.language_updated": "语言已更新。"
 }

@@ -531,7 +531,7 @@ flowchart LR
 | Version Restore | Alte Version wiederherstellen | ~~Mittel~~ ✅ Sprint D |
 | Auto-Import CA | Let's Encrypt / Azure Key Vault Sync | ~~Mittel~~ ✅ Sprint H |
 | Shop Checkout | Zahlung / Warenkorb für fuckco2.shop | ~~Mittel~~ ✅ Sprint G |
-| Shop Retouren | Retourenportal / Gutschriften | Niedrig |
+| Shop Retouren | Retourenportal / Gutschriften | ~~Niedrig~~ ✅ Sprint I |
 | KI-Assistenz | Zusammenfassung, Übersetzung DE↔EN↔中文 | ~~Mittel~~ ✅ Sprint A |
 | SharePoint | Zertifikate aus SharePoint-Bibliothek importieren | ~~Mittel~~ ✅ Sprint F |
 | Mobile | Responsive Optimierung / PWA | ~~Niedrig~~ Teilweise (UI Sprint) |
@@ -614,8 +614,32 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ---
 
+## Sprint I — Shop-Retouren / Gutschriften ✅ (MVP)
+
+**Ziel:** Kunden können Retouren anfragen; Shop-Redaktion prüft und schließt ab (Lager + CO₂-Rückbuchung). Geldrückerstattung bleibt manuelle Gutschrift.
+
+### Deliverables
+
+- [x] Modell `shop_returns` (`requested|approved|rejected|completed`)
+- [x] Kunden-API: `POST /api/shop/auth/me/orders/{id}/returns`, `GET /api/shop/auth/me/returns`
+- [x] Admin-API: `GET/PATCH /api/shop-returns`
+- [x] Retourenfenster `SHOP_RETURN_WINDOW_DAYS` (Default 30)
+- [x] Abschluss: Lager wiederherstellen + CO₂-Clawback + Order-Status `returned`
+- [x] Shop-Konto: Retoure anfragen + eigene Retouren
+- [x] Platform: Shop → Retouren
+- [x] DE / EN / 中文 + Tests
+
+### Akzeptanzkriterien
+
+- [x] Kunde kann nur bei `paid`/`fulfilled` innerhalb der Frist retournieren
+- [x] Eine offene/abgeschlossene Retoure pro Bestellung
+- [x] Abschluss stellt Tracked-Inventory wieder her und bucht CO₂ zurück (Floor 0)
+- [x] Ablehnung ändert Lager/Credits nicht
+
+---
+
 ## Nächster Schritt
 
-**Sprint I (Vorschlag):** Shop-Retouren / Gutschriften — siehe Backlog.
+**Sprint J (Vorschlag):** Zertifikat-Ketten Vertiefung / Mobile PWA — siehe Backlog.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.

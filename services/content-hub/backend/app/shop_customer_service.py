@@ -178,6 +178,8 @@ def adjust_customer_credits(
     delta: int,
     note: str = "",
     reason: str = "adjust",
+    order_id: str | None = None,
+    allow_floor_zero: bool = False,
 ) -> ShopCustomer:
     customer = get_customer(db, customer_id)
     if not customer:
@@ -186,13 +188,19 @@ def adjust_customer_credits(
         return customer
     new_balance = int(customer.co2_credit_balance or 0) + int(delta)
     if new_balance < 0:
-        raise HTTPException(status_code=400, detail="insufficient_credits")
+        if allow_floor_zero:
+            delta = -int(customer.co2_credit_balance or 0)
+            new_balance = 0
+            if delta == 0:
+                return customer
+        else:
+            raise HTTPException(status_code=400, detail="insufficient_credits")
     customer.co2_credit_balance = new_balance
     db.add(
         ShopCreditLedger(
             id=str(uuid4()),
             customer_id=customer.id,
-            order_id=None,
+            order_id=order_id,
             delta_credits=int(delta),
             reason=reason,
             note=(note or "").strip()[:500],

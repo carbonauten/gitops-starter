@@ -46,6 +46,7 @@ def shop_config() -> dict:
         "invoice_enabled": True,
         "require_account_checkout": settings.shop_require_account_checkout,
         "co2_credits_per_euro": settings.shop_co2_credits_per_euro,
+        "return_window_days": settings.shop_return_window_days,
         "analytics_enabled": settings.shop_analytics_enabled,
         "bot_protection": {
             "enabled": settings.shop_bot_protection_enabled,

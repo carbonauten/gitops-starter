@@ -54,5 +54,10 @@
   "errors.key_vault_not_configured": "Azure Key Vault ist nicht konfiguriert.",
   "errors.key_vault_token_failed": "Anmeldung bei Azure Key Vault fehlgeschlagen.",
   "errors.key_vault_list_failed": "Zertifikate aus Key Vault konnten nicht geladen werden.",
+  "errors.return_not_allowed": "Für diese Bestellung ist keine Retoure möglich.",
+  "errors.return_window_expired": "Die Retourenfrist ist abgelaufen.",
+  "errors.return_already_open": "Für diese Bestellung läuft bereits eine Retoure.",
+  "errors.return_already_completed": "Diese Retoure wurde bereits abgeschlossen.",
+  "errors.return_already_resolved": "Diese Retoure wurde bereits entschieden.",
   "messages.language_updated": "Sprache wurde aktualisiert."
 }

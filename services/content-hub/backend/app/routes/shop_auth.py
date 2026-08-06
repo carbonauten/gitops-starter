@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import clear_shop_session, get_shop_session, set_shop_session
 from ..config import get_settings
-from ..database import get_db
+from ..database import ShopOrder, get_db
 from ..shop_bot_protection import protect_shop_action
 from ..shop_customer_service import (
     authenticate_customer,
@@ -17,6 +17,7 @@ from ..shop_customer_service import (
     register_customer,
 )
 from ..shop_order_service import get_order_items, order_to_dict
+from ..shop_return_service import list_customer_returns, request_return, return_to_dict
 
 router = APIRouter(prefix="/api/shop/auth", tags=["shop-auth"])
 
@@ -35,6 +36,11 @@ class ShopLoginRequest(BaseModel):
     password: str = Field(..., min_length=1, max_length=200)
     website: str = ""  # honeypot
     turnstile_token: str = ""
+
+
+class ShopReturnCreateRequest(BaseModel):
+    reason: str = Field(default="other", max_length=80)
+    customer_note: str = Field(default="", max_length=2000)
 
 
 def get_current_shop_customer(request: Request, db: Session = Depends(get_db)) -> dict:
@@ -140,3 +146,32 @@ def shop_my_orders(
 ) -> dict:
     orders = list_customer_orders(db, customer["id"])
     return {"orders": [order_to_dict(order, get_order_items(db, order.id)) for order in orders]}
+
+
+@router.get("/me/returns")
+def shop_my_returns(
+    db: Session = Depends(get_db),
+    customer: dict = Depends(get_current_shop_customer),
+) -> dict:
+    rows = list_customer_returns(db, customer["id"])
+    return {"returns": [return_to_dict(row, order) for row, order in rows]}
+
+
+@router.post("/me/orders/{order_id}/returns", status_code=201)
+def shop_request_return(
+    order_id: str,
+    payload: ShopReturnCreateRequest,
+    db: Session = Depends(get_db),
+    customer: dict = Depends(get_current_shop_customer),
+) -> dict:
+    order = db.get(ShopOrder, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="not_found")
+    row = request_return(
+        db,
+        order=order,
+        customer_id=customer["id"],
+        reason=payload.reason,
+        customer_note=payload.customer_note,
+    )
+    return {"return": return_to_dict(row, order)}

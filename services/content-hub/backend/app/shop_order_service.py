@@ -239,6 +239,14 @@ def mark_inventory_reserved(db: Session, items: list[ShopOrderItem]) -> None:
         product.stock_qty -= item.quantity
 
 
+def restore_inventory(db: Session, items: list[ShopOrderItem]) -> None:
+    """Return reserved stock for cancelled/returned orders."""
+    for item in items:
+        product = db.get(Product, item.product_id)
+        if not product or not product.track_inventory:
+            continue
+        product.stock_qty = int(product.stock_qty or 0) + int(item.quantity or 0)
+
 def create_stripe_checkout_session(
     db: Session,
     order: ShopOrder,
@@ -389,6 +397,7 @@ def send_order_emails(db: Session, order: ShopOrder, items: list[ShopOrderItem],
         "pending": "ausstehend",
         "fulfilled": "versendet",
         "cancelled": "storniert",
+        "returned": "retourniert",
     }.get(order.status, order.status)
 
     body = (
@@ -438,8 +447,10 @@ def list_orders(db: Session, *, status: Optional[str] = None) -> list[ShopOrder]
 
 
 def update_order_status(db: Session, order: ShopOrder, status: str) -> ShopOrder:
-    if status not in {"pending", "awaiting_payment", "paid", "fulfilled", "cancelled"}:
+    if status not in {"pending", "awaiting_payment", "paid", "fulfilled", "cancelled", "returned"}:
         raise HTTPException(status_code=400, detail="validation")
+    previous = order.status
+    items = get_order_items(db, order.id)
     order.status = status
     if status == "paid" and not order.paid_at:
         order.paid_at = _utc_now()
@@ -447,6 +458,10 @@ def update_order_status(db: Session, order: ShopOrder, status: str) -> ShopOrder
         order.fulfilled_at = _utc_now()
         if not order.paid_at:
             order.paid_at = order.fulfilled_at
+    if status == "cancelled" and previous in {"awaiting_payment", "paid", "fulfilled", "pending"}:
+        # Restore stock if it was reserved (invoice at create, stripe at paid)
+        if previous in {"awaiting_payment", "paid", "fulfilled"}:
+            restore_inventory(db, items)
     db.commit()
     db.refresh(order)
     if status in {"paid", "fulfilled"}:

@@ -97,6 +97,7 @@ class Settings(BaseSettings):
     # CO2 Reward Credits: credits awarded per full euro of paid order total
     shop_co2_credits_per_euro: int = 1
     shop_require_account_checkout: bool = False
+    shop_return_window_days: int = 30
     # Bot protection (rate limit + honeypot; optional Cloudflare Turnstile)
     shop_bot_protection_enabled: bool = True
     shop_bot_rate_limit: int = 30

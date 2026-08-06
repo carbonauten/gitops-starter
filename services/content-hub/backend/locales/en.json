@@ -54,5 +54,10 @@
   "errors.key_vault_not_configured": "Azure Key Vault is not configured.",
   "errors.key_vault_token_failed": "Azure Key Vault authentication failed.",
   "errors.key_vault_list_failed": "Could not list certificates from Key Vault.",
+  "errors.return_not_allowed": "A return is not allowed for this order.",
+  "errors.return_window_expired": "The return window has expired.",
+  "errors.return_already_open": "A return is already open for this order.",
+  "errors.return_already_completed": "This return was already completed.",
+  "errors.return_already_resolved": "This return was already resolved.",
   "messages.language_updated": "Language updated."
 }

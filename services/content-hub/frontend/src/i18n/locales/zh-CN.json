@@ -21,6 +21,7 @@
     "openMenu": "打开菜单",
     "closeMenu": "关闭菜单",
     "shopCustomers": "客户账户",
+    "shopReturns": "退货",
     "shopMonitoring": "监控",
     "overviewSection": "概览",
     "contentSection": "内容",
@@ -626,7 +627,8 @@
       "awaiting_payment": "待付款",
       "paid": "已付款",
       "fulfilled": "已发货",
-      "cancelled": "已取消"
+      "cancelled": "已取消",
+      "returned": "已退货"
     },
     "login": "登录",
     "register": "注册",
@@ -641,6 +643,13 @@
     "co2Balance": "CO₂ 奖励积分",
     "myOrders": "我的订单",
     "noOrders": "暂无订单。",
+    "myReturns": "我的退货",
+    "noReturns": "暂无退货。",
+    "requestReturn": "申请退货",
+    "submitReturn": "提交退货",
+    "returnReason": "原因",
+    "returnNote": "备注（可选）",
+    "returnRequested": "退货申请已提交。",
     "creditHistory": "积分记录",
     "noCreditsYet": "尚未获得积分。",
     "creditsEarned": "您获得了 +{{credits}} CO₂ 奖励积分。",
@@ -782,5 +791,31 @@
     "colIp": "IP",
     "colReferrer": "来源",
     "empty": "尚无页面浏览记录。"
+  },
+  "shopReturns": {
+    "title": "商店退货",
+    "subtitle": "审核、批准并完成客户退货（库存 + CO₂ 回扣）。",
+    "empty": "此筛选下暂无退货。",
+    "allStatuses": "全部状态",
+    "adminNote": "管理员备注",
+    "approve": "批准",
+    "reject": "拒绝",
+    "complete": "完成（库存 + CO₂）",
+    "resolved": "退货已更新：{{status}}",
+    "stockRestored": "库存已恢复",
+    "stockNotRestored": "库存未变更",
+    "statusValues": {
+      "requested": "已申请",
+      "approved": "已批准",
+      "rejected": "已拒绝",
+      "completed": "已完成"
+    },
+    "reasons": {
+      "damaged": "损坏",
+      "wrong_item": "发错商品",
+      "not_as_described": "与描述不符",
+      "changed_mind": "改变主意",
+      "other": "其他"
+    }
   }
 }

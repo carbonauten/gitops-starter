@@ -398,6 +398,35 @@ class ShopOrderItem(Base):
     line_total_cents: Mapped[int] = mapped_column(Integer, default=0)
 
 
+class ShopReturn(Base):
+    """Customer return / Gutschrift request for a shop order."""
+
+    __tablename__ = "shop_returns"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    return_number: Mapped[str] = mapped_column(String(40), unique=True, index=True)
+    order_id: Mapped[str] = mapped_column(String(36), index=True)
+    customer_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(30), default="requested")  # requested|approved|rejected|completed
+    reason: Mapped[str] = mapped_column(String(80), default="other")
+    customer_note: Mapped[str] = mapped_column(Text, default="")
+    admin_note: Mapped[str] = mapped_column(Text, default="")
+    refund_method: Mapped[str] = mapped_column(String(40), default="credit_note")  # credit_note|manual
+    credits_reversed: Mapped[int] = mapped_column(Integer, default=0)
+    inventory_restored: Mapped[bool] = mapped_column(Boolean, default=False)
+    requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    resolved_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    resolved_by_id: Mapped[str] = mapped_column(String(100), default="")
+    resolved_by_name: Mapped[str] = mapped_column(String(200), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
 class ShopPageView(Base):
     """Consent-gated storefront page view for shop monitoring."""
 

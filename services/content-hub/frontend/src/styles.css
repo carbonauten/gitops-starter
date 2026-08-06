@@ -2935,6 +2935,49 @@ a {
   font: inherit;
 }
 
+.shop-account-orders {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+  display: grid;
+  gap: 0.85rem;
+}
+
+.shop-account-orders li {
+  display: grid;
+  gap: 0.55rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+}
+
+.shop-return-form {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+
+.shop-return-form label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.92rem;
+}
+
+.shop-return-form select,
+.shop-return-form textarea {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  background: color-mix(in srgb, #0b1210 70%, transparent);
+  color: inherit;
+  padding: 0.55rem 0.7rem;
+}
+
+.shop-return-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .shop-legal-body {
   white-space: pre-wrap;
   font-family: inherit;

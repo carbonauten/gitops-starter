@@ -8,15 +8,18 @@ import {
   fetchShopConfig,
   fetchShopMyCredits,
   fetchShopMyOrders,
+  fetchShopMyReturns,
   fetchShopOrder,
   fetchShopProduct,
   fetchShopProducts,
   formatMoney,
+  requestShopReturn,
   trackShopPageView,
   type ShopConfig,
   type ShopCreditLedgerEntry,
   type ShopOrder,
   type ShopProduct,
+  type ShopReturn,
 } from "../api/client";
 import { EmptyState } from "../components/EmptyState";
 import { LanguageSwitch } from "../components/LanguageSwitch";
@@ -824,22 +827,56 @@ function ShopAccountPage({ base }: { base: string }) {
   const { t, i18n } = useTranslation();
   const { customer, loading } = useShopAuth();
   const [orders, setOrders] = useState<ShopOrder[]>([]);
+  const [returns, setReturns] = useState<ShopReturn[]>([]);
   const [ledger, setLedger] = useState<ShopCreditLedgerEntry[]>([]);
   const [balance, setBalance] = useState(0);
+  const [reason, setReason] = useState("changed_mind");
+  const [note, setNote] = useState("");
+  const [activeOrderId, setActiveOrderId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  async function reload() {
+    if (!customer) return;
+    const [nextOrders, nextReturns, credits] = await Promise.all([
+      fetchShopMyOrders(),
+      fetchShopMyReturns(),
+      fetchShopMyCredits(),
+    ]);
+    setOrders(nextOrders);
+    setReturns(nextReturns);
+    setLedger(credits.ledger);
+    setBalance(credits.balance);
+  }
 
   useEffect(() => {
     if (!customer) return;
     void (async () => {
       try {
-        const [nextOrders, credits] = await Promise.all([fetchShopMyOrders(), fetchShopMyCredits()]);
-        setOrders(nextOrders);
-        setLedger(credits.ledger);
-        setBalance(credits.balance);
+        await reload();
       } catch {
         /* ignore */
       }
     })();
   }, [customer]);
+
+  async function submitReturn(orderId: string) {
+    setSaving(true);
+    setError("");
+    setNotice("");
+    try {
+      await requestShopReturn(orderId, { reason, customer_note: note });
+      setActiveOrderId("");
+      setNote("");
+      setNotice(t("shop.returnRequested"));
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setSaving(false);
+    }
+  }
 
   if (loading) return <LoadingState />;
   if (!customer) {
@@ -853,6 +890,10 @@ function ShopAccountPage({ base }: { base: string }) {
     );
   }
 
+  const openReturnOrderIds = new Set(
+    returns.filter((item) => item.status === "requested" || item.status === "approved" || item.status === "completed").map((item) => item.order_id),
+  );
+
   return (
     <section className="shop-success">
       <h1>{t("shop.account")}</h1>
@@ -862,14 +903,70 @@ function ShopAccountPage({ base }: { base: string }) {
       <p>
         {t("shop.co2Balance")}: <strong>{balance}</strong>
       </p>
+      {error ? <p className="error-text">{error}</p> : null}
+      {notice ? <p className="success-text">{notice}</p> : null}
       <h2>{t("shop.myOrders")}</h2>
       {orders.length === 0 ? <p className="muted">{t("shop.noOrders")}</p> : null}
+      <ul className="shop-account-orders">
+        {orders.map((order) => {
+          const canReturn =
+            (order.status === "paid" || order.status === "fulfilled") && !openReturnOrderIds.has(order.id);
+          return (
+            <li key={order.id}>
+              <div>
+                {order.order_number} · {t(`shop.statusValues.${order.status}`, { defaultValue: order.status })} ·{" "}
+                {formatMoney(order.total_cents, order.currency, i18n.language)}
+                {order.credits_earned ? ` · +${order.credits_earned} CO₂` : ""}
+              </div>
+              {canReturn ? (
+                activeOrderId === order.id ? (
+                  <div className="shop-return-form">
+                    <label>
+                      {t("shop.returnReason")}
+                      <select value={reason} onChange={(event) => setReason(event.target.value)}>
+                        {["damaged", "wrong_item", "not_as_described", "changed_mind", "other"].map((item) => (
+                          <option key={item} value={item}>
+                            {t(`shopReturns.reasons.${item}`)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      {t("shop.returnNote")}
+                      <textarea rows={2} value={note} onChange={(event) => setNote(event.target.value)} />
+                    </label>
+                    <div className="shop-return-actions">
+                      <button
+                        type="button"
+                        className="shop-btn shop-btn-primary"
+                        disabled={saving}
+                        onClick={() => void submitReturn(order.id)}
+                      >
+                        {saving ? t("common.loading") : t("shop.submitReturn")}
+                      </button>
+                      <button type="button" className="shop-btn shop-btn-ghost" onClick={() => setActiveOrderId("")}>
+                        {t("common.cancel")}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button type="button" className="shop-btn shop-btn-ghost" onClick={() => setActiveOrderId(order.id)}>
+                    {t("shop.requestReturn")}
+                  </button>
+                )
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+      <h2>{t("shop.myReturns")}</h2>
+      {returns.length === 0 ? <p className="muted">{t("shop.noReturns")}</p> : null}
       <ul>
-        {orders.map((order) => (
-          <li key={order.id}>
-            {order.order_number} · {t(`shop.statusValues.${order.status}`, { defaultValue: order.status })} ·{" "}
-            {formatMoney(order.total_cents, order.currency, i18n.language)}
-            {order.credits_earned ? ` · +${order.credits_earned} CO₂` : ""}
+        {returns.map((item) => (
+          <li key={item.id}>
+            {item.return_number} · {item.order_number} ·{" "}
+            {t(`shopReturns.statusValues.${item.status}`, { defaultValue: item.status })} ·{" "}
+            {t(`shopReturns.reasons.${item.reason}`, { defaultValue: item.reason })}
           </li>
         ))}
       </ul>
