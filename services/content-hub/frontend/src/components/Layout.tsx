@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { SearchBar } from "./SearchBar";
 import { BrandLogo } from "./BrandLogo";
+import { PwaInstallBanner } from "./PwaInstallBanner";
 import { useAuth } from "../hooks/useAuth";
 import { usePermissions } from "../hooks/usePermissions";
 
@@ -158,6 +159,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="app-shell">
       <TopBar onMenuToggle={() => setNavOpen((current) => !current)} />
+      <PwaInstallBanner />
       <div className="app-body">
         {navOpen ? (
           <button

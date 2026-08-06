@@ -7,6 +7,7 @@ import {
   certificatesExportUrl,
   deleteCertificate,
   fetchCaSyncStatus,
+  fetchCertificateChains,
   fetchCertificates,
   importCertificateFromSharePoint,
   importSslCertificateFile,
@@ -14,6 +15,7 @@ import {
   syncCertificatesFromLetsEncrypt,
   type CaSyncStatus,
   type Certificate,
+  type CertificateChainNode,
   type FileBrowseItem,
 } from "../api/client";
 import { CertificateStatusBadge } from "../components/CertificateStatusBadge";
@@ -25,11 +27,74 @@ import { usePermissions } from "../hooks/usePermissions";
 const CATEGORIES = ["compliance", "product", "training", "ssl"] as const;
 const STATUSES = ["valid", "expiring", "expired", "renewal"] as const;
 
+function ChainTreeNode({
+  node,
+  depth = 0,
+  canEdit,
+  onDelete,
+}: {
+  node: CertificateChainNode;
+  depth?: number;
+  canEdit: boolean;
+  onDelete: (id: string) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <li className="cert-chain-node" style={{ ["--depth" as string]: depth }}>
+      <article className="list-card cert-chain-card">
+        <div>
+          <div className="list-card-title-row">
+            <h2>
+              <Link to={canEdit ? `/certificates/${node.id}/edit` : `/certificates`}>{node.name}</Link>
+            </h2>
+            <CertificateStatusBadge status={node.status} />
+          </div>
+          <p className="muted">
+            {t(`certificates.categories.${node.category}`, { defaultValue: node.category })} ·{" "}
+            {t("certificates.validUntil")}: {node.valid_to}
+            {node.days_until_expiry >= 0
+              ? ` · ${t("certificates.daysLeft", { count: node.days_until_expiry })}`
+              : ` · ${t("certificates.overdue", { count: Math.abs(node.days_until_expiry) })}`}
+          </p>
+          {(node.children?.length || 0) > 0 ? (
+            <p className="muted">{t("certificates.childrenCount", { count: node.children.length })}</p>
+          ) : null}
+        </div>
+        {canEdit ? (
+          <div className="list-card-actions">
+            <Link to={`/certificates/${node.id}/edit`} className="ghost-button link-button">
+              {t("certificates.edit")}
+            </Link>
+            <button type="button" className="ghost-button danger" onClick={() => onDelete(node.id)}>
+              {t("certificates.delete")}
+            </button>
+          </div>
+        ) : null}
+      </article>
+      {node.children?.length ? (
+        <ul className="cert-chain-children">
+          {node.children.map((child) => (
+            <ChainTreeNode
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              canEdit={canEdit}
+              onDelete={onDelete}
+            />
+          ))}
+        </ul>
+      ) : null}
+    </li>
+  );
+}
+
 export function CertificatesPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { canEdit } = usePermissions();
   const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [chains, setChains] = useState<CertificateChainNode[]>([]);
+  const [view, setView] = useState<"list" | "chains">("list");
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [status, setStatus] = useState("");
@@ -41,7 +106,7 @@ export function CertificatesPage() {
   const [syncing, setSyncing] = useState(false);
   const [notice, setNotice] = useState("");
 
-  async function load() {
+  async function loadList() {
     setLoading(true);
     setError("");
     try {
@@ -58,9 +123,25 @@ export function CertificatesPage() {
     }
   }
 
+  async function loadChains() {
+    setLoading(true);
+    setError("");
+    try {
+      setChains(await fetchCertificateChains());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setLoading(false);
+    }
+  }
+
   useEffect(() => {
-    void load();
-  }, [query, category, status]);
+    if (view === "chains") {
+      void loadChains();
+    } else {
+      void loadList();
+    }
+  }, [view, query, category, status]);
 
   useEffect(() => {
     if (!canEdit) return;
@@ -76,7 +157,11 @@ export function CertificatesPage() {
   async function handleDelete(id: string) {
     if (!window.confirm(t("certificates.confirmDelete"))) return;
     await deleteCertificate(id);
-    await load();
+    if (view === "chains") {
+      await loadChains();
+    } else {
+      await loadList();
+    }
   }
 
   async function handleSharePointImport(file: FileBrowseItem) {
@@ -109,7 +194,7 @@ export function CertificatesPage() {
           name: result.certificate.name,
         }),
       );
-      await load();
+      await loadList();
       navigate(`/certificates/${result.certificate.id}/edit`, {
         state: { notice: "ssl-imported" },
       });
@@ -129,7 +214,8 @@ export function CertificatesPage() {
       const result = await syncCertificatesFromKeyVault();
       setNotice(t("certificates.syncDone", { created: result.created, updated: result.updated }));
       setSyncStatus(await fetchCaSyncStatus());
-      await load();
+      if (view === "chains") await loadChains();
+      else await loadList();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
@@ -144,7 +230,8 @@ export function CertificatesPage() {
     try {
       const result = await syncCertificatesFromLetsEncrypt();
       setNotice(t("certificates.syncDone", { created: result.created, updated: result.updated }));
-      await load();
+      if (view === "chains") await loadChains();
+      else await loadList();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
@@ -157,6 +244,13 @@ export function CertificatesPage() {
     label: t(`certificates.categories.${item}`),
     count: certificates.filter((cert) => cert.category === item).length,
   }));
+
+  const filteredChains = chains.filter((root) => {
+    const matchesQuery = !query || root.name.toLowerCase().includes(query.toLowerCase());
+    const matchesCategory = !category || root.category === category;
+    const matchesStatus = !status || root.status === status;
+    return matchesQuery && matchesCategory && matchesStatus;
+  });
 
   return (
     <section className="page">
@@ -227,16 +321,34 @@ export function CertificatesPage() {
         onSelect={handleSharePointImport}
       />
 
-      <div className="card-grid compact-grid">
-        {categoryCounts.map((item) => (
-          <article key={item.key} className="stat-card">
-            <p className="stat-label">{item.label}</p>
-            <p className="stat-value">{item.count}</p>
-          </article>
-        ))}
-      </div>
+      {view === "list" ? (
+        <div className="card-grid compact-grid">
+          {categoryCounts.map((item) => (
+            <article key={item.key} className="stat-card">
+              <p className="stat-label">{item.label}</p>
+              <p className="stat-value">{item.count}</p>
+            </article>
+          ))}
+        </div>
+      ) : null}
 
       <div className="toolbar">
+        <div className="view-toggle" role="group" aria-label={t("certificates.viewLabel")}>
+          <button
+            type="button"
+            className={view === "list" ? "ghost-button active" : "ghost-button"}
+            onClick={() => setView("list")}
+          >
+            {t("certificates.viewList")}
+          </button>
+          <button
+            type="button"
+            className={view === "chains" ? "ghost-button active" : "ghost-button"}
+            onClick={() => setView("chains")}
+          >
+            {t("certificates.viewChains")}
+          </button>
+        </div>
         <input
           type="search"
           value={query}
@@ -263,58 +375,74 @@ export function CertificatesPage() {
 
       {loading ? <LoadingState /> : null}
       {error ? <p className="error-text">{error}</p> : null}
-      {!loading && certificates.length === 0 ? (
+      {!loading && view === "list" && certificates.length === 0 ? (
         <EmptyState message={t("certificates.empty")} icon="◎" />
       ) : null}
+      {!loading && view === "chains" && filteredChains.length === 0 ? (
+        <EmptyState message={t("certificates.noChains")} icon="◎" />
+      ) : null}
 
-      <div className="list-stack">
-        {certificates.map((certificate) => (
-          <article key={certificate.id} className="list-card">
-            <div>
-              <div className="list-card-title-row">
-                <h2>{certificate.name}</h2>
-                <CertificateStatusBadge status={certificate.status} />
+      {view === "list" ? (
+        <div className="list-stack">
+          {certificates.map((certificate) => (
+            <article key={certificate.id} className="list-card">
+              <div>
+                <div className="list-card-title-row">
+                  <h2>{certificate.name}</h2>
+                  <CertificateStatusBadge status={certificate.status} />
+                </div>
+                <p className="muted">
+                  {t(`certificates.categories.${certificate.category}`)} ·{" "}
+                  {certificate.issuer || t("certificates.noIssuer")}
+                </p>
+                {certificate.parent_name ? (
+                  <p className="muted">
+                    {t("certificates.parent")}: {certificate.parent_name}
+                  </p>
+                ) : null}
+                {(certificate.children?.length || 0) > 0 ? (
+                  <p className="muted">
+                    {t("certificates.childrenCount", { count: certificate.children?.length || 0 })}
+                  </p>
+                ) : null}
+                <p className="muted">
+                  {t("certificates.validUntil")}: {certificate.valid_to}
+                  {certificate.days_until_expiry >= 0
+                    ? ` · ${t("certificates.daysLeft", { count: certificate.days_until_expiry })}`
+                    : ` · ${t("certificates.overdue", { count: Math.abs(certificate.days_until_expiry) })}`}
+                </p>
+                {certificate.responsible_name ? (
+                  <p className="muted">
+                    {t("certificates.responsible")}: {certificate.responsible_name}
+                  </p>
+                ) : null}
               </div>
-              <p className="muted">
-                {t(`certificates.categories.${certificate.category}`)} · {certificate.issuer || t("certificates.noIssuer")}
-              </p>
-              {certificate.parent_name ? (
-                <p className="muted">
-                  {t("certificates.parent")}: {certificate.parent_name}
-                </p>
-              ) : null}
-              {(certificate.children?.length || 0) > 0 ? (
-                <p className="muted">
-                  {t("certificates.childrenCount", { count: certificate.children?.length || 0 })}
-                </p>
-              ) : null}
-              <p className="muted">
-                {t("certificates.validUntil")}: {certificate.valid_to}
-                {certificate.days_until_expiry >= 0
-                  ? ` · ${t("certificates.daysLeft", { count: certificate.days_until_expiry })}`
-                  : ` · ${t("certificates.overdue", { count: Math.abs(certificate.days_until_expiry) })}`}
-              </p>
-              {certificate.responsible_name ? (
-                <p className="muted">
-                  {t("certificates.responsible")}: {certificate.responsible_name}
-                </p>
-              ) : null}
-            </div>
-            <div className="list-card-actions">
-              {canEdit ? (
-                <>
-                  <Link to={`/certificates/${certificate.id}/edit`} className="ghost-button link-button">
-                    {t("certificates.edit")}
-                  </Link>
-                  <button type="button" className="ghost-button danger" onClick={() => void handleDelete(certificate.id)}>
-                    {t("certificates.delete")}
-                  </button>
-                </>
-              ) : null}
-            </div>
-          </article>
-        ))}
-      </div>
+              <div className="list-card-actions">
+                {canEdit ? (
+                  <>
+                    <Link to={`/certificates/${certificate.id}/edit`} className="ghost-button link-button">
+                      {t("certificates.edit")}
+                    </Link>
+                    <button
+                      type="button"
+                      className="ghost-button danger"
+                      onClick={() => void handleDelete(certificate.id)}
+                    >
+                      {t("certificates.delete")}
+                    </button>
+                  </>
+                ) : null}
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <ul className="cert-chain-tree">
+          {filteredChains.map((root) => (
+            <ChainTreeNode key={root.id} node={root} canEdit={canEdit} onDelete={(id) => void handleDelete(id)} />
+          ))}
+        </ul>
+      )}
     </section>
   );
 }

@@ -41,6 +41,8 @@ npm run dev
 
 Vite proxies `/api` to `http://localhost:8080`.
 
+Production builds (`npm run build`) include a PWA (manifest + service worker). The app shell can be installed on mobile/desktop; API calls stay network-only.
+
 ### Run tests
 
 ```bash

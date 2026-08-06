@@ -1,6 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
+import { registerSW } from "virtual:pwa-register";
 
 import App from "./App";
 import { AuthProvider } from "./hooks/useAuth";
@@ -23,12 +24,35 @@ function isShopHost(): boolean {
   return false;
 }
 
-const Root = isShopHost() ? ShopApp : App;
+function applyHostChrome(shop: boolean) {
+  document.documentElement.lang = document.documentElement.lang || "en";
+  if (shop) {
+    document.title = "FuckCo2 Shop";
+    const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (appleTitle) appleTitle.setAttribute("content", "FuckCo2");
+    let manifest = document.querySelector('link[rel="manifest"]') as HTMLLinkElement | null;
+    if (!manifest) {
+      manifest = document.createElement("link");
+      manifest.rel = "manifest";
+      document.head.appendChild(manifest);
+    }
+    manifest.href = "/manifest-shop.webmanifest";
+  }
+}
+
+const shop = isShopHost();
+applyHostChrome(shop);
+
+registerSW({
+  immediate: true,
+});
+
+const Root = shop ? ShopApp : App;
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
-      {isShopHost() ? (
+      {shop ? (
         <Root />
       ) : (
         <AuthProvider>

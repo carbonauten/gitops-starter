@@ -46,7 +46,22 @@ def test_certificate_parent_child_chain(auth_client):
 
     chains = auth_client.get("/api/certificates/chains")
     assert chains.status_code == 200
-    assert any(node["name"] == "ISO 9001 Root" for node in chains.json()["chains"])
+    roots = chains.json()["chains"]
+    root = next(node for node in roots if node["name"] == "ISO 9001 Root")
+    assert root["children"][0]["id"] == child["id"]
+    assert root["children"][0]["name"] == "ISO 9001 Audit Report"
+
+
+def test_certificate_nested_chain_depth(auth_client):
+    root = _create(auth_client, "Root Nest", days_left=500)
+    mid = _create(auth_client, "Mid Nest", days_left=300, parent_id=root["id"])
+    leaf = _create(auth_client, "Leaf Nest", days_left=100, parent_id=mid["id"])
+
+    chains = auth_client.get("/api/certificates/chains")
+    assert chains.status_code == 200
+    tree = next(node for node in chains.json()["chains"] if node["id"] == root["id"])
+    assert tree["children"][0]["id"] == mid["id"]
+    assert tree["children"][0]["children"][0]["id"] == leaf["id"]
 
 
 def test_certificate_cycle_rejected(auth_client):

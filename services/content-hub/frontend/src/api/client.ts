@@ -1390,8 +1390,19 @@ export function certificatesAuditExportUrl(): string {
   return "/api/certificates/audit-export";
 }
 
-export async function fetchCertificateChains(): Promise<unknown[]> {
-  const payload = await request<{ chains: unknown[] }>("/api/certificates/chains");
+export type CertificateChainNode = {
+  id: string;
+  name: string;
+  category: string;
+  status: Certificate["status"] | string;
+  valid_to: string;
+  days_until_expiry: number;
+  parent_id?: string | null;
+  children: CertificateChainNode[];
+};
+
+export async function fetchCertificateChains(): Promise<CertificateChainNode[]> {
+  const payload = await request<{ chains: CertificateChainNode[] }>("/api/certificates/chains");
   return payload.chains;
 }
 

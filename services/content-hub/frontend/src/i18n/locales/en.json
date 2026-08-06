@@ -239,6 +239,10 @@
     "responsible": "Responsible",
     "parent": "Parent",
     "childrenCount": "{{count}} linked certificates",
+    "viewLabel": "View",
+    "viewList": "List",
+    "viewChains": "Chains",
+    "noChains": "No certificate chains found.",
     "fieldParent": "Parent certificate",
     "noParent": "No parent (root)",
     "childrenTitle": "Dependent certificates",
@@ -709,6 +713,12 @@
     "no": "No",
     "close": "Close",
     "cancel": "Cancel"
+  },
+  "pwa": {
+    "installTitle": "Install app",
+    "installHint": "Add to your home screen for faster access — shell works offline.",
+    "install": "Install",
+    "dismiss": "Later"
   },
   "versions": {
     "title": "Version history",

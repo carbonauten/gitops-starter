@@ -24,6 +24,7 @@ import {
 import { EmptyState } from "../components/EmptyState";
 import { LanguageSwitch } from "../components/LanguageSwitch";
 import { LoadingState } from "../components/LoadingState";
+import { PwaInstallBanner } from "../components/PwaInstallBanner";
 import { ShopHoneypot, ShopTurnstile } from "../components/ShopBotFields";
 import {
   clearShopConsentDecision,
@@ -236,6 +237,7 @@ function ShopShell({
           </Link>
         </div>
       </header>
+      <PwaInstallBanner variant="shop" />
       <main className="shop-main">{children}</main>
       <footer className="shop-footer">
         <div className="shop-footer-inner">

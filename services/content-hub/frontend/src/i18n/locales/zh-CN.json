@@ -239,6 +239,10 @@
     "responsible": "负责人",
     "parent": "上级证书",
     "childrenCount": "{{count}} 个关联证书",
+    "viewLabel": "视图",
+    "viewList": "列表",
+    "viewChains": "证书链",
+    "noChains": "未找到证书链。",
     "fieldParent": "上级证书",
     "noParent": "无上级（根证书）",
     "childrenTitle": "关联子证书",
@@ -709,6 +713,12 @@
     "no": "否",
     "close": "关闭",
     "cancel": "取消"
+  },
+  "pwa": {
+    "installTitle": "安装应用",
+    "installHint": "添加到主屏幕以便更快访问 — 界面可离线打开。",
+    "install": "安装",
+    "dismiss": "稍后"
   },
   "versions": {
     "title": "版本历史",

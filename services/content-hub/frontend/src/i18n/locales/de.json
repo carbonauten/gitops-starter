@@ -239,6 +239,10 @@
     "responsible": "Verantwortlich",
     "parent": "Übergeordnet",
     "childrenCount": "{{count}} abhängige Zertifikate",
+    "viewLabel": "Ansicht",
+    "viewList": "Liste",
+    "viewChains": "Ketten",
+    "noChains": "Keine Zertifikatsketten gefunden.",
     "fieldParent": "Übergeordnetes Zertifikat",
     "noParent": "Kein Parent (Root)",
     "childrenTitle": "Abhängige Zertifikate",
@@ -709,6 +713,12 @@
     "no": "Nein",
     "close": "Schließen",
     "cancel": "Abbrechen"
+  },
+  "pwa": {
+    "installTitle": "App installieren",
+    "installHint": "Als App auf dem Homescreen für schnelleren Zugriff — auch offline auf die Oberfläche.",
+    "install": "Installieren",
+    "dismiss": "Später"
   },
   "versions": {
     "title": "Versionshistorie",

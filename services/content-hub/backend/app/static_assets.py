@@ -12,6 +12,8 @@ def _media_type(path: Path) -> str:
         return "application/javascript"
     if path.suffix == ".css":
         return "text/css; charset=utf-8"
+    if path.suffix == ".webmanifest":
+        return "application/manifest+json"
     return "application/octet-stream"
 
 

@@ -46,6 +46,47 @@ http {
             try_files $uri =404;
         }
 
+        location = /apple-touch-icon.png {
+            sendfile off;
+            try_files $uri =404;
+        }
+
+        location = /pwa-192.png {
+            sendfile off;
+            try_files $uri =404;
+        }
+
+        location = /pwa-512.png {
+            sendfile off;
+            try_files $uri =404;
+        }
+
+        location = /manifest.webmanifest {
+            sendfile off;
+            default_type application/manifest+json;
+            add_header Cache-Control "no-cache";
+            try_files $uri =404;
+        }
+
+        location = /manifest-shop.webmanifest {
+            sendfile off;
+            default_type application/manifest+json;
+            add_header Cache-Control "no-cache";
+            try_files $uri =404;
+        }
+
+        location = /sw.js {
+            sendfile off;
+            add_header Cache-Control "no-cache";
+            try_files $uri =404;
+        }
+
+        location ~ ^/workbox-[a-f0-9]+\.js$ {
+            sendfile off;
+            add_header Cache-Control "no-cache";
+            try_files $uri =404;
+        }
+
         location /api/ {
             proxy_pass http://127.0.0.1:8000;
             proxy_http_version 1.1;

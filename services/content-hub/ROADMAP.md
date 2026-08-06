@@ -70,6 +70,9 @@ flowchart LR
 | E | 2–4 Tage | ✅ Abgeschlossen | Analytics Dashboard (Publish & Zertifikate) |
 | F | 2–4 Tage | ✅ Abgeschlossen | SharePoint-Zertifikat-Import |
 | G | 3–5 Tage | ✅ Abgeschlossen (Produktiv) | FuckCo2 Shop + Checkout + Bestellungen |
+| H | 2–4 Tage | ✅ Abgeschlossen (MVP) | Auto-Import CA (PEM / LE / Key Vault) |
+| I | 2–4 Tage | ✅ Abgeschlossen (MVP) | Shop-Retouren / Gutschriften |
+| J | 2–4 Tage | ✅ Abgeschlossen (MVP) | Mobile PWA + Zertifikat-Ketten UI |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -534,7 +537,7 @@ flowchart LR
 | Shop Retouren | Retourenportal / Gutschriften | ~~Niedrig~~ ✅ Sprint I |
 | KI-Assistenz | Zusammenfassung, Übersetzung DE↔EN↔中文 | ~~Mittel~~ ✅ Sprint A |
 | SharePoint | Zertifikate aus SharePoint-Bibliothek importieren | ~~Mittel~~ ✅ Sprint F |
-| Mobile | Responsive Optimierung / PWA | ~~Niedrig~~ Teilweise (UI Sprint) |
+| Mobile | Responsive Optimierung / PWA | ~~Niedrig~~ ✅ Sprint J |
 | Analytics | Veröffentlichungs- und Zertifikat-Statistiken | ~~Niedrig~~ ✅ Sprint E |
 
 ---
@@ -638,8 +641,30 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ---
 
+## Sprint J — Mobile PWA & Zertifikat-Ketten ✅ (MVP)
+
+**Ziel:** Platform und Shop installierbar machen; Zertifikatsketten in der UI sichtbar; mobile Bedienung nachschärfen.
+
+### Deliverables
+
+- [x] Web App Manifest + Icons (192/512 + Apple Touch)
+- [x] Service Worker via `vite-plugin-pwa` (Shell offline, `/api` network-only)
+- [x] Install-Banner (DE / EN / 中文) für Platform und Shop
+- [x] Shop-Manifest (`manifest-shop.webmanifest`) auf Shop-Hosts
+- [x] Zertifikate: Ansicht **Liste / Ketten** mit rekursivem Tree (`GET /api/certificates/chains`)
+- [x] Mobile: Header-Aktionen, Toolbar und Shop-Topbar wrap/stack
+- [x] Nginx: Manifest/SW ohne Long-Cache; Tests für PWA-Assets
+
+### Akzeptanzkriterien
+
+- [x] Build liefert Manifest, Icons und Service Worker
+- [x] Ketten-Ansicht zeigt Parent → Child → Grandchild
+- [x] API-Aufrufe werden vom SW nicht aggressiv gecacht
+
+---
+
 ## Nächster Schritt
 
-**Sprint J (Vorschlag):** Zertifikat-Ketten Vertiefung / Mobile PWA — siehe Backlog.
+**Sprint K (Vorschlag):** Weitere Shop-/Plattform-Erweiterungen nach Priorität des Product Owners.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.

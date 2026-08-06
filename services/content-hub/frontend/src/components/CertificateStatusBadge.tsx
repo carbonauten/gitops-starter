@@ -9,7 +9,8 @@ const STATUS_CLASS: Record<Certificate["status"], string> = {
   renewal: "workflow-badge workflow-badge-review",
 };
 
-export function CertificateStatusBadge({ status }: { status: Certificate["status"] }) {
+export function CertificateStatusBadge({ status }: { status: Certificate["status"] | string }) {
   const { t } = useTranslation();
-  return <span className={STATUS_CLASS[status]}>{t(`certificates.status.${status}`)}</span>;
+  const className = STATUS_CLASS[status as Certificate["status"]] || "workflow-badge workflow-badge-review";
+  return <span className={className}>{t(`certificates.status.${status}`, { defaultValue: status })}</span>;
 }
