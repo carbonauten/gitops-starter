@@ -7,8 +7,8 @@ ARG SERVICE_DIR=services/content-hub/
 FROM node:20-alpine AS frontend
 ARG SERVICE_DIR
 WORKDIR /frontend
-COPY ${SERVICE_DIR}frontend/package.json ./
-RUN npm install
+COPY ${SERVICE_DIR}frontend/package.json ${SERVICE_DIR}frontend/package-lock.json ./
+RUN npm ci
 COPY ${SERVICE_DIR}frontend/ ./
 RUN npm run build
 
