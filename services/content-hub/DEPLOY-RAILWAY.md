@@ -309,6 +309,8 @@ Keine extra Railway-Variable nötig (nutzt `AZURE_*` + `APP_PUBLIC_URL`).
 
 Unter **Zertifikate** können Dateien aus dieser Bibliothek importiert werden (`/api/certificates/import-from-sharepoint`). Im Mock-Modus gibt es den Demo-Ordner „Zertifikate“.
 
+**CA Auto-Import:** PEM/CRT über **SSL-Datei importieren**; optional `LETSENCRYPT_LIVE_DIR`, `AZURE_KEY_VAULT_URL` (+ Entra) oder `KEY_VAULT_MOCK_MODE=true`.
+
 ### Mock / Vorschau
 
 Wenn OneDrive nicht verbunden ist bzw. SharePoint nicht konfiguriert:
