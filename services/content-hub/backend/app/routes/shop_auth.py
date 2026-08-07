@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.responses import Response as FileBytesResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
@@ -16,6 +17,7 @@ from ..shop_customer_service import (
     list_customer_orders,
     register_customer,
 )
+from ..shop_invoice_service import build_invoice_pdf, invoice_filename
 from ..shop_order_service import get_order_items, order_to_dict
 from ..shop_return_service import list_customer_returns, request_return, return_to_dict
 
@@ -146,6 +148,24 @@ def shop_my_orders(
 ) -> dict:
     orders = list_customer_orders(db, customer["id"])
     return {"orders": [order_to_dict(order, get_order_items(db, order.id)) for order in orders]}
+
+
+@router.get("/me/orders/{order_id}/invoice.pdf")
+def shop_my_order_invoice(
+    order_id: str,
+    db: Session = Depends(get_db),
+    customer: dict = Depends(get_current_shop_customer),
+) -> FileBytesResponse:
+    order = db.get(ShopOrder, order_id)
+    if not order or order.customer_id != customer["id"]:
+        raise HTTPException(status_code=404, detail="not_found")
+    pdf = build_invoice_pdf(order, get_order_items(db, order.id))
+    filename = invoice_filename(order)
+    return FileBytesResponse(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/me/returns")

@@ -3,12 +3,14 @@ from __future__ import annotations
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ..audit_service import log_audit
 from ..database import ShopOrder, get_db
 from ..dependencies import require_shop_editor
+from ..shop_invoice_service import build_invoice_pdf, invoice_filename
 from ..shop_order_service import get_order_items, list_orders, order_to_dict, update_order_status
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
@@ -43,6 +45,24 @@ def admin_get_order(
     if not order:
         raise HTTPException(status_code=404, detail="not_found")
     return {"order": order_to_dict(order, get_order_items(db, order.id))}
+
+
+@router.get("/{order_id}/invoice.pdf")
+def admin_download_invoice(
+    order_id: str,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_shop_editor),
+) -> Response:
+    order = db.get(ShopOrder, order_id)
+    if not order:
+        raise HTTPException(status_code=404, detail="not_found")
+    pdf = build_invoice_pdf(order, get_order_items(db, order.id))
+    filename = invoice_filename(order)
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.patch("/{order_id}")

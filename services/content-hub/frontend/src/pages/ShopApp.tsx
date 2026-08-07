@@ -14,6 +14,8 @@ import {
   fetchShopProducts,
   formatMoney,
   requestShopReturn,
+  shopAccountOrderInvoiceUrl,
+  shopPublicOrderInvoiceUrl,
   trackShopPageView,
   type ShopConfig,
   type ShopCreditLedgerEntry,
@@ -934,6 +936,16 @@ function ShopAccountPage({ base }: { base: string }) {
                   ) : null}
                 </p>
               ) : null}
+              <p>
+                <a
+                  className="shop-nav-link"
+                  href={shopAccountOrderInvoiceUrl(order.id)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t("shop.downloadInvoice")}
+                </a>
+              </p>
               {canReturn ? (
                 activeOrderId === order.id ? (
                   <div className="shop-return-form">
@@ -1072,6 +1084,21 @@ function ShopOrderSuccess({ base }: { base: string }) {
               </a>
             </>
           ) : null}
+        </p>
+      ) : null}
+      {order.access_token || order.invoice_url ? (
+        <p>
+          <a
+            className="shop-btn shop-btn-ghost link-button"
+            href={
+              order.invoice_url ||
+              shopPublicOrderInvoiceUrl(order.order_number, order.access_token || "")
+            }
+            target="_blank"
+            rel="noreferrer"
+          >
+            {t("shop.downloadInvoice")}
+          </a>
         </p>
       ) : null}
       <Link to={base || "/"} className="shop-btn shop-btn-primary link-button">

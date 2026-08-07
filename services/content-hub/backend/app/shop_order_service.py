@@ -109,6 +109,9 @@ def order_to_dict(order: ShopOrder, items: list[ShopOrderItem], *, include_token
     }
     if include_token:
         payload["access_token"] = order.access_token
+        payload["invoice_url"] = (
+            f"/api/shop/orders/{order.order_number}/invoice.pdf?token={order.access_token}"
+        )
     return payload
 
 
@@ -425,6 +428,12 @@ def send_order_emails(db: Session, order: ShopOrder, items: list[ShopOrderItem],
             f"Bank: {settings.shop_bank_name}\n"
             f"Verwendungszweck: {order.order_number}\n"
         )
+
+    invoice_url = (
+        f"{settings.shop_public_origin.rstrip('/')}/api/shop/orders/{order.order_number}/invoice.pdf"
+        f"?token={order.access_token}"
+    )
+    body += f"\nRechnung / Beleg (PDF):\n{invoice_url}\n"
 
     send_plain_email(
         to_email=order.customer_email,

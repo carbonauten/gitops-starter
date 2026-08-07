@@ -74,6 +74,7 @@ flowchart LR
 | I | 2–4 Tage | ✅ Abgeschlossen (MVP) | Shop-Retouren / Gutschriften |
 | J | 2–4 Tage | ✅ Abgeschlossen (MVP) | Mobile PWA + Zertifikat-Ketten UI |
 | K | 2–4 Tage | ✅ Abgeschlossen (MVP) | Shop-Versandverfolgung + Status-Mails |
+| L | 2–4 Tage | ✅ Abgeschlossen (MVP) | Shop-Rechnungs-PDF |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -541,6 +542,7 @@ flowchart LR
 | Mobile | Responsive Optimierung / PWA | ~~Niedrig~~ ✅ Sprint J |
 | Analytics | Veröffentlichungs- und Zertifikat-Statistiken | ~~Niedrig~~ ✅ Sprint E |
 | Shop Versand | Sendungsverfolgung + Status-E-Mails | ~~Mittel~~ ✅ Sprint K |
+| Shop Rechnung PDF | Rechnungs-/Beleg-PDF Download | ~~Mittel~~ ✅ Sprint L |
 
 ---
 
@@ -686,8 +688,29 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ---
 
+## Sprint L — Shop-Rechnungs-PDF ✅ (MVP)
+
+**Ziel:** Kunden und Redaktion können eine Rechnung/einen Zahlungsbeleg als PDF herunterladen.
+
+### Deliverables
+
+- [x] PDF-Generator (`reportlab`) mit Positionen, MwSt, Bankdaten
+- [x] Public: `GET /api/shop/orders/{number}/invoice.pdf?token=…`
+- [x] Kundenkonto: `GET /api/shop/auth/me/orders/{id}/invoice.pdf`
+- [x] Admin: `GET /api/orders/{id}/invoice.pdf`
+- [x] Link in Bestell-E-Mail + UI (Konto, Success, Bestellungen)
+- [x] DE / EN / 中文 + Tests
+
+### Akzeptanzkriterien
+
+- [x] PDF beginnt mit `%PDF` und enthält Rechnungsnummer `RE-…`
+- [x] Download ohne gültigen Token ist 404
+- [x] Rechnungskauf zeigt IBAN/Verwendungszweck im PDF
+
+---
+
 ## Nächster Schritt
 
-**Sprint L (Vorschlag):** Rechnungs-PDF / Entra-Gruppen-Mapping / Volltext-Diff — nach PO-Priorität.
+**Sprint M (Vorschlag):** Entra-Gruppen-Mapping oder Volltext-Diff — nach PO-Priorität.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.

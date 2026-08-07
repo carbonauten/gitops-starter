@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { fetchAdminOrders, formatMoney, updateAdminOrderStatus, type ShopOrder } from "../api/client";
+import { fetchAdminOrders, formatMoney, adminOrderInvoiceUrl, updateAdminOrderStatus, type ShopOrder } from "../api/client";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingState } from "../components/LoadingState";
 
@@ -188,6 +188,9 @@ export function OrdersPage() {
               ) : null}
 
               <div className="list-card-actions">
+                <a href={adminOrderInvoiceUrl(order.id)} className="ghost-button link-button" target="_blank" rel="noreferrer">
+                  {t("orders.downloadInvoice")}
+                </a>
                 {order.status !== "paid" && order.status !== "fulfilled" && order.status !== "returned" ? (
                   <button
                     type="button"

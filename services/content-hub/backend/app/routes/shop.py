@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.responses import FileResponse, Response, StreamingResponse
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
@@ -14,6 +14,7 @@ from ..product_service import get_product_by_slug, list_products, to_public_dict
 from ..schemas import ShopCheckoutRequest, ShopPageViewRequest, ShopProductPublic
 from ..shop_analytics_service import monitoring_summary, record_page_view
 from ..shop_bot_protection import client_ip, protect_shop_action
+from ..shop_invoice_service import build_invoice_pdf, invoice_filename
 from ..shop_order_service import (
     confirm_stripe_order,
     create_checkout_order,
@@ -189,7 +190,25 @@ def shop_get_order(
     order = get_order_by_number(db, order_number)
     if not order or order.access_token != token:
         raise HTTPException(status_code=404, detail="not_found")
-    return {"order": order_to_dict(order, get_order_items(db, order.id))}
+    return {"order": order_to_dict(order, get_order_items(db, order.id), include_token=True)}
+
+
+@router.get("/orders/{order_number}/invoice.pdf")
+def shop_download_invoice(
+    order_number: str,
+    token: str = Query(...),
+    db: Session = Depends(get_db),
+) -> Response:
+    order = get_order_by_number(db, order_number)
+    if not order or order.access_token != token:
+        raise HTTPException(status_code=404, detail="not_found")
+    pdf = build_invoice_pdf(order, get_order_items(db, order.id))
+    filename = invoice_filename(order)
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.post("/orders/{order_number}/confirm")
@@ -202,7 +221,7 @@ def shop_confirm_order(
     if not session_id:
         raise HTTPException(status_code=400, detail="validation")
     order = confirm_stripe_order(db, order_number=order_number, access_token=token, session_id=session_id)
-    return {"order": order_to_dict(order, get_order_items(db, order.id))}
+    return {"order": order_to_dict(order, get_order_items(db, order.id), include_token=True)}
 
 
 @router.post("/stripe/webhook")

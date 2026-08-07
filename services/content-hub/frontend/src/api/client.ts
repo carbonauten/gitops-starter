@@ -389,6 +389,7 @@ export type ShopOrder = {
   shipping_carrier?: string;
   tracking_number?: string;
   tracking_url?: string;
+  invoice_url?: string;
   paid_at?: string | null;
   fulfilled_at?: string | null;
   created_at?: string | null;
@@ -1392,6 +1393,18 @@ export async function updateAdminOrderStatus(
     }),
   });
   return payload.order;
+}
+
+export function adminOrderInvoiceUrl(orderId: string): string {
+  return `/api/orders/${orderId}/invoice.pdf`;
+}
+
+export function shopAccountOrderInvoiceUrl(orderId: string): string {
+  return `/api/shop/auth/me/orders/${orderId}/invoice.pdf`;
+}
+
+export function shopPublicOrderInvoiceUrl(orderNumber: string, token: string): string {
+  return `/api/shop/orders/${encodeURIComponent(orderNumber)}/invoice.pdf?token=${encodeURIComponent(token)}`;
 }
 
 export function formatMoney(cents: number, currency = "EUR", locale = "de-DE"): string {
