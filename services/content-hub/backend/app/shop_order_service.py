@@ -87,6 +87,9 @@ def order_to_dict(order: ShopOrder, items: list[ShopOrderItem], *, include_token
         "country": order.country,
         "notes": order.notes,
         "credits_earned": int(order.credits_earned or 0),
+        "shipping_carrier": order.shipping_carrier or "",
+        "tracking_number": order.tracking_number or "",
+        "tracking_url": order.tracking_url or "",
         "paid_at": order.paid_at.isoformat() if order.paid_at else None,
         "fulfilled_at": order.fulfilled_at.isoformat() if order.fulfilled_at else None,
         "created_at": order.created_at.isoformat() if order.created_at else None,
@@ -439,6 +442,87 @@ def send_order_emails(db: Session, order: ShopOrder, items: list[ShopOrderItem],
         )
 
 
+def build_tracking_url(*, carrier: str, tracking_number: str, tracking_url: str = "") -> str:
+    explicit = (tracking_url or "").strip()
+    if explicit:
+        return explicit[:500]
+    number = (tracking_number or "").strip()
+    if not number:
+        return ""
+    key = (carrier or "").strip().lower()
+    templates = {
+        "dhl": f"https://www.dhl.de/de/privatkunden/dhl-sendungsverfolgung.html?piececode={number}",
+        "dpd": f"https://tracking.dpd.de/status/de_DE/parcel/{number}",
+        "ups": f"https://www.ups.com/track?tracknum={number}",
+        "hermes": f"https://www.myhermes.de/empfangen/sendungsverfolgung/?trackingNumber={number}",
+        "gls": f"https://gls-group.com/EU/de/sendungsverfolgung?match={number}",
+        "deutsche_post": f"https://www.deutschepost.de/de/s/sendungsverfolgung.html?piececode={number}",
+    }
+    return templates.get(key, "")[:500]
+
+
+def send_status_update_email(
+    db: Session,
+    order: ShopOrder,
+    *,
+    event: str,
+    settings: Settings | None = None,
+) -> None:
+    """Notify customer (+ shop inbox) about fulfillment or cancellation."""
+    settings = settings or get_settings()
+    items = get_order_items(db, order.id)
+    lines = [
+        f"{item.quantity}× {item.product_name} — {item.line_total_cents / 100:.2f} {order.currency}"
+        for item in items
+    ]
+    if event == "fulfilled":
+        subject_customer = f"{settings.shop_brand_name} Versand {order.order_number}"
+        intro = "Ihre Bestellung wurde versendet."
+        tracking_block = ""
+        if order.tracking_number or order.tracking_url:
+            tracking_block = (
+                "\nSendungsverfolgung:\n"
+                f"Carrier: {order.shipping_carrier or '—'}\n"
+                f"Sendungsnummer: {order.tracking_number or '—'}\n"
+            )
+            if order.tracking_url:
+                tracking_block += f"Track & Trace: {order.tracking_url}\n"
+        body = (
+            f"{intro}\n\n"
+            f"Bestellung {order.order_number}\n"
+            f"Status: versendet\n"
+            f"{tracking_block}\n"
+            f"Positionen:\n" + "\n".join(lines) + "\n\n"
+            f"Gesamt: {order.total_cents / 100:.2f} {order.currency}\n"
+        )
+        subject_shop = f"Shop-Versand {order.order_number}"
+    elif event == "cancelled":
+        subject_customer = f"{settings.shop_brand_name} Storno {order.order_number}"
+        body = (
+            f"Ihre Bestellung {order.order_number} wurde storniert.\n\n"
+            f"Positionen:\n" + "\n".join(lines) + "\n\n"
+            f"Gesamt: {order.total_cents / 100:.2f} {order.currency}\n"
+        )
+        subject_shop = f"Shop-Storno {order.order_number}"
+    else:
+        return
+
+    send_plain_email(
+        to_email=order.customer_email,
+        subject=subject_customer,
+        body=body,
+        settings=settings,
+    )
+    shop_inbox = settings.shop_contact
+    if shop_inbox and shop_inbox.lower() != order.customer_email.lower():
+        send_plain_email(
+            to_email=shop_inbox,
+            subject=subject_shop,
+            body=body,
+            settings=settings,
+        )
+
+
 def list_orders(db: Session, *, status: Optional[str] = None) -> list[ShopOrder]:
     stmt = select(ShopOrder).order_by(ShopOrder.created_at.desc())
     if status:
@@ -446,7 +530,16 @@ def list_orders(db: Session, *, status: Optional[str] = None) -> list[ShopOrder]
     return list(db.scalars(stmt).all())
 
 
-def update_order_status(db: Session, order: ShopOrder, status: str) -> ShopOrder:
+def update_order_status(
+    db: Session,
+    order: ShopOrder,
+    status: str,
+    *,
+    shipping_carrier: str | None = None,
+    tracking_number: str | None = None,
+    tracking_url: str | None = None,
+    notify: bool = True,
+) -> ShopOrder:
     if status not in {"pending", "awaiting_payment", "paid", "fulfilled", "cancelled", "returned"}:
         raise HTTPException(status_code=400, detail="validation")
     previous = order.status
@@ -455,9 +548,19 @@ def update_order_status(db: Session, order: ShopOrder, status: str) -> ShopOrder
     if status == "paid" and not order.paid_at:
         order.paid_at = _utc_now()
     if status == "fulfilled":
-        order.fulfilled_at = _utc_now()
+        order.fulfilled_at = order.fulfilled_at or _utc_now()
         if not order.paid_at:
             order.paid_at = order.fulfilled_at
+        if shipping_carrier is not None:
+            order.shipping_carrier = (shipping_carrier or "").strip()[:80]
+        if tracking_number is not None:
+            order.tracking_number = (tracking_number or "").strip()[:120]
+        if tracking_url is not None or shipping_carrier is not None or tracking_number is not None:
+            order.tracking_url = build_tracking_url(
+                carrier=order.shipping_carrier or "",
+                tracking_number=order.tracking_number or "",
+                tracking_url=(tracking_url if tracking_url is not None else order.tracking_url) or "",
+            )
     if status == "cancelled" and previous in {"awaiting_payment", "paid", "fulfilled", "pending"}:
         # Restore stock if it was reserved (invoice at create, stripe at paid)
         if previous in {"awaiting_payment", "paid", "fulfilled"}:
@@ -466,4 +569,13 @@ def update_order_status(db: Session, order: ShopOrder, status: str) -> ShopOrder
     db.refresh(order)
     if status in {"paid", "fulfilled"}:
         award_co2_credits_for_order(db, order)
+    if notify:
+        if status == "fulfilled" and previous != "fulfilled":
+            send_status_update_email(db, order, event="fulfilled")
+        elif status == "fulfilled" and previous == "fulfilled" and (
+            shipping_carrier is not None or tracking_number is not None or tracking_url is not None
+        ):
+            send_status_update_email(db, order, event="fulfilled")
+        elif status == "cancelled" and previous != "cancelled":
+            send_status_update_email(db, order, event="cancelled")
     return order

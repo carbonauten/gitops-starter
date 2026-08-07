@@ -654,6 +654,8 @@
     "returnReason": "Grund",
     "returnNote": "Notiz (optional)",
     "returnRequested": "Retourenanfrage wurde gesendet.",
+    "tracking": "Sendungsverfolgung",
+    "trackShipment": "Sendung verfolgen",
     "creditHistory": "Credit-Verlauf",
     "noCreditsYet": "Noch keine Credits gesammelt.",
     "creditsEarned": "Sie haben +{{credits}} CO₂ Reward Credits erhalten.",
@@ -697,7 +699,26 @@
     "allStatuses": "Alle Status",
     "markPaid": "Als bezahlt markieren",
     "markFulfilled": "Als versendet markieren",
-    "markCancelled": "Stornieren"
+    "confirmShip": "Versand bestätigen & E-Mail senden",
+    "saveTracking": "Sendung speichern",
+    "markCancelled": "Stornieren",
+    "tracking": "Sendung",
+    "trackLink": "Sendung verfolgen",
+    "carrier": "Carrier",
+    "trackingNumber": "Sendungsnummer",
+    "trackingUrl": "Tracking-URL (optional)",
+    "fulfilledNotice": "Bestellung als versendet markiert. Kunde wurde benachrichtigt.",
+    "cancelledNotice": "Bestellung storniert. Kunde wurde benachrichtigt.",
+    "updatedNotice": "Bestellung aktualisiert.",
+    "carriers": {
+      "dhl": "DHL",
+      "dpd": "DPD",
+      "ups": "UPS",
+      "hermes": "Hermes",
+      "gls": "GLS",
+      "deutsche_post": "Deutsche Post",
+      "other": "Sonstiger"
+    }
   },
   "onboarding": {
     "title": "Schnellstart",

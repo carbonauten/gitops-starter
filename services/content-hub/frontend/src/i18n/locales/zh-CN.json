@@ -654,6 +654,8 @@
     "returnReason": "原因",
     "returnNote": "备注（可选）",
     "returnRequested": "退货申请已提交。",
+    "tracking": "物流跟踪",
+    "trackShipment": "跟踪包裹",
     "creditHistory": "积分记录",
     "noCreditsYet": "尚未获得积分。",
     "creditsEarned": "您获得了 +{{credits}} CO₂ 奖励积分。",
@@ -697,7 +699,26 @@
     "allStatuses": "全部状态",
     "markPaid": "标记为已付款",
     "markFulfilled": "标记为已发货",
-    "markCancelled": "取消"
+    "confirmShip": "确认发货并通知客户",
+    "saveTracking": "保存物流信息",
+    "markCancelled": "取消",
+    "tracking": "物流",
+    "trackLink": "跟踪包裹",
+    "carrier": "承运商",
+    "trackingNumber": "运单号",
+    "trackingUrl": "跟踪链接（可选）",
+    "fulfilledNotice": "订单已标记为发货。客户已收到通知。",
+    "cancelledNotice": "订单已取消。客户已收到通知。",
+    "updatedNotice": "订单已更新。",
+    "carriers": {
+      "dhl": "DHL",
+      "dpd": "DPD",
+      "ups": "UPS",
+      "hermes": "Hermes",
+      "gls": "GLS",
+      "deutsche_post": "Deutsche Post",
+      "other": "其他"
+    }
   },
   "onboarding": {
     "title": "快速入门",

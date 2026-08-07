@@ -16,6 +16,9 @@ router = APIRouter(prefix="/api/orders", tags=["orders"])
 
 class OrderStatusUpdate(BaseModel):
     status: str = Field(min_length=1, max_length=30)
+    shipping_carrier: str = Field(default="", max_length=80)
+    tracking_number: str = Field(default="", max_length=120)
+    tracking_url: str = Field(default="", max_length=500)
 
 
 @router.get("")
@@ -52,13 +55,25 @@ def admin_update_order(
     order = db.get(ShopOrder, order_id)
     if not order:
         raise HTTPException(status_code=404, detail="not_found")
-    order = update_order_status(db, order, payload.status)
+    shipping_kwargs = {}
+    if payload.status == "fulfilled" or payload.shipping_carrier or payload.tracking_number or payload.tracking_url:
+        shipping_kwargs = {
+            "shipping_carrier": payload.shipping_carrier,
+            "tracking_number": payload.tracking_number,
+            "tracking_url": payload.tracking_url,
+        }
+    order = update_order_status(db, order, payload.status, **shipping_kwargs)
     log_audit(
         db,
         entity_type="shop_order",
         entity_id=order.id,
         action="update_status",
         actor=user,
-        details={"order_number": order.order_number, "status": order.status},
+        details={
+            "order_number": order.order_number,
+            "status": order.status,
+            "shipping_carrier": order.shipping_carrier,
+            "tracking_number": order.tracking_number,
+        },
     )
     return {"order": order_to_dict(order, get_order_items(db, order.id))}

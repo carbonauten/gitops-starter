@@ -374,6 +374,9 @@ class ShopOrder(Base):
     credits_awarded_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     stripe_session_id: Mapped[str] = mapped_column(String(200), default="")
     stripe_payment_intent: Mapped[str] = mapped_column(String(200), default="")
+    shipping_carrier: Mapped[str] = mapped_column(String(80), default="")
+    tracking_number: Mapped[str] = mapped_column(String(120), default="")
+    tracking_url: Mapped[str] = mapped_column(String(500), default="")
     paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     fulfilled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -594,6 +597,21 @@ def ensure_schema_updates(engine, is_sqlite: bool) -> None:
                 "credits_awarded_at",
                 "ALTER TABLE shop_orders ADD COLUMN credits_awarded_at DATETIME",
                 "ALTER TABLE shop_orders ADD COLUMN credits_awarded_at TIMESTAMP WITH TIME ZONE",
+            ),
+            (
+                "shipping_carrier",
+                "ALTER TABLE shop_orders ADD COLUMN shipping_carrier VARCHAR(80) DEFAULT ''",
+                "ALTER TABLE shop_orders ADD COLUMN shipping_carrier VARCHAR(80) NOT NULL DEFAULT ''",
+            ),
+            (
+                "tracking_number",
+                "ALTER TABLE shop_orders ADD COLUMN tracking_number VARCHAR(120) DEFAULT ''",
+                "ALTER TABLE shop_orders ADD COLUMN tracking_number VARCHAR(120) NOT NULL DEFAULT ''",
+            ),
+            (
+                "tracking_url",
+                "ALTER TABLE shop_orders ADD COLUMN tracking_url VARCHAR(500) DEFAULT ''",
+                "ALTER TABLE shop_orders ADD COLUMN tracking_url VARCHAR(500) NOT NULL DEFAULT ''",
             ),
         ):
             if column_name not in columns:

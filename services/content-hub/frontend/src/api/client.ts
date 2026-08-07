@@ -386,6 +386,9 @@ export type ShopOrder = {
   country: string;
   notes?: string;
   credits_earned?: number;
+  shipping_carrier?: string;
+  tracking_number?: string;
+  tracking_url?: string;
   paid_at?: string | null;
   fulfilled_at?: string | null;
   created_at?: string | null;
@@ -1370,10 +1373,23 @@ export async function fetchAdminOrders(status?: string): Promise<ShopOrder[]> {
   return payload.orders;
 }
 
-export async function updateAdminOrderStatus(orderId: string, status: string): Promise<ShopOrder> {
+export async function updateAdminOrderStatus(
+  orderId: string,
+  status: string,
+  shipping?: {
+    shipping_carrier?: string;
+    tracking_number?: string;
+    tracking_url?: string;
+  },
+): Promise<ShopOrder> {
   const payload = await request<{ order: ShopOrder }>(`/api/orders/${orderId}`, {
     method: "PATCH",
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({
+      status,
+      shipping_carrier: shipping?.shipping_carrier || "",
+      tracking_number: shipping?.tracking_number || "",
+      tracking_url: shipping?.tracking_url || "",
+    }),
   });
   return payload.order;
 }

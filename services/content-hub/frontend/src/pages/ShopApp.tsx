@@ -920,6 +920,20 @@ function ShopAccountPage({ base }: { base: string }) {
                 {formatMoney(order.total_cents, order.currency, i18n.language)}
                 {order.credits_earned ? ` · +${order.credits_earned} CO₂` : ""}
               </div>
+              {order.tracking_number || order.tracking_url ? (
+                <p className="muted shop-tracking-line">
+                  {t("shop.tracking")}: {order.shipping_carrier || "—"}
+                  {order.tracking_number ? ` · ${order.tracking_number}` : ""}
+                  {order.tracking_url ? (
+                    <>
+                      {" · "}
+                      <a href={order.tracking_url} target="_blank" rel="noreferrer">
+                        {t("shop.trackShipment")}
+                      </a>
+                    </>
+                  ) : null}
+                </p>
+              ) : null}
               {canReturn ? (
                 activeOrderId === order.id ? (
                   <div className="shop-return-form">
@@ -1044,6 +1058,20 @@ function ShopOrderSuccess({ base }: { base: string }) {
       {order.credits_earned ? (
         <p>
           {t("shop.creditsEarned", { credits: order.credits_earned })}
+        </p>
+      ) : null}
+      {order.tracking_number || order.tracking_url ? (
+        <p className="muted">
+          {t("shop.tracking")}: {order.shipping_carrier || "—"}
+          {order.tracking_number ? ` · ${order.tracking_number}` : ""}
+          {order.tracking_url ? (
+            <>
+              {" · "}
+              <a href={order.tracking_url} target="_blank" rel="noreferrer">
+                {t("shop.trackShipment")}
+              </a>
+            </>
+          ) : null}
         </p>
       ) : null}
       <Link to={base || "/"} className="shop-btn shop-btn-primary link-button">

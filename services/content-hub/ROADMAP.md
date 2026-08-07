@@ -73,6 +73,7 @@ flowchart LR
 | H | 2–4 Tage | ✅ Abgeschlossen (MVP) | Auto-Import CA (PEM / LE / Key Vault) |
 | I | 2–4 Tage | ✅ Abgeschlossen (MVP) | Shop-Retouren / Gutschriften |
 | J | 2–4 Tage | ✅ Abgeschlossen (MVP) | Mobile PWA + Zertifikat-Ketten UI |
+| K | 2–4 Tage | ✅ Abgeschlossen (MVP) | Shop-Versandverfolgung + Status-Mails |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -539,6 +540,7 @@ flowchart LR
 | SharePoint | Zertifikate aus SharePoint-Bibliothek importieren | ~~Mittel~~ ✅ Sprint F |
 | Mobile | Responsive Optimierung / PWA | ~~Niedrig~~ ✅ Sprint J |
 | Analytics | Veröffentlichungs- und Zertifikat-Statistiken | ~~Niedrig~~ ✅ Sprint E |
+| Shop Versand | Sendungsverfolgung + Status-E-Mails | ~~Mittel~~ ✅ Sprint K |
 
 ---
 
@@ -663,8 +665,29 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ---
 
+## Sprint K — Shop-Versandverfolgung & Status-Mails ✅ (MVP)
+
+**Ziel:** Versendete Bestellungen mit Carrier/Tracking erfassen und Kunden per E-Mail informieren.
+
+### Deliverables
+
+- [x] Felder `shipping_carrier`, `tracking_number`, `tracking_url` an Shop-Orders
+- [x] Admin: Versandformular beim Markieren als versendet (+ Tracking später speichern)
+- [x] Auto-Tracking-URL für DHL/DPD/UPS/Hermes/GLS/Deutsche Post
+- [x] E-Mail an Kunde (+ Shop-Inbox) bei Versand und Storno
+- [x] Shop-Konto und Bestellseite zeigen Tracking-Link
+- [x] DE / EN / 中文 + Tests
+
+### Akzeptanzkriterien
+
+- [x] Redaktion kann Bestellung mit Sendungsnummer als versendet markieren
+- [x] Kunde erhält Versand-Mail mit Track-&-Trace-Link
+- [x] Storno stellt Tracked-Inventory wieder her und benachrichtigt den Kunden
+
+---
+
 ## Nächster Schritt
 
-**Sprint K (Vorschlag):** Weitere Shop-/Plattform-Erweiterungen nach Priorität des Product Owners.
+**Sprint L (Vorschlag):** Rechnungs-PDF / Entra-Gruppen-Mapping / Volltext-Diff — nach PO-Priorität.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.

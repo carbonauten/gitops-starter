@@ -654,6 +654,8 @@
     "returnReason": "Reason",
     "returnNote": "Note (optional)",
     "returnRequested": "Return request submitted.",
+    "tracking": "Tracking",
+    "trackShipment": "Track shipment",
     "creditHistory": "Credit history",
     "noCreditsYet": "No credits earned yet.",
     "creditsEarned": "You earned +{{credits}} CO₂ reward credits.",
@@ -697,7 +699,26 @@
     "allStatuses": "All statuses",
     "markPaid": "Mark as paid",
     "markFulfilled": "Mark as shipped",
-    "markCancelled": "Cancel"
+    "confirmShip": "Confirm shipment & email customer",
+    "saveTracking": "Save tracking",
+    "markCancelled": "Cancel",
+    "tracking": "Shipment",
+    "trackLink": "Track shipment",
+    "carrier": "Carrier",
+    "trackingNumber": "Tracking number",
+    "trackingUrl": "Tracking URL (optional)",
+    "fulfilledNotice": "Order marked as shipped. Customer notified.",
+    "cancelledNotice": "Order cancelled. Customer notified.",
+    "updatedNotice": "Order updated.",
+    "carriers": {
+      "dhl": "DHL",
+      "dpd": "DPD",
+      "ups": "UPS",
+      "hermes": "Hermes",
+      "gls": "GLS",
+      "deutsche_post": "Deutsche Post",
+      "other": "Other"
+    }
   },
   "onboarding": {
     "title": "Quick start",
