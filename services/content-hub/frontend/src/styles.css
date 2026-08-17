@@ -1017,6 +1017,18 @@ a {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
 }
 
+.reputation-letter {
+  white-space: pre-wrap;
+  font-family: inherit;
+  font-size: 0.92rem;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(248, 250, 252, 0.9);
+  overflow: auto;
+  max-height: 280px;
+}
+
 .order-ship-form label {
   display: grid;
   gap: 0.3rem;

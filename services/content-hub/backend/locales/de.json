@@ -58,6 +58,6 @@
   "errors.return_window_expired": "Die Retourenfrist ist abgelaufen.",
   "errors.return_already_open": "Für diese Bestellung läuft bereits eine Retoure.",
   "errors.return_already_completed": "Diese Retoure wurde bereits abgeschlossen.",
-  "errors.return_already_resolved": "Diese Retoure wurde bereits entschieden.",
+  "errors.deletion_already_open": "Für diesen Treffer läuft bereits ein Löschantrag.",
   "messages.language_updated": "Sprache wurde aktualisiert."
 }

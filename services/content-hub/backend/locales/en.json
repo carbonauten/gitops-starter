@@ -58,6 +58,6 @@
   "errors.return_window_expired": "The return window has expired.",
   "errors.return_already_open": "A return is already open for this order.",
   "errors.return_already_completed": "This return was already completed.",
-  "errors.return_already_resolved": "This return was already resolved.",
+  "errors.deletion_already_open": "A deletion request is already open for this result.",
   "messages.language_updated": "Language updated."
 }

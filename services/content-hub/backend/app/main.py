@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from .config import get_settings
 from .database import ensure_upload_dir, init_database
 from .i18n import parse_accept_language, translate
-from .routes import ai, analytics, articles, audit, auth, certificates, dashboard, departments, files, health, integrations, monitor, orders, products, publish, search, shop, shop_auth, shop_customers, shop_returns, sync, user, versions, workflow
+from .routes import ai, analytics, articles, audit, auth, certificates, dashboard, departments, files, health, integrations, monitor, orders, products, publish, reputation, search, shop, shop_auth, shop_customers, shop_returns, sync, user, versions, workflow
 from .static_assets import media_type_for, resolve_asset_path, resolve_root_file
 
 logger = logging.getLogger(__name__)
@@ -61,17 +61,40 @@ async def lifespan(app: FastAPI):
             finally:
                 db.close()
 
+    async def reputation_crawl_loop():
+        from .config import get_settings as _settings
+        from .database import _SessionLocal
+        from .reputation_crawler import run_reputation_crawl
+
+        while True:
+            if _SessionLocal is None or not _settings().reputation_crawl_enabled:
+                await asyncio.sleep(3600)
+                continue
+            db = _SessionLocal()
+            try:
+                run_reputation_crawl(db)
+            except Exception:  # noqa: BLE001
+                logger.exception("Reputation crawl loop failed")
+            finally:
+                db.close()
+            hours = max(1, int(_settings().reputation_crawl_interval_hours or 6))
+            await asyncio.sleep(hours * 3600)
+
     publish_task = asyncio.create_task(scheduled_publish_loop())
     reminder_task = asyncio.create_task(certificate_reminder_loop())
+    reputation_task = asyncio.create_task(reputation_crawl_loop())
     try:
         yield
     finally:
         publish_task.cancel()
         reminder_task.cancel()
+        reputation_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await publish_task
         with contextlib.suppress(asyncio.CancelledError):
             await reminder_task
+        with contextlib.suppress(asyncio.CancelledError):
+            await reputation_task
 
 
 def create_app() -> FastAPI:
@@ -133,6 +156,7 @@ def create_app() -> FastAPI:
     app.include_router(shop_auth.router)
     app.include_router(shop_customers.router)
     app.include_router(shop_returns.router)
+    app.include_router(reputation.router)
     app.include_router(search.router)
     app.include_router(ai.router)
     app.include_router(dashboard.router)

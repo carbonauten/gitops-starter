@@ -1201,6 +1201,103 @@ export async function fetchShopMonitoringSummary(days = 30): Promise<ShopMonitor
   return request<ShopMonitoringSummary>(`/api/shop/monitoring/summary?${params}`);
 }
 
+export type ReputationDeletion = {
+  id: string;
+  mention_id: string;
+  status: string;
+  reason: string;
+  notes: string;
+  letter: string;
+  publisher_email: string;
+  requested_by_name?: string;
+  created_at?: string | null;
+};
+
+export type ReputationMention = {
+  id: string;
+  url: string;
+  title: string;
+  snippet: string;
+  excerpt: string;
+  source_host: string;
+  query: string;
+  channel: string;
+  sentiment: "negative" | "neutral" | "positive" | string;
+  sentiment_score: number;
+  sentiment_reasons: string;
+  first_seen_at?: string | null;
+  last_seen_at?: string | null;
+  deletion?: ReputationDeletion | null;
+};
+
+export type ReputationSummary = {
+  total: number;
+  negative: number;
+  positive: number;
+  neutral: number;
+  open_deletion_requests: number;
+  last_run?: {
+    id: string;
+    status: string;
+    found: number;
+    created: number;
+    updated: number;
+    negative: number;
+    error?: string;
+    started_at?: string | null;
+    finished_at?: string | null;
+  } | null;
+};
+
+export type ReputationCrawlRun = {
+  id: string;
+  status: string;
+  found: number;
+  created: number;
+  updated: number;
+  negative: number;
+  error?: string;
+  started_at?: string | null;
+  finished_at?: string | null;
+};
+
+export async function fetchReputationSummary(): Promise<ReputationSummary> {
+  return request<ReputationSummary>("/api/reputation/summary");
+}
+
+export async function fetchReputationMentions(filters?: {
+  sentiment?: string;
+  q?: string;
+}): Promise<ReputationMention[]> {
+  const params = new URLSearchParams();
+  if (filters?.sentiment) params.set("sentiment", filters.sentiment);
+  if (filters?.q) params.set("q", filters.q);
+  const query = params.toString();
+  const payload = await request<{ mentions: ReputationMention[] }>(
+    `/api/reputation/mentions${query ? `?${query}` : ""}`,
+  );
+  return payload.mentions;
+}
+
+export async function runReputationCrawl(): Promise<ReputationCrawlRun> {
+  const payload = await request<{ run: ReputationCrawlRun }>("/api/reputation/crawl", { method: "POST" });
+  return payload.run;
+}
+
+export async function requestReputationDeletion(
+  mentionId: string,
+  data: { reason: string; notes?: string; publisher_email?: string },
+): Promise<{ request: ReputationDeletion; mention: ReputationMention }> {
+  return request(`/api/reputation/mentions/${mentionId}/deletion-requests`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function closeReputationDeletion(requestId: string): Promise<{ request: ReputationDeletion }> {
+  return request(`/api/reputation/deletion-requests/${requestId}/close`, { method: "PATCH" });
+}
+
 export async function fetchShopOrder(orderNumber: string, token: string): Promise<ShopOrder> {
   const params = new URLSearchParams({ token });
   const payload = await request<{ order: ShopOrder }>(

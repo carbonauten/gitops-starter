@@ -75,6 +75,7 @@ flowchart LR
 | J | 2–4 Tage | ✅ Abgeschlossen (MVP) | Mobile PWA + Zertifikat-Ketten UI |
 | K | 2–4 Tage | ✅ Abgeschlossen (MVP) | Shop-Versandverfolgung + Status-Mails |
 | L | 2–4 Tage | ✅ Abgeschlossen (MVP) | Shop-Rechnungs-PDF |
+| M | 2–4 Tage | ✅ Abgeschlossen (MVP) | Web-Reputation-Crawler + Löschanträge |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -543,6 +544,7 @@ flowchart LR
 | Analytics | Veröffentlichungs- und Zertifikat-Statistiken | ~~Niedrig~~ ✅ Sprint E |
 | Shop Versand | Sendungsverfolgung + Status-E-Mails | ~~Mittel~~ ✅ Sprint K |
 | Shop Rechnung PDF | Rechnungs-/Beleg-PDF Download | ~~Mittel~~ ✅ Sprint L |
+| Web-Reputation | Crawler + negative Treffer + Löschantrag | ~~Mittel~~ ✅ Sprint M |
 
 ---
 
@@ -709,8 +711,29 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ---
 
+## Sprint M — Web-Reputation-Crawler ✅ (MVP)
+
+**Ziel:** Öffentliche Artikel und Meldungen zu carbonauten GmbH / FuckCo2 sammeln, negative Treffer hervorheben, Löschanträge intern dokumentieren.
+
+### Deliverables
+
+- [x] Crawler: DuckDuckGo-HTML + Google-News-RSS (kein Login, Rate-Limit)
+- [x] Sentiment: negativ / neutral / positiv (Keyword-Score)
+- [x] UI **Web-Reputation** mit Filter, Crawl-Button, Quelle öffnen
+- [x] Löschantrag mit Begründung, Briefvorlage, interner E-Mail
+- [x] Geplanter Crawl alle `REPUTATION_CRAWL_INTERVAL_HOURS` (Default 6)
+- [x] DE / EN / 中文 + Tests
+
+### Akzeptanzkriterien
+
+- [x] Redaktion sieht negative Treffer zuerst / per Filter
+- [x] Löschantrag erzeugt Brief + verhindert Duplikate (409)
+- [x] Viewer hat keinen Zugriff
+
+---
+
 ## Nächster Schritt
 
-**Sprint M (Vorschlag):** Entra-Gruppen-Mapping oder Volltext-Diff — nach PO-Priorität.
+**Sprint N (Vorschlag):** Entra-Gruppen-Mapping oder Volltext-Diff — nach PO-Priorität.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.

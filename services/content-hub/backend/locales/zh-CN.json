@@ -58,6 +58,6 @@
   "errors.return_window_expired": "退货期限已过。",
   "errors.return_already_open": "此订单已有进行中的退货。",
   "errors.return_already_completed": "此退货已完成。",
-  "errors.return_already_resolved": "此退货已处理。",
+  "errors.deletion_already_open": "此结果已有进行中的删除申请。",
   "messages.language_updated": "语言已更新。"
 }

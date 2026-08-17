@@ -430,6 +430,67 @@ class ShopReturn(Base):
     )
 
 
+class ReputationMention(Base):
+    """Public web mention of carbonauten / FuckCo2 found by the reputation crawler."""
+
+    __tablename__ = "reputation_mentions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    url: Mapped[str] = mapped_column(String(800), unique=True, index=True)
+    canonical_url: Mapped[str] = mapped_column(String(800), default="", index=True)
+    title: Mapped[str] = mapped_column(String(500), default="")
+    snippet: Mapped[str] = mapped_column(Text, default="")
+    excerpt: Mapped[str] = mapped_column(Text, default="")
+    source_host: Mapped[str] = mapped_column(String(200), default="", index=True)
+    query: Mapped[str] = mapped_column(String(300), default="")
+    channel: Mapped[str] = mapped_column(String(40), default="web")  # web|news
+    sentiment: Mapped[str] = mapped_column(String(20), default="neutral", index=True)  # negative|neutral|positive
+    sentiment_score: Mapped[int] = mapped_column(Integer, default=0)
+    sentiment_reasons: Mapped[str] = mapped_column(String(500), default="")
+    language: Mapped[str] = mapped_column(String(10), default="")
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class ReputationDeletionRequest(Base):
+    """Internal request to ask a publisher to take down a mention."""
+
+    __tablename__ = "reputation_deletion_requests"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    mention_id: Mapped[str] = mapped_column(String(36), index=True)
+    status: Mapped[str] = mapped_column(String(30), default="requested", index=True)  # requested|sent|closed
+    reason: Mapped[str] = mapped_column(String(40), default="other")  # gdpr|inaccurate|defamation|other
+    notes: Mapped[str] = mapped_column(Text, default="")
+    letter: Mapped[str] = mapped_column(Text, default="")
+    publisher_email: Mapped[str] = mapped_column(String(200), default="")
+    requested_by_id: Mapped[str] = mapped_column(String(100), default="")
+    requested_by_name: Mapped[str] = mapped_column(String(200), default="")
+    requested_by_email: Mapped[str] = mapped_column(String(200), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
+class ReputationCrawlRun(Base):
+    __tablename__ = "reputation_crawl_runs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    status: Mapped[str] = mapped_column(String(30), default="running")  # running|ok|failed
+    queries: Mapped[int] = mapped_column(Integer, default=0)
+    found: Mapped[int] = mapped_column(Integer, default=0)
+    created: Mapped[int] = mapped_column(Integer, default=0)
+    updated: Mapped[int] = mapped_column(Integer, default=0)
+    negative: Mapped[int] = mapped_column(Integer, default=0)
+    error: Mapped[str] = mapped_column(String(500), default="")
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class ShopPageView(Base):
     """Consent-gated storefront page view for shop monitoring."""
 

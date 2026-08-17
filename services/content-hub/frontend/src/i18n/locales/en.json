@@ -9,6 +9,7 @@
     "articles": "Articles",
     "files": "Files",
     "certificates": "Certificates",
+    "reputation": "Web reputation",
     "products": "Products",
     "orders": "Orders",
     "publish": "Publish",
@@ -849,6 +850,48 @@
       "not_as_described": "Not as described",
       "changed_mind": "Changed mind",
       "other": "Other"
+    }
+  },
+  "reputation": {
+    "eyebrow": "Public web",
+    "title": "Web reputation",
+    "subtitle": "Public mentions of carbonauten GmbH and FuckCo2 — especially negative coverage. Deletion requests are logged internally; they do not automatically take down third-party pages.",
+    "runCrawl": "Run crawl",
+    "crawlDone": "{{found}} hits, {{negative}} negative.",
+    "statTotal": "Mentions",
+    "statNegative": "Negative",
+    "statOpenRequests": "Open deletion requests",
+    "lastRun": "Last crawl",
+    "hits": "hits",
+    "allSentiments": "All tones",
+    "searchPlaceholder": "Title, host, URL…",
+    "applyFilter": "Filter",
+    "empty": "No mentions yet. Run a crawl.",
+    "openSource": "Open source",
+    "requestDeletion": "Request deletion",
+    "submitDeletion": "Submit request",
+    "closeDeletion": "Close request",
+    "deletionRequested": "Deletion request logged and emailed internally.",
+    "deletionClosed": "Deletion request closed.",
+    "deletionReason": "Reason",
+    "deletionNotes": "Notes",
+    "publisherEmail": "Recipient (optional)",
+    "deletionStatus": "Deletion request",
+    "sentiments": {
+      "negative": "Negative",
+      "neutral": "Neutral",
+      "positive": "Positive"
+    },
+    "reasons": {
+      "gdpr": "GDPR / personal data",
+      "inaccurate": "Inaccurate",
+      "defamation": "Defamation",
+      "other": "Other"
+    },
+    "deletionStatuses": {
+      "requested": "Requested",
+      "sent": "Sent",
+      "closed": "Closed"
     }
   }
 }

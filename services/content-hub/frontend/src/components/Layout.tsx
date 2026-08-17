@@ -92,6 +92,9 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
     { to: "/files", label: t("nav.files"), icon: "▣" },
     { to: "/certificates", label: t("nav.certificates"), icon: "◎" },
   ];
+  if (canEdit) {
+    content.push({ to: "/reputation", label: t("nav.reputation"), icon: "⚑" });
+  }
 
   const shop: NavItem[] = canManageShop
     ? [

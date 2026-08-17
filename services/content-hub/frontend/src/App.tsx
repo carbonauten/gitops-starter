@@ -26,6 +26,7 @@ import { ShopApp } from "./pages/ShopApp";
 import { ShopCustomersPage } from "./pages/ShopCustomersPage";
 import { ShopMonitoringPage } from "./pages/ShopMonitoringPage";
 import { ShopReturnsPage } from "./pages/ShopReturnsPage";
+import { ReputationPage } from "./pages/ReputationPage";
 import { usePermissions } from "./hooks/usePermissions";
 
 function ShopManageRoute({ children }: { children: React.ReactNode }) {
@@ -236,6 +237,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <WorkflowPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reputation"
+        element={
+          <ProtectedRoute>
+            <ReputationPage />
           </ProtectedRoute>
         }
       />

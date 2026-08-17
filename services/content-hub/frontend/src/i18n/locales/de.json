@@ -9,6 +9,7 @@
     "articles": "Artikel",
     "files": "Dateien",
     "certificates": "Zertifikate",
+    "reputation": "Web-Reputation",
     "products": "Produkte",
     "orders": "Bestellungen",
     "publish": "Veröffentlichen",
@@ -849,6 +850,48 @@
       "not_as_described": "Nicht wie beschrieben",
       "changed_mind": "Meinungsänderung",
       "other": "Sonstiges"
+    }
+  },
+  "reputation": {
+    "eyebrow": "Öffentliches Web",
+    "title": "Web-Reputation",
+    "subtitle": "Öffentliche Treffer zu carbonauten GmbH und FuckCo2 — mit Fokus auf negative Meldungen. Löschanträge gehen intern raus, löschen fremde Seiten nicht automatisch.",
+    "runCrawl": "Jetzt crawlen",
+    "crawlDone": "{{found}} Treffer, davon {{negative}} negativ.",
+    "statTotal": "Treffer",
+    "statNegative": "Negativ",
+    "statOpenRequests": "Offene Löschanträge",
+    "lastRun": "Letzter Crawl",
+    "hits": "Treffer",
+    "allSentiments": "Alle Töne",
+    "searchPlaceholder": "Titel, Host, URL…",
+    "applyFilter": "Filtern",
+    "empty": "Noch keine Treffer. Crawl starten.",
+    "openSource": "Quelle öffnen",
+    "requestDeletion": "Löschung beantragen",
+    "submitDeletion": "Antrag senden",
+    "closeDeletion": "Antrag schließen",
+    "deletionRequested": "Löschantrag wurde intern erfasst und per E-Mail gesendet.",
+    "deletionClosed": "Löschantrag geschlossen.",
+    "deletionReason": "Grund",
+    "deletionNotes": "Begründung",
+    "publisherEmail": "Empfänger (optional)",
+    "deletionStatus": "Löschantrag",
+    "sentiments": {
+      "negative": "Negativ",
+      "neutral": "Neutral",
+      "positive": "Positiv"
+    },
+    "reasons": {
+      "gdpr": "DSGVO / personenbezogene Daten",
+      "inaccurate": "Unzutreffend",
+      "defamation": "Rufschädigung",
+      "other": "Sonstiges"
+    },
+    "deletionStatuses": {
+      "requested": "Beantragt",
+      "sent": "Gesendet",
+      "closed": "Geschlossen"
     }
   }
 }
