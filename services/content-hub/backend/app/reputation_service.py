@@ -22,8 +22,9 @@ from .reputation_crawler import crawl_run_to_dict, run_reputation_crawl, source_
 logger = logging.getLogger(__name__)
 
 DELETION_REASONS = {"gdpr", "inaccurate", "defamation", "other"}
-STALE_RUNNING_MINUTES = 15
+STALE_RUNNING_MINUTES = 3
 _start_lock = threading.Lock()
+_worker_lock = threading.Lock()
 
 
 def _utc_now() -> datetime:
@@ -71,22 +72,27 @@ def get_running_run(db: Session) -> ReputationCrawlRun | None:
 def _crawl_worker(run_id: str) -> None:
     from .database import _SessionLocal
 
-    if _SessionLocal is None:
+    if not _worker_lock.acquire(blocking=False):
         return
-    db = _SessionLocal()
     try:
-        run_reputation_crawl(db, existing_run_id=run_id)
-    except Exception:  # noqa: BLE001
-        logger.exception("Background reputation crawl failed")
-        run = db.get(ReputationCrawlRun, run_id)
-        if run and run.status == "running":
-            run.status = "failed"
-            run.error = "worker_failed"
-            run.finished_at = _utc_now()
-            db.add(run)
-            db.commit()
+        if _SessionLocal is None:
+            return
+        db = _SessionLocal()
+        try:
+            run_reputation_crawl(db, existing_run_id=run_id)
+        except Exception:  # noqa: BLE001
+            logger.exception("Background reputation crawl failed")
+            run = db.get(ReputationCrawlRun, run_id)
+            if run and run.status == "running":
+                run.status = "failed"
+                run.error = "worker_failed"
+                run.finished_at = _utc_now()
+                db.add(run)
+                db.commit()
+        finally:
+            db.close()
     finally:
-        db.close()
+        _worker_lock.release()
 
 
 def guess_publisher_email(url: str) -> str:
@@ -222,9 +228,13 @@ def start_crawl(db: Session, *, actor: dict[str, Any] | None = None, wait: bool 
     expire_stale_runs(db)
     with _start_lock:
         active = get_running_run(db)
-        if active:
+        worker_busy = _worker_lock.locked()
+        if active and worker_busy:
             run_id = active.id
             created = False
+        elif active and not worker_busy:
+            run_id = active.id
+            created = True
         else:
             run = ReputationCrawlRun(id=str(uuid4()), status="running")
             db.add(run)

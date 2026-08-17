@@ -162,7 +162,7 @@ def test_parse_duckduckgo_linkedin_channel():
 def test_default_queries_include_linkedin():
     queries = default_queries()
     assert any("linkedin.com" in item for item in queries)
-    assert any("linkedin.com/posts" in item for item in queries)
+    assert len(queries) <= 6
 
 
 def test_reputation_mentions_optional_date_range(auth_client, monkeypatch):

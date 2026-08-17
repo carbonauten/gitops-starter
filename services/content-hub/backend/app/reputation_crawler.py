@@ -1,20 +1,22 @@
 """Public-web reputation crawler for carbonauten GmbH / FuckCo2.
 
 Searches public DuckDuckGo HTML (including LinkedIn ``site:`` queries) and
-Google News RSS, then fetches a short excerpt from result pages. LinkedIn
-post pages are login-walled, so those mentions keep the search snippet.
-Does not log in, bypass paywalls, or ignore rate limits.
+Google News RSS. Uses search snippets instead of fetching result pages, runs
+queries in parallel, and stops after a short time budget. Does not log in,
+bypass paywalls, or ignore rate limits.
 """
 
 from __future__ import annotations
 
+import contextvars
 import html as html_lib
 import logging
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from typing import Any, Callable
-from urllib.parse import parse_qs, unquote, urljoin, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 from uuid import uuid4
 from xml.etree import ElementTree
 
@@ -75,25 +77,22 @@ POSITIVE_TERMS = (
 
 DEFAULT_QUERIES = (
     "carbonauten GmbH",
-    "carbonauten GmbH Kritik",
-    "carbonauten GmbH Betrug",
-    "carbonauten GmbH Skandal",
-    "carbonauten GmbH Abmahnung",
-    '"carbonauten" Warnung OR Beschwerde',
-    "FuckCo2 Kritik",
+    "carbonauten Kritik OR Betrug OR Skandal",
     "FuckCo2 carbonauten",
-    "site:linkedin.com carbonauten",
-    "site:linkedin.com FuckCo2 OR fuckco2",
-    "site:linkedin.com/posts carbonauten",
-    "site:linkedin.com/pulse carbonauten",
-    "site:linkedin.com carbonauten Kritik OR Betrug",
+    "site:linkedin.com carbonauten OR FuckCo2",
 )
 
-MAX_QUERIES = 18
-MAX_PAGE_FETCHES = 12
-FETCH_TIMEOUT_SEC = 8.0
+MAX_QUERIES = 6
+MAX_PAGE_FETCHES = 0
+FETCH_TIMEOUT_SEC = 5.0
+CRAWL_BUDGET_SEC = 25.0
+SEARCH_WORKERS = 4
 
 FetchFn = Callable[[str, dict[str, str] | None, dict[str, str] | None], str]
+_http_client: contextvars.ContextVar[httpx.Client | None] = contextvars.ContextVar(
+    "reputation_http_client",
+    default=None,
+)
 
 
 def _utc_now() -> datetime:
@@ -101,11 +100,11 @@ def _utc_now() -> datetime:
 
 
 def default_queries(settings: Settings | None = None) -> list[str]:
-    settings = settings or get_settings()
-    extra = [part.strip() for part in (settings.reputation_brand_terms or "").split(",") if part.strip()]
+    """Brand terms stay in DEFAULT_QUERIES; extras are not extra round-trips."""
+    del settings  # reserved for future allow-list of extra site: queries
     seen: set[str] = set()
     queries: list[str] = []
-    for item in list(DEFAULT_QUERIES) + extra:
+    for item in DEFAULT_QUERIES:
         key = item.lower()
         if key in seen:
             continue
@@ -226,6 +225,11 @@ def default_fetch(url: str, params: dict[str, str] | None = None, headers: dict[
     merged = {"User-Agent": USER_AGENT, "Accept-Language": "de,en;q=0.8"}
     if headers:
         merged.update(headers)
+    shared = _http_client.get()
+    if shared is not None:
+        response = shared.get(url, params=params, headers=merged)
+        response.raise_for_status()
+        return response.text[:250_000]
     with httpx.Client(timeout=FETCH_TIMEOUT_SEC, follow_redirects=True, headers=merged) as client:
         response = client.get(url, params=params)
         response.raise_for_status()
@@ -354,13 +358,27 @@ def _upsert_mention(db: Session, payload: dict[str, str], *, excerpt: str = "") 
     return row, True
 
 
+def _search_query(query: str, *, include_news: bool, fetch: FetchFn) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    try:
+        rows.extend(search_web(query, fetch=fetch))
+    except Exception:  # noqa: BLE001
+        logger.info("Web search failed for query %s", query)
+    if include_news:
+        try:
+            rows.extend(search_news(query, fetch=fetch))
+        except Exception:  # noqa: BLE001
+            logger.info("News search failed for query %s", query)
+    return rows
+
+
 def run_reputation_crawl(
     db: Session,
     *,
     settings: Settings | None = None,
     fetch: FetchFn | None = None,
     include_news: bool = True,
-    fetch_pages: bool = True,
+    fetch_pages: bool = False,
     existing_run_id: str | None = None,
 ) -> ReputationCrawlRun:
     settings = settings or get_settings()
@@ -379,30 +397,45 @@ def run_reputation_crawl(
     queries = default_queries(settings)
     seen_urls: set[str] = set()
     created = updated = negative = 0
-    news_done = False
+    owned_client: httpx.Client | None = None
+    pool: ThreadPoolExecutor | None = None
+    client_token = None
+    active_fetch = fetch or default_fetch
+    if fetch is None:
+        owned_client = httpx.Client(
+            timeout=FETCH_TIMEOUT_SEC,
+            follow_redirects=True,
+            headers={"User-Agent": USER_AGENT, "Accept-Language": "de,en;q=0.8"},
+        )
+        client_token = _http_client.set(owned_client)
+
+    deadline = time.monotonic() + CRAWL_BUDGET_SEC
     try:
-        for query in queries:
-            batches: list[list[dict[str, str]]] = []
-            try:
-                batches.append(search_web(query, fetch=fetch))
-            except Exception:  # noqa: BLE001
-                logger.info("Web search failed for query %s", query)
-            if include_news and not news_done:
+        jobs = [(query, include_news and index == 0) for index, query in enumerate(queries)]
+        pool = ThreadPoolExecutor(max_workers=min(SEARCH_WORKERS, max(1, len(jobs))))
+        futures = {
+            pool.submit(_search_query, query, include_news=news, fetch=active_fetch): query
+            for query, news in jobs
+        }
+        remaining = max(0.1, deadline - time.monotonic())
+        try:
+            completed = as_completed(futures, timeout=remaining)
+            for future in completed:
+                if time.monotonic() >= deadline:
+                    break
                 try:
-                    batches.append(search_news(query, fetch=fetch))
+                    batch = future.result()
                 except Exception:  # noqa: BLE001
-                    logger.info("News search failed for query %s", query)
-                news_done = True
-            for batch in batches:
+                    logger.info("Search worker failed")
+                    continue
                 for item in batch:
                     url = item.get("url") or ""
                     if not url or url in seen_urls:
                         continue
                     seen_urls.add(url)
                     excerpt = ""
-                    if fetch_pages and len(seen_urls) <= MAX_PAGE_FETCHES and not is_linkedin_url(url):
-                        excerpt = fetch_excerpt(url, fetch=fetch)
-                        time.sleep(0.15)
+                    if fetch_pages and MAX_PAGE_FETCHES and len(seen_urls) <= MAX_PAGE_FETCHES and not is_linkedin_url(url):
+                        excerpt = fetch_excerpt(url, fetch=active_fetch)
                     _row, is_new = _upsert_mention(db, item, excerpt=excerpt)
                     if is_new:
                         created += 1
@@ -410,13 +443,17 @@ def run_reputation_crawl(
                         updated += 1
                     if _row.sentiment == "negative":
                         negative += 1
-            run.queries = len(queries)
-            run.found = len(seen_urls)
-            run.created = created
-            run.updated = updated
-            run.negative = negative
-            db.add(run)
-            db.commit()
+                run.queries = len(queries)
+                run.found = len(seen_urls)
+                run.created = created
+                run.updated = updated
+                run.negative = negative
+                db.add(run)
+                db.commit()
+                if time.monotonic() >= deadline:
+                    break
+        except TimeoutError:
+            logger.info("Reputation crawl reached %ss budget with %s hits", CRAWL_BUDGET_SEC, len(seen_urls))
 
         run.status = "ok"
         run.queries = len(queries)
@@ -438,3 +475,10 @@ def run_reputation_crawl(
         db.commit()
         db.refresh(run)
         return run
+    finally:
+        if client_token is not None:
+            _http_client.reset(client_token)
+        if owned_client is not None:
+            owned_client.close()
+        if pool is not None:
+            pool.shutdown(wait=False, cancel_futures=True)

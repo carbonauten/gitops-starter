@@ -105,7 +105,7 @@ export function ReputationPage() {
           void load({ silent: true });
         })
         .catch(() => undefined);
-    }, 2000);
+    }, 1000);
     return () => window.clearInterval(timer);
   }, [summary?.last_run?.status]);
 
