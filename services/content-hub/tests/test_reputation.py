@@ -8,6 +8,7 @@ from app.reputation_crawler import (
     classify_sentiment,
     default_queries,
     detect_channel,
+    is_on_brand,
     parse_duckduckgo_html,
     parse_news_rss,
 )
@@ -140,9 +141,34 @@ def test_parse_news_rss_items():
     assert rows[0]["url"] == "https://blog.example.org/skandal"
 
 
+def test_parse_news_rss_linkedin_source():
+    xml = """
+    <rss><channel>
+    <item>
+      <title>Torsten Becker – carbonauten - the minus CO2 factory - LinkedIn</title>
+      <link>https://news.google.com/rss/articles/abc</link>
+      <description>CEO von carbonauten GmbH</description>
+      <source url="https://www.linkedin.com">LinkedIn</source>
+    </item>
+    <item>
+      <title>Unrelated Torsten Becker – lawyer</title>
+      <link>https://news.google.com/rss/articles/xyz</link>
+      <description>Anwaltskanzlei</description>
+      <source url="https://www.linkedin.com">LinkedIn</source>
+    </item>
+    </channel></rss>
+    """
+    rows = parse_news_rss(xml, limit=20)
+    assert rows[0]["channel"] == "linkedin"
+    assert "Torsten Becker" in rows[0]["title"]
+    assert is_on_brand(rows[0]["title"])
+    assert not is_on_brand(rows[1]["title"] + " " + rows[1]["snippet"])
+
+
 def test_detect_channel_linkedin():
     assert detect_channel("https://www.linkedin.com/posts/someone_carbonauten-activity-123") == "linkedin"
     assert detect_channel("https://de.linkedin.com/pulse/foo") == "linkedin"
+    assert detect_channel("https://lnkd.in/abc") == "linkedin"
     assert detect_channel("https://news.example.com/story") == "web"
     assert detect_channel("https://news.example.com/story", fallback="news") == "news"
 
@@ -162,7 +188,9 @@ def test_parse_duckduckgo_linkedin_channel():
 def test_default_queries_include_linkedin():
     queries = default_queries()
     assert any("linkedin.com" in item for item in queries)
-    assert len(queries) <= 6
+    assert any("Torsten Becker" in item for item in queries)
+    assert any("linkedin.com/posts" in item for item in queries)
+    assert len(queries) <= 10
 
 
 def test_reputation_mentions_optional_date_range(auth_client, monkeypatch):

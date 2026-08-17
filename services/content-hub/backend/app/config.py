@@ -139,6 +139,7 @@ class Settings(BaseSettings):
     reputation_crawl_enabled: bool = True
     reputation_crawl_interval_hours: int = 6
     reputation_brand_terms: str = "carbonauten GmbH,carbonauten,FuckCo2,fuckco2"
+    reputation_people: str = "Torsten Becker"
 
     supported_languages: tuple[str, ...] = ("de", "en", "zh-CN")
     default_language: str = "en"

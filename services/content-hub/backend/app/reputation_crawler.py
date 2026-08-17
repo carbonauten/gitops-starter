@@ -1,9 +1,10 @@
 """Public-web reputation crawler for carbonauten GmbH / FuckCo2.
 
-Searches public DuckDuckGo HTML (including LinkedIn ``site:`` queries) and
-Google News RSS. Uses search snippets instead of fetching result pages, runs
-queries in parallel, and stops after a short time budget. Does not log in,
-bypass paywalls, or ignore rate limits.
+Searches public DuckDuckGo HTML and Google News RSS, including LinkedIn
+``site:`` queries for carbonauten / FuckCo2 and named people (e.g. Torsten Becker).
+DuckDuckGo is often blocked from datacenter IPs; Google News RSS still returns
+LinkedIn sources. Uses search snippets, runs queries in parallel, and stops after
+a short time budget. Does not log in, bypass paywalls, or ignore rate limits.
 """
 
 from __future__ import annotations
@@ -79,14 +80,19 @@ DEFAULT_QUERIES = (
     "carbonauten GmbH",
     "carbonauten Kritik OR Betrug OR Skandal",
     "FuckCo2 carbonauten",
-    "site:linkedin.com carbonauten OR FuckCo2",
+)
+LINKEDIN_QUERIES = (
+    'site:linkedin.com "carbonauten GmbH"',
+    'site:linkedin.com "carbonauten"',
+    'site:linkedin.com/posts "carbonauten"',
+    'site:linkedin.com/company/carbonauten',
 )
 
-MAX_QUERIES = 6
+MAX_QUERIES = 10
 MAX_PAGE_FETCHES = 0
 FETCH_TIMEOUT_SEC = 5.0
-CRAWL_BUDGET_SEC = 25.0
-SEARCH_WORKERS = 4
+CRAWL_BUDGET_SEC = 35.0
+SEARCH_WORKERS = 6
 
 FetchFn = Callable[[str, dict[str, str] | None, dict[str, str] | None], str]
 _http_client: contextvars.ContextVar[httpx.Client | None] = contextvars.ContextVar(
@@ -99,18 +105,33 @@ def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _csv_terms(value: str) -> list[str]:
+    return [part.strip() for part in (value or "").split(",") if part.strip()]
+
+
+def default_people(settings: Settings | None = None) -> list[str]:
+    settings = settings or get_settings()
+    people = _csv_terms(getattr(settings, "reputation_people", "") or "")
+    return people or ["Torsten Becker"]
+
+
 def default_queries(settings: Settings | None = None) -> list[str]:
-    """Brand terms stay in DEFAULT_QUERIES; extras are not extra round-trips."""
-    del settings  # reserved for future allow-list of extra site: queries
+    settings = settings or get_settings()
     seen: set[str] = set()
     queries: list[str] = []
-    for item in DEFAULT_QUERIES:
+    people_queries = [f'site:linkedin.com "{person}" carbonauten' for person in default_people(settings)]
+    for item in list(DEFAULT_QUERIES) + list(LINKEDIN_QUERIES) + people_queries:
         key = item.lower()
         if key in seen:
             continue
         seen.add(key)
         queries.append(item)
     return queries[:MAX_QUERIES]
+
+
+def is_on_brand(text: str) -> bool:
+    blob = (text or "").lower()
+    return "carbonauten" in blob or "fuckco2" in blob or "fuck co2" in blob
 
 
 def normalize_url(raw: str) -> str:
@@ -141,7 +162,7 @@ def source_host(url: str) -> str:
 
 def is_linkedin_url(url: str) -> bool:
     host = source_host(url)
-    return host == "linkedin.com" or host.endswith(".linkedin.com")
+    return host in {"linkedin.com", "lnkd.in"} or host.endswith(".linkedin.com")
 
 
 def detect_channel(url: str, fallback: str = "web") -> str:
@@ -199,7 +220,7 @@ def parse_duckduckgo_html(markup: str) -> list[dict[str, str]]:
     return results[:12]
 
 
-def parse_news_rss(markup: str) -> list[dict[str, str]]:
+def parse_news_rss(markup: str, *, limit: int = 12) -> list[dict[str, str]]:
     results: list[dict[str, str]] = []
     try:
         root = ElementTree.fromstring(markup or "")
@@ -212,13 +233,20 @@ def parse_news_rss(markup: str) -> list[dict[str, str]]:
         url = normalize_url(link)
         if not url or not title:
             continue
+        source_el = item.find("source")
+        source_name = (source_el.text or "").strip() if source_el is not None else ""
+        source_url = (source_el.get("url") or "") if source_el is not None else ""
+        if "linkedin" in source_name.lower() or "linkedin.com" in source_url.lower():
+            channel = "linkedin"
+        else:
+            channel = detect_channel(url, fallback="news")
         results.append({
             "url": url,
             "title": title[:500],
             "snippet": description[:800],
-            "channel": detect_channel(url, fallback="news"),
+            "channel": channel,
         })
-    return results[:12]
+    return results[:limit]
 
 
 def default_fetch(url: str, params: dict[str, str] | None = None, headers: dict[str, str] | None = None) -> str:
@@ -245,14 +273,14 @@ def search_web(query: str, *, fetch: FetchFn | None = None) -> list[dict[str, st
     return rows
 
 
-def search_news(query: str, *, fetch: FetchFn | None = None) -> list[dict[str, str]]:
+def search_news(query: str, *, fetch: FetchFn | None = None, limit: int = 12) -> list[dict[str, str]]:
     fetch = fetch or default_fetch
     xml = fetch(
         NEWS_RSS,
         {"q": query, "hl": "de", "gl": "DE", "ceid": "DE:de"},
         None,
     )
-    rows = parse_news_rss(xml)
+    rows = parse_news_rss(xml, limit=limit)
     for row in rows:
         row["query"] = query
     return rows
@@ -324,13 +352,17 @@ def _upsert_mention(db: Session, payload: dict[str, str], *, excerpt: str = "") 
     )
     sentiment, score, reasons = classify_sentiment(text)
     now = _utc_now()
+    channel = payload.get("channel") or "web"
+    host = "linkedin.com" if channel == "linkedin" else source_host(url)
     if existing:
         existing.title = payload.get("title") or existing.title
         existing.snippet = payload.get("snippet") or existing.snippet
         if excerpt:
             existing.excerpt = excerpt
         existing.query = payload.get("query") or existing.query
-        existing.channel = payload.get("channel") or existing.channel
+        existing.channel = channel or existing.channel
+        if host:
+            existing.source_host = host
         existing.sentiment = sentiment
         existing.sentiment_score = score
         existing.sentiment_reasons = reasons
@@ -345,9 +377,9 @@ def _upsert_mention(db: Session, payload: dict[str, str], *, excerpt: str = "") 
         title=(payload.get("title") or "")[:500],
         snippet=(payload.get("snippet") or "")[:2000],
         excerpt=excerpt[:4000],
-        source_host=source_host(url),
+        source_host=host,
         query=(payload.get("query") or "")[:300],
-        channel=payload.get("channel") or "web",
+        channel=channel,
         sentiment=sentiment,
         sentiment_score=score,
         sentiment_reasons=reasons,
@@ -360,16 +392,17 @@ def _upsert_mention(db: Session, payload: dict[str, str], *, excerpt: str = "") 
 
 def _search_query(query: str, *, include_news: bool, fetch: FetchFn) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
+    linkedin_query = "linkedin" in query.lower()
     try:
         rows.extend(search_web(query, fetch=fetch))
     except Exception:  # noqa: BLE001
         logger.info("Web search failed for query %s", query)
     if include_news:
         try:
-            rows.extend(search_news(query, fetch=fetch))
+            rows.extend(search_news(query, fetch=fetch, limit=40 if linkedin_query else 12))
         except Exception:  # noqa: BLE001
             logger.info("News search failed for query %s", query)
-    return rows
+    return [row for row in rows if is_on_brand(" ".join((row.get("title") or "", row.get("snippet") or "", query)))]
 
 
 def run_reputation_crawl(
@@ -411,7 +444,7 @@ def run_reputation_crawl(
 
     deadline = time.monotonic() + CRAWL_BUDGET_SEC
     try:
-        jobs = [(query, include_news and index == 0) for index, query in enumerate(queries)]
+        jobs = [(query, include_news) for query in queries]
         pool = ThreadPoolExecutor(max_workers=min(SEARCH_WORKERS, max(1, len(jobs))))
         futures = {
             pool.submit(_search_query, query, include_news=news, fetch=active_fetch): query

@@ -403,6 +403,7 @@ Der Shop läuft auf derselben Railway-App wie `app.carbonauten.com`.
 | `REPUTATION_CRAWL_ENABLED` | Web-Reputation-Crawler an/aus (Default `true`) |
 | `REPUTATION_CRAWL_INTERVAL_HOURS` | Automatischer Crawl-Abstand (Default `6`) |
 | `REPUTATION_BRAND_TERMS` | Suchbegriffe, komma-getrennt (Default `carbonauten GmbH,carbonauten,FuckCo2,fuckco2`) |
+| `REPUTATION_PEOPLE` | Personen für LinkedIn-Suche, komma-getrennt (Default `Torsten Becker`) |
 | `SHOP_REQUIRE_ACCOUNT_CHECKOUT` | `true` = Checkout nur mit Kundenkonto |
 | `SHOP_ADMIN_EMAIL` / `SHOP_ADMIN_PASSWORD` / `SHOP_ADMIN_NAME` | optional; sonst = `INITIAL_ADMIN_*` — Master-Konto für Shop-Login |
 | `SHOP_BOT_PROTECTION_ENABLED` | Bot-Schutz an/aus (Default `true`) — Rate-Limit + Honeypot |
