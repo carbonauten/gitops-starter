@@ -855,7 +855,7 @@
   "reputation": {
     "eyebrow": "Öffentliches Web",
     "title": "Web-Reputation",
-    "subtitle": "Öffentliche Treffer zu carbonauten GmbH und FuckCo2 — mit Fokus auf negative Meldungen. Löschanträge gehen intern raus, löschen fremde Seiten nicht automatisch.",
+    "subtitle": "Öffentliche Treffer zu carbonauten GmbH und FuckCo2 — inkl. LinkedIn-Posts, Web und Nachrichten. Fokus auf negative Meldungen. Löschanträge gehen intern raus, löschen fremde Seiten nicht automatisch.",
     "runCrawl": "Jetzt crawlen",
     "crawlDone": "{{found}} Treffer, davon {{negative}} negativ.",
     "statTotal": "Treffer",
@@ -877,6 +877,11 @@
     "deletionNotes": "Begründung",
     "publisherEmail": "Empfänger (optional)",
     "deletionStatus": "Löschantrag",
+    "channels": {
+      "web": "Web",
+      "news": "Nachrichten",
+      "linkedin": "LinkedIn"
+    },
     "sentiments": {
       "negative": "Negativ",
       "neutral": "Neutral",

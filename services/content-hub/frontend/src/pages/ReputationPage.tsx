@@ -209,7 +209,8 @@ export function ReputationPage() {
                 </span>
               </div>
               <p className="muted">
-                {item.source_host} · {item.channel} · {item.query}
+                {item.source_host} ·{" "}
+                {t(`reputation.channels.${item.channel}`, { defaultValue: item.channel })} · {item.query}
                 {item.sentiment_reasons ? ` · ${item.sentiment_reasons}` : ""}
               </p>
               <p>{item.snippet || item.excerpt}</p>

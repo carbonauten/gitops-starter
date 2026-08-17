@@ -1,7 +1,9 @@
 """Public-web reputation crawler for carbonauten GmbH / FuckCo2.
 
-Searches public DuckDuckGo HTML and Google News RSS, then fetches a short
-excerpt from result pages. Does not log in, bypass paywalls, or ignore rate limits.
+Searches public DuckDuckGo HTML (including LinkedIn ``site:`` queries) and
+Google News RSS, then fetches a short excerpt from result pages. LinkedIn
+post pages are login-walled, so those mentions keep the search snippet.
+Does not log in, bypass paywalls, or ignore rate limits.
 """
 
 from __future__ import annotations
@@ -80,7 +82,14 @@ DEFAULT_QUERIES = (
     '"carbonauten" Warnung OR Beschwerde',
     "FuckCo2 Kritik",
     "FuckCo2 carbonauten",
+    "site:linkedin.com carbonauten",
+    "site:linkedin.com FuckCo2 OR fuckco2",
+    "site:linkedin.com/posts carbonauten",
+    "site:linkedin.com/pulse carbonauten",
+    "site:linkedin.com carbonauten Kritik OR Betrug",
 )
+
+MAX_QUERIES = 18
 
 FetchFn = Callable[[str, dict[str, str] | None, dict[str, str] | None], str]
 
@@ -100,7 +109,7 @@ def default_queries(settings: Settings | None = None) -> list[str]:
             continue
         seen.add(key)
         queries.append(item)
-    return queries[:12]
+    return queries[:MAX_QUERIES]
 
 
 def normalize_url(raw: str) -> str:
@@ -127,6 +136,18 @@ def normalize_url(raw: str) -> str:
 def source_host(url: str) -> str:
     host = (urlparse(url).netloc or "").lower()
     return host[4:] if host.startswith("www.") else host
+
+
+def is_linkedin_url(url: str) -> bool:
+    host = source_host(url)
+    return host == "linkedin.com" or host.endswith(".linkedin.com")
+
+
+def detect_channel(url: str, fallback: str = "web") -> str:
+    """Classify a mention URL. LinkedIn is a first-class channel."""
+    if is_linkedin_url(url):
+        return "linkedin"
+    return fallback
 
 
 def _strip_tags(markup: str) -> str:
@@ -173,7 +194,7 @@ def parse_duckduckgo_html(markup: str) -> list[dict[str, str]]:
         snippet = _strip_tags(snippets[index])[:800] if index < len(snippets) else ""
         if not url or not title:
             continue
-        results.append({"url": url, "title": title, "snippet": snippet, "channel": "web"})
+        results.append({"url": url, "title": title, "snippet": snippet, "channel": detect_channel(url)})
     return results[:12]
 
 
@@ -190,7 +211,12 @@ def parse_news_rss(markup: str) -> list[dict[str, str]]:
         url = normalize_url(link)
         if not url or not title:
             continue
-        results.append({"url": url, "title": title[:500], "snippet": description[:800], "channel": "news"})
+        results.append({
+            "url": url,
+            "title": title[:500],
+            "snippet": description[:800],
+            "channel": detect_channel(url, fallback="news"),
+        })
     return results[:12]
 
 
@@ -232,6 +258,8 @@ def fetch_excerpt(url: str, *, fetch: FetchFn | None = None) -> str:
     if parsed.scheme not in {"http", "https"}:
         return ""
     if parsed.path.lower().endswith((".pdf", ".zip", ".jpg", ".png", ".gif", ".mp4")):
+        return ""
+    if is_linkedin_url(url):
         return ""
     try:
         markup = fetch(url, None, None)
@@ -340,7 +368,7 @@ def run_reputation_crawl(
                         continue
                     seen_urls.add(url)
                     excerpt = ""
-                    if fetch_pages and len(seen_urls) <= 25:
+                    if fetch_pages and len(seen_urls) <= 25 and not is_linkedin_url(url):
                         excerpt = fetch_excerpt(url, fetch=fetch)
                         time.sleep(0.15)
                     _row, is_new = _upsert_mention(db, item, excerpt=excerpt)

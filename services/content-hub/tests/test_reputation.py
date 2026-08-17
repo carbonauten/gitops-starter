@@ -1,6 +1,12 @@
 from unittest.mock import patch
 
-from app.reputation_crawler import classify_sentiment, parse_duckduckgo_html, parse_news_rss
+from app.reputation_crawler import (
+    classify_sentiment,
+    default_queries,
+    detect_channel,
+    parse_duckduckgo_html,
+    parse_news_rss,
+)
 
 
 DDG_HTML = """
@@ -9,6 +15,8 @@ DDG_HTML = """
 <a class="result__snippet">Schwere Vorwürfe und Betrug-Warnung gegen carbonauten.</a>
 <a class="result__a" href="https://carbonauten.com/about">Über carbonauten</a>
 <a class="result__snippet">Nachhaltige Pflanzenkohle und Innovation.</a>
+<a class="result__a" href="https://www.linkedin.com/posts/someone_carbonauten-activity-123">carbonauten auf LinkedIn</a>
+<a class="result__snippet">Post über Carbonauten GmbH und FuckCo2.</a>
 </body></html>
 """
 
@@ -63,6 +71,12 @@ def test_reputation_crawl_and_deletion_request(auth_client, monkeypatch):
         assert run["found"] >= 2
         assert run["negative"] >= 1
 
+        all_mentions = auth_client.get("/api/reputation/mentions", params={"q": "linkedin"})
+        assert all_mentions.status_code == 200
+        linkedin_hits = [row for row in all_mentions.json()["mentions"] if row["channel"] == "linkedin"]
+        assert linkedin_hits
+        assert "linkedin.com" in linkedin_hits[0]["url"]
+
         negative = auth_client.get("/api/reputation/mentions", params={"sentiment": "negative"})
         assert negative.status_code == 200
         mentions = negative.json()["mentions"]
@@ -107,3 +121,28 @@ def test_parse_news_rss_items():
     rows = parse_news_rss(NEWS_XML)
     assert rows[0]["channel"] == "news"
     assert rows[0]["url"] == "https://blog.example.org/skandal"
+
+
+def test_detect_channel_linkedin():
+    assert detect_channel("https://www.linkedin.com/posts/someone_carbonauten-activity-123") == "linkedin"
+    assert detect_channel("https://de.linkedin.com/pulse/foo") == "linkedin"
+    assert detect_channel("https://news.example.com/story") == "web"
+    assert detect_channel("https://news.example.com/story", fallback="news") == "news"
+
+
+def test_parse_duckduckgo_linkedin_channel():
+    html = """
+    <a class="result__a" href="https://www.linkedin.com/posts/someone_carbonauten-activity-123">
+      carbonauten auf LinkedIn
+    </a>
+    <a class="result__snippet">Post über Carbonauten GmbH</a>
+    """
+    rows = parse_duckduckgo_html(html)
+    assert rows[0]["channel"] == "linkedin"
+    assert "linkedin.com/posts" in rows[0]["url"]
+
+
+def test_default_queries_include_linkedin():
+    queries = default_queries()
+    assert any("linkedin.com" in item for item in queries)
+    assert any("linkedin.com/posts" in item for item in queries)

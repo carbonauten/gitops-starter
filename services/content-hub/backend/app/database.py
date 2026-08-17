@@ -443,7 +443,7 @@ class ReputationMention(Base):
     excerpt: Mapped[str] = mapped_column(Text, default="")
     source_host: Mapped[str] = mapped_column(String(200), default="", index=True)
     query: Mapped[str] = mapped_column(String(300), default="")
-    channel: Mapped[str] = mapped_column(String(40), default="web")  # web|news
+    channel: Mapped[str] = mapped_column(String(40), default="web")  # web|news|linkedin
     sentiment: Mapped[str] = mapped_column(String(20), default="neutral", index=True)  # negative|neutral|positive
     sentiment_score: Mapped[int] = mapped_column(Integer, default=0)
     sentiment_reasons: Mapped[str] = mapped_column(String(500), default="")

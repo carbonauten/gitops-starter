@@ -717,7 +717,7 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ### Deliverables
 
-- [x] Crawler: DuckDuckGo-HTML + Google-News-RSS (kein Login, Rate-Limit)
+- [x] Crawler: DuckDuckGo-HTML + Google-News-RSS + LinkedIn `site:`-Suchen (kein Login, Rate-Limit)
 - [x] Sentiment: negativ / neutral / positiv (Keyword-Score)
 - [x] UI **Web-Reputation** mit Filter, Crawl-Button, Quelle öffnen
 - [x] Löschantrag mit Begründung, Briefvorlage, interner E-Mail

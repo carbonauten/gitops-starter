@@ -855,7 +855,7 @@
   "reputation": {
     "eyebrow": "Public web",
     "title": "Web reputation",
-    "subtitle": "Public mentions of carbonauten GmbH and FuckCo2 — especially negative coverage. Deletion requests are logged internally; they do not automatically take down third-party pages.",
+    "subtitle": "Public mentions of carbonauten GmbH and FuckCo2 — including LinkedIn posts, web, and news. Especially negative coverage. Deletion requests are logged internally; they do not automatically take down third-party pages.",
     "runCrawl": "Run crawl",
     "crawlDone": "{{found}} hits, {{negative}} negative.",
     "statTotal": "Mentions",
@@ -877,6 +877,11 @@
     "deletionNotes": "Notes",
     "publisherEmail": "Recipient (optional)",
     "deletionStatus": "Deletion request",
+    "channels": {
+      "web": "Web",
+      "news": "News",
+      "linkedin": "LinkedIn"
+    },
     "sentiments": {
       "negative": "Negative",
       "neutral": "Neutral",
