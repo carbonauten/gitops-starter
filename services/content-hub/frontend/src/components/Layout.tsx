@@ -80,7 +80,7 @@ export function TopBar({ onMenuToggle }: { onMenuToggle: () => void }) {
 
 export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
   const { t } = useTranslation();
-  const { canManageUsers, canManageShop, canApprove, canApproveCertificates } = usePermissions();
+  const { canEdit, canManageUsers, canManageShop, canApprove, canApproveCertificates } = usePermissions();
 
   const overview: NavItem[] = [
     { to: "/search", label: t("nav.search"), icon: "⌕" },
