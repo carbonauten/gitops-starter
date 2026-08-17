@@ -1077,6 +1077,10 @@ a {
   min-width: 160px;
 }
 
+.toolbar-field input[type="date"] {
+  min-width: 11.5rem;
+}
+
 .link-button {
   display: inline-flex;
   align-items: center;

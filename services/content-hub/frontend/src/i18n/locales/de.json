@@ -736,7 +736,8 @@
     "yes": "Ja",
     "no": "Nein",
     "close": "Schließen",
-    "cancel": "Abbrechen"
+    "cancel": "Abbrechen",
+    "timeout": "Die Anfrage hat zu lange gedauert. Bitte erneut versuchen."
   },
   "pwa": {
     "installTitle": "App installieren",
@@ -857,6 +858,9 @@
     "title": "Web-Reputation",
     "subtitle": "Öffentliche Treffer zu carbonauten GmbH und FuckCo2 — inkl. LinkedIn-Posts, Web und Nachrichten. Fokus auf negative Meldungen. Löschanträge gehen intern raus, löschen fremde Seiten nicht automatisch.",
     "runCrawl": "Jetzt crawlen",
+    "crawlRunning": "Crawl läuft…",
+    "crawlFailed": "Crawl fehlgeschlagen. Bitte später erneut versuchen.",
+    "crawlTimeout": "Crawl dauert zu lange. Die bisherigen Treffer bleiben sichtbar.",
     "crawlDone": "{{found}} Treffer, davon {{negative}} negativ.",
     "statTotal": "Treffer",
     "statNegative": "Negativ",
@@ -868,6 +872,11 @@
     "applyFilter": "Filtern",
     "seenFrom": "Von",
     "seenTo": "Bis",
+    "runStatuses": {
+      "running": "läuft",
+      "ok": "fertig",
+      "failed": "fehlgeschlagen"
+    },
     "empty": "Noch keine Treffer. Crawl starten.",
     "emptyFiltered": "Keine Treffer für diesen Zeitraum oder Filter.",
     "openSource": "Quelle öffnen",

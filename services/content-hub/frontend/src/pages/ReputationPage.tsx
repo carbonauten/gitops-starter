@@ -16,6 +16,7 @@ import { usePermissions } from "../hooks/usePermissions";
 
 const SENTIMENTS = ["negative", "neutral", "positive"] as const;
 const REASONS = ["gdpr", "inaccurate", "defamation", "other"] as const;
+const TIMEOUT_MESSAGE = "Request timed out. Please try again.";
 
 export function ReputationPage() {
   const { t, i18n } = useTranslation();
@@ -37,9 +38,19 @@ export function ReputationPage() {
   const [busyId, setBusyId] = useState("");
   const [letter, setLetter] = useState("");
 
-  async function load() {
-    setLoading(true);
-    setError("");
+  function errorMessage(err: unknown) {
+    if (err instanceof Error && err.message === TIMEOUT_MESSAGE) {
+      return t("common.timeout");
+    }
+    return err instanceof Error ? err.message : t("common.error");
+  }
+
+  async function load(options?: { silent?: boolean }) {
+    const silent = Boolean(options?.silent);
+    if (!silent) {
+      setLoading(true);
+      setError("");
+    }
     try {
       const [nextSummary, nextItems] = await Promise.all([
         fetchReputationSummary(),
@@ -53,7 +64,7 @@ export function ReputationPage() {
       setSummary(nextSummary);
       setItems(nextItems);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("common.error"));
+      setError(errorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -63,23 +74,62 @@ export function ReputationPage() {
     void load();
   }, [sentiment, seenFrom, seenTo]);
 
+  useEffect(() => {
+    if (summary?.last_run?.status !== "running") {
+      setCrawling(false);
+      return;
+    }
+    setCrawling(true);
+    const timer = window.setInterval(() => {
+      void fetchReputationSummary()
+        .then((nextSummary) => {
+          setSummary(nextSummary);
+          const status = nextSummary.last_run?.status;
+          if (!status || status === "running") {
+            return;
+          }
+          if (status === "ok") {
+            setNotice(
+              t("reputation.crawlDone", {
+                found: nextSummary.last_run?.found ?? 0,
+                negative: nextSummary.last_run?.negative ?? 0,
+              }),
+            );
+          } else {
+            setError(
+              nextSummary.last_run?.error === "timed_out"
+                ? t("reputation.crawlTimeout")
+                : t("reputation.crawlFailed"),
+            );
+          }
+          void load({ silent: true });
+        })
+        .catch(() => undefined);
+    }, 2000);
+    return () => window.clearInterval(timer);
+  }, [summary?.last_run?.status]);
+
   async function crawl() {
     setCrawling(true);
     setError("");
     setNotice("");
     try {
       const run = await runReputationCrawl();
-      setNotice(
-        t("reputation.crawlDone", {
-          found: run.found,
-          negative: run.negative,
-        }),
+      setSummary((current) =>
+        current
+          ? { ...current, last_run: run }
+          : {
+              total: 0,
+              negative: 0,
+              positive: 0,
+              neutral: 0,
+              open_deletion_requests: 0,
+              last_run: run,
+            },
       );
-      await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("common.error"));
-    } finally {
       setCrawling(false);
+      setError(errorMessage(err));
     }
   }
 
@@ -97,9 +147,9 @@ export function ReputationPage() {
       setNotice(t("reputation.deletionRequested"));
       setActiveId("");
       setNotes("");
-      await load();
+      await load({ silent: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("common.error"));
+      setError(errorMessage(err));
     } finally {
       setBusyId("");
     }
@@ -110,9 +160,9 @@ export function ReputationPage() {
     try {
       await closeReputationDeletion(requestId);
       setNotice(t("reputation.deletionClosed"));
-      await load();
+      await load({ silent: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("common.error"));
+      setError(errorMessage(err));
     } finally {
       setBusyId("");
     }
@@ -129,7 +179,7 @@ export function ReputationPage() {
         {canEdit ? (
           <div className="header-actions">
             <button type="button" className="primary-button" disabled={crawling} onClick={() => void crawl()}>
-              {crawling ? t("common.loading") : t("reputation.runCrawl")}
+              {crawling ? t("reputation.crawlRunning") : t("reputation.runCrawl")}
             </button>
           </div>
         ) : null}
@@ -152,11 +202,16 @@ export function ReputationPage() {
 
       {summary?.last_run ? (
         <p className="muted">
-          {t("reputation.lastRun")}: {summary.last_run.status} · {summary.last_run.found}{" "}
-          {t("reputation.hits")}
+          {t("reputation.lastRun")}:{" "}
+          {t(`reputation.runStatuses.${summary.last_run.status}`, {
+            defaultValue: summary.last_run.status,
+          })}{" "}
+          · {summary.last_run.found} {t("reputation.hits")}
           {summary.last_run.finished_at
             ? ` · ${new Date(summary.last_run.finished_at).toLocaleString(i18n.language)}`
-            : ""}
+            : crawling
+              ? ` · ${t("reputation.crawlRunning")}`
+              : ""}
         </p>
       ) : null}
 
@@ -171,11 +226,21 @@ export function ReputationPage() {
         </select>
         <label className="toolbar-field">
           <span>{t("reputation.seenFrom")}</span>
-          <input type="date" value={seenFrom} onChange={(event) => setSeenFrom(event.target.value)} />
+          <input
+            type="date"
+            value={seenFrom}
+            onChange={(event) => setSeenFrom(event.target.value)}
+            aria-label={t("reputation.seenFrom")}
+          />
         </label>
         <label className="toolbar-field">
           <span>{t("reputation.seenTo")}</span>
-          <input type="date" value={seenTo} onChange={(event) => setSeenTo(event.target.value)} />
+          <input
+            type="date"
+            value={seenTo}
+            onChange={(event) => setSeenTo(event.target.value)}
+            aria-label={t("reputation.seenTo")}
+          />
         </label>
         <input
           type="search"
@@ -191,7 +256,8 @@ export function ReputationPage() {
         </button>
       </div>
 
-      {loading ? <LoadingState /> : null}
+      {loading && items.length === 0 ? <LoadingState /> : null}
+      {loading && items.length > 0 ? <p className="muted">{t("common.loading")}</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
       {notice ? <p className="success-text">{notice}</p> : null}
       {letter ? (

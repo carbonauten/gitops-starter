@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime, time, timezone
+import logging
+import threading
+import time as time_mod
+from datetime import date, datetime, time as dt_time, timedelta, timezone
 from typing import Any, Optional
 from uuid import uuid4
 
@@ -14,9 +17,13 @@ from .audit_service import log_audit
 from .config import get_settings
 from .database import ReputationCrawlRun, ReputationDeletionRequest, ReputationMention
 from .email_service import send_plain_email
-from .reputation_crawler import mention_to_dict, run_reputation_crawl, source_host
+from .reputation_crawler import crawl_run_to_dict, run_reputation_crawl, source_host
+
+logger = logging.getLogger(__name__)
 
 DELETION_REASONS = {"gdpr", "inaccurate", "defamation", "other"}
+STALE_RUNNING_MINUTES = 15
+_start_lock = threading.Lock()
 
 
 def _utc_now() -> datetime:
@@ -24,11 +31,62 @@ def _utc_now() -> datetime:
 
 
 def _day_start(value: date) -> datetime:
-    return datetime.combine(value, time.min, tzinfo=timezone.utc)
+    return datetime.combine(value, dt_time.min, tzinfo=timezone.utc)
 
 
 def _day_end(value: date) -> datetime:
-    return datetime.combine(value, time.max, tzinfo=timezone.utc)
+    return datetime.combine(value, dt_time.max, tzinfo=timezone.utc)
+
+
+def expire_stale_runs(db: Session) -> int:
+    cutoff = _utc_now() - timedelta(minutes=STALE_RUNNING_MINUTES)
+    rows = list(
+        db.scalars(
+            select(ReputationCrawlRun).where(
+                ReputationCrawlRun.status == "running",
+                ReputationCrawlRun.started_at < cutoff,
+            )
+        ).all()
+    )
+    now = _utc_now()
+    for row in rows:
+        row.status = "failed"
+        row.error = "timed_out"
+        row.finished_at = now
+        db.add(row)
+    if rows:
+        db.commit()
+    return len(rows)
+
+
+def get_running_run(db: Session) -> ReputationCrawlRun | None:
+    return db.scalar(
+        select(ReputationCrawlRun)
+        .where(ReputationCrawlRun.status == "running")
+        .order_by(ReputationCrawlRun.started_at.desc())
+        .limit(1)
+    )
+
+
+def _crawl_worker(run_id: str) -> None:
+    from .database import _SessionLocal
+
+    if _SessionLocal is None:
+        return
+    db = _SessionLocal()
+    try:
+        run_reputation_crawl(db, existing_run_id=run_id)
+    except Exception:  # noqa: BLE001
+        logger.exception("Background reputation crawl failed")
+        run = db.get(ReputationCrawlRun, run_id)
+        if run and run.status == "running":
+            run.status = "failed"
+            run.error = "worker_failed"
+            run.finished_at = _utc_now()
+            db.add(run)
+            db.commit()
+    finally:
+        db.close()
 
 
 def guess_publisher_email(url: str) -> str:
@@ -131,6 +189,7 @@ def list_mentions(
 
 
 def summary(db: Session) -> dict[str, Any]:
+    expire_stale_runs(db)
     total = db.scalar(select(func.count()).select_from(ReputationMention)) or 0
     negative = (
         db.scalar(select(func.count()).select_from(ReputationMention).where(ReputationMention.sentiment == "negative"))
@@ -155,36 +214,61 @@ def summary(db: Session) -> dict[str, Any]:
         "positive": int(positive),
         "neutral": int(total) - int(negative) - int(positive),
         "open_deletion_requests": int(open_requests),
-        "last_run": (
-            {
-                "id": last_run.id,
-                "status": last_run.status,
-                "found": last_run.found,
-                "created": last_run.created,
-                "updated": last_run.updated,
-                "negative": last_run.negative,
-                "error": last_run.error,
-                "started_at": last_run.started_at.isoformat() if last_run.started_at else None,
-                "finished_at": last_run.finished_at.isoformat() if last_run.finished_at else None,
-            }
-            if last_run
-            else None
-        ),
+        "last_run": crawl_run_to_dict(last_run) if last_run else None,
     }
 
 
-def start_crawl(db: Session, *, actor: dict[str, Any] | None = None) -> ReputationCrawlRun:
-    run = run_reputation_crawl(db)
-    if actor:
-        log_audit(
-            db,
-            entity_type="reputation_crawl",
-            entity_id=run.id,
-            action="crawl",
-            actor=actor,
-            details={"status": run.status, "found": run.found, "negative": run.negative},
-        )
-    return run
+def start_crawl(db: Session, *, actor: dict[str, Any] | None = None, wait: bool = False) -> ReputationCrawlRun:
+    expire_stale_runs(db)
+    with _start_lock:
+        active = get_running_run(db)
+        if active:
+            run_id = active.id
+            created = False
+        else:
+            run = ReputationCrawlRun(id=str(uuid4()), status="running")
+            db.add(run)
+            db.commit()
+            db.refresh(run)
+            run_id = run.id
+            created = True
+            if actor:
+                log_audit(
+                    db,
+                    entity_type="reputation_crawl",
+                    entity_id=run.id,
+                    action="crawl",
+                    actor=actor,
+                    details={"status": "running"},
+                )
+
+    if not created:
+        if wait:
+            deadline = time_mod.time() + 90
+            while time_mod.time() < deadline:
+                db.expire_all()
+                current = db.get(ReputationCrawlRun, run_id)
+                if current and current.status != "running":
+                    return current
+                time_mod.sleep(0.05)
+        current = db.get(ReputationCrawlRun, run_id)
+        if current:
+            return current
+        raise RuntimeError("reputation_crawl_missing")
+
+    if wait:
+        _crawl_worker(run_id)
+        db.expire_all()
+        finished = db.get(ReputationCrawlRun, run_id)
+        if finished:
+            return finished
+        raise RuntimeError("reputation_crawl_missing")
+
+    threading.Thread(target=_crawl_worker, args=(run_id,), daemon=True, name="reputation-crawl").start()
+    started = db.get(ReputationCrawlRun, run_id)
+    if started:
+        return started
+    raise RuntimeError("reputation_crawl_missing")
 
 
 def request_deletion(

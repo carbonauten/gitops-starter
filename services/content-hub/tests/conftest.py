@@ -19,7 +19,7 @@ def test_env(monkeypatch, tmp_path):
     monkeypatch.setenv("AZURE_TENANT_ID", "")
     monkeypatch.setenv("AZURE_CLIENT_ID", "")
     monkeypatch.setenv("DATABASE_URL", f"sqlite:///{tmp_path / 'test.db'}")
-    monkeypatch.setenv("UPLOAD_DIR", str(tmp_path / "uploads"))
+    monkeypatch.setenv("REPUTATION_CRAWL_ENABLED", "false")
 
     from app.config import get_settings
 

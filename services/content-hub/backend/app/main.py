@@ -64,19 +64,25 @@ async def lifespan(app: FastAPI):
     async def reputation_crawl_loop():
         from .config import get_settings as _settings
         from .database import _SessionLocal
-        from .reputation_crawler import run_reputation_crawl
+        from .reputation_service import start_crawl
 
+        await asyncio.sleep(120)
         while True:
             if _SessionLocal is None or not _settings().reputation_crawl_enabled:
                 await asyncio.sleep(3600)
                 continue
-            db = _SessionLocal()
+
+            def _run_scheduled() -> None:
+                db = _SessionLocal()
+                try:
+                    start_crawl(db, wait=True)
+                finally:
+                    db.close()
+
             try:
-                run_reputation_crawl(db)
+                await asyncio.to_thread(_run_scheduled)
             except Exception:  # noqa: BLE001
                 logger.exception("Reputation crawl loop failed")
-            finally:
-                db.close()
             hours = max(1, int(_settings().reputation_crawl_interval_hours or 6))
             await asyncio.sleep(hours * 3600)
 

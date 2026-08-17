@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from ..database import ReputationDeletionRequest, ReputationMention, get_db
 from ..dependencies import require_editor
-from ..reputation_crawler import mention_to_dict
+from ..reputation_crawler import crawl_run_to_dict, mention_to_dict
 from ..reputation_service import (
     close_deletion,
     deletion_to_dict,
@@ -59,19 +59,7 @@ def reputation_crawl(
     user: dict = Depends(require_editor),
 ) -> dict:
     run = start_crawl(db, actor=user)
-    return {
-        "run": {
-            "id": run.id,
-            "status": run.status,
-            "found": run.found,
-            "created": run.created,
-            "updated": run.updated,
-            "negative": run.negative,
-            "error": run.error,
-            "started_at": run.started_at.isoformat() if run.started_at else None,
-            "finished_at": run.finished_at.isoformat() if run.finished_at else None,
-        }
-    }
+    return {"run": crawl_run_to_dict(run)}
 
 
 @router.post("/mentions/{mention_id}/deletion-requests", status_code=201)

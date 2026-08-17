@@ -90,6 +90,8 @@ DEFAULT_QUERIES = (
 )
 
 MAX_QUERIES = 18
+MAX_PAGE_FETCHES = 12
+FETCH_TIMEOUT_SEC = 8.0
 
 FetchFn = Callable[[str, dict[str, str] | None, dict[str, str] | None], str]
 
@@ -224,7 +226,7 @@ def default_fetch(url: str, params: dict[str, str] | None = None, headers: dict[
     merged = {"User-Agent": USER_AGENT, "Accept-Language": "de,en;q=0.8"}
     if headers:
         merged.update(headers)
-    with httpx.Client(timeout=20.0, follow_redirects=True, headers=merged) as client:
+    with httpx.Client(timeout=FETCH_TIMEOUT_SEC, follow_redirects=True, headers=merged) as client:
         response = client.get(url, params=params)
         response.raise_for_status()
         return response.text[:250_000]
@@ -273,6 +275,21 @@ def fetch_excerpt(url: str, *, fetch: FetchFn | None = None) -> str:
     body = _strip_tags(markup)
     combined = f"{title} {body}".strip()
     return combined[:2500]
+
+
+def crawl_run_to_dict(row: ReputationCrawlRun) -> dict[str, Any]:
+    return {
+        "id": row.id,
+        "status": row.status,
+        "queries": int(row.queries or 0),
+        "found": int(row.found or 0),
+        "created": int(row.created or 0),
+        "updated": int(row.updated or 0),
+        "negative": int(row.negative or 0),
+        "error": row.error or "",
+        "started_at": row.started_at.isoformat() if row.started_at else None,
+        "finished_at": row.finished_at.isoformat() if row.finished_at else None,
+    }
 
 
 def mention_to_dict(row: ReputationMention, deletion: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -344,22 +361,37 @@ def run_reputation_crawl(
     fetch: FetchFn | None = None,
     include_news: bool = True,
     fetch_pages: bool = True,
+    existing_run_id: str | None = None,
 ) -> ReputationCrawlRun:
     settings = settings or get_settings()
-    run = ReputationCrawlRun(id=str(uuid4()), status="running")
-    db.add(run)
-    db.commit()
-    db.refresh(run)
+    run = db.get(ReputationCrawlRun, existing_run_id) if existing_run_id else None
+    if run is None:
+        run = ReputationCrawlRun(id=existing_run_id or str(uuid4()), status="running")
+        db.add(run)
+        db.commit()
+        db.refresh(run)
+    else:
+        run.status = "running"
+        run.error = ""
+        db.add(run)
+        db.commit()
 
     queries = default_queries(settings)
     seen_urls: set[str] = set()
     created = updated = negative = 0
     news_done = False
     try:
-        for index, query in enumerate(queries):
-            batches = [search_web(query, fetch=fetch)]
+        for query in queries:
+            batches: list[list[dict[str, str]]] = []
+            try:
+                batches.append(search_web(query, fetch=fetch))
+            except Exception:  # noqa: BLE001
+                logger.info("Web search failed for query %s", query)
             if include_news and not news_done:
-                batches.append(search_news(query, fetch=fetch))
+                try:
+                    batches.append(search_news(query, fetch=fetch))
+                except Exception:  # noqa: BLE001
+                    logger.info("News search failed for query %s", query)
                 news_done = True
             for batch in batches:
                 for item in batch:
@@ -368,7 +400,7 @@ def run_reputation_crawl(
                         continue
                     seen_urls.add(url)
                     excerpt = ""
-                    if fetch_pages and len(seen_urls) <= 25 and not is_linkedin_url(url):
+                    if fetch_pages and len(seen_urls) <= MAX_PAGE_FETCHES and not is_linkedin_url(url):
                         excerpt = fetch_excerpt(url, fetch=fetch)
                         time.sleep(0.15)
                     _row, is_new = _upsert_mention(db, item, excerpt=excerpt)
@@ -378,6 +410,12 @@ def run_reputation_crawl(
                         updated += 1
                     if _row.sentiment == "negative":
                         negative += 1
+            run.queries = len(queries)
+            run.found = len(seen_urls)
+            run.created = created
+            run.updated = updated
+            run.negative = negative
+            db.add(run)
             db.commit()
 
         run.status = "ok"

@@ -1,5 +1,6 @@
 from datetime import date, datetime, timedelta, timezone
 from unittest.mock import patch
+import time
 
 from sqlalchemy import select
 
@@ -44,6 +45,18 @@ def _fake_fetch(url, params=None, headers=None):
     return "<html><title>About</title><body>Innovation nachhaltig carbonauten</body></html>"
 
 
+def _wait_for_crawl(client, timeout=8.0):
+    deadline = time.time() + timeout
+    last = None
+    while time.time() < deadline:
+        payload = client.get("/api/reputation/summary").json()
+        last = payload.get("last_run")
+        if last and last.get("status") in {"ok", "failed"}:
+            return last
+        time.sleep(0.05)
+    raise AssertionError(f"crawl did not finish: {last}")
+
+
 def test_classify_sentiment_negative_and_positive():
     label, score, reasons = classify_sentiment("carbonauten Betrug Skandal Warnung")
     assert label == "negative"
@@ -69,7 +82,8 @@ def test_reputation_crawl_and_deletion_request(auth_client, monkeypatch):
     ), patch("app.reputation_service.send_plain_email", return_value=True) as send_email:
         crawl = auth_client.post("/api/reputation/crawl")
         assert crawl.status_code == 200
-        run = crawl.json()["run"]
+        assert crawl.json()["run"]["status"] in {"running", "ok"}
+        run = _wait_for_crawl(auth_client)
         assert run["status"] == "ok"
         assert run["found"] >= 2
         assert run["negative"] >= 1
@@ -164,6 +178,8 @@ def test_reputation_mentions_optional_date_range(auth_client, monkeypatch):
     ):
         crawl = auth_client.post("/api/reputation/crawl")
         assert crawl.status_code == 200
+        run = _wait_for_crawl(auth_client)
+        assert run["status"] == "ok"
 
     if _SessionLocal is None:
         init_database(get_settings().effective_database_url)
@@ -209,3 +225,54 @@ def test_reputation_mentions_optional_date_range(auth_client, monkeypatch):
         params={"seen_from": (today + timedelta(days=2)).isoformat()},
     )
     assert future.json()["mentions"] == []
+
+
+def test_reputation_crawl_returns_before_work_finishes(auth_client, monkeypatch):
+    def slow_fetch(url, params=None, headers=None):
+        time.sleep(0.4)
+        return _fake_fetch(url, params, headers)
+
+    monkeypatch.setattr(
+        "app.reputation_crawler.default_queries",
+        lambda settings=None: ["carbonauten GmbH"],
+    )
+    with patch("app.reputation_crawler.default_fetch", side_effect=slow_fetch), patch(
+        "app.reputation_crawler.time.sleep", return_value=None
+    ):
+        started = time.time()
+        crawl = auth_client.post("/api/reputation/crawl")
+        elapsed = time.time() - started
+        assert crawl.status_code == 200
+        assert elapsed < 1.0
+        assert crawl.json()["run"]["status"] in {"running", "ok"}
+        run = _wait_for_crawl(auth_client, timeout=8)
+        assert run["status"] == "ok"
+        assert run["found"] >= 1
+
+
+def test_stale_running_crawl_is_marked_failed(auth_client):
+    from app.config import get_settings
+    from app.database import ReputationCrawlRun, _SessionLocal, init_database
+
+    if _SessionLocal is None:
+        init_database(get_settings().effective_database_url)
+    from app.database import _SessionLocal as session_factory
+
+    db = session_factory()
+    try:
+        db.add(
+            ReputationCrawlRun(
+                id="stale-reputation-run",
+                status="running",
+                started_at=datetime.now(timezone.utc) - timedelta(minutes=20),
+            )
+        )
+        db.commit()
+    finally:
+        db.close()
+
+    summary = auth_client.get("/api/reputation/summary")
+    assert summary.status_code == 200
+    last_run = summary.json()["last_run"]
+    assert last_run["status"] == "failed"
+    assert last_run["error"] == "timed_out"
