@@ -8,8 +8,10 @@ from app.reputation_crawler import (
     classify_sentiment,
     default_queries,
     detect_channel,
+    extract_article_text,
     is_china_coverage,
     is_on_brand,
+    mention_sentiment_text,
     news_editions_for,
     parse_duckduckgo_html,
     parse_news_rss,
@@ -73,6 +75,47 @@ def test_classify_sentiment_negative_and_positive():
     assert pos == "positive"
 
 
+def test_sentiment_uses_article_body_not_search_query():
+    positive = mention_sentiment_text(
+        title="carbonauten Innovation nachhaltig",
+        snippet="Partner und Auszeichnung",
+        excerpt="Preis für Pflanzenkohle und Climate-Innovation.",
+    )
+    assert classify_sentiment(positive)[0] == "positive"
+    poisoned = positive + " carbonauten Kritik OR Betrug OR Skandal"
+    assert classify_sentiment(poisoned)[0] == "negative"
+
+    body_negative = mention_sentiment_text(
+        title="carbonauten factory update",
+        snippet="A short teaser without strong words.",
+        excerpt="Die Meldung wirft Betrug, Skandal und eine Klage vor. Warnung vor Greenwashing.",
+    )
+    assert classify_sentiment(body_negative)[0] == "negative"
+
+    mixed_neutral = mention_sentiment_text(
+        title="carbonauten in the press",
+        snippet="Kurzer Hinweis.",
+        excerpt="Ein Bericht ohne starke Wertung.",
+    )
+    assert classify_sentiment(mixed_neutral)[0] == "neutral"
+
+
+def test_extract_article_text_prefers_article_body():
+    markup = """
+    <html><head><title>carbonauten Update</title></head>
+    <body>
+      <nav>Home Kritik Beschwerde</nav>
+      <article><p>Die carbonauten GmbH startete den Bau in Chibi mit nachhaltiger Pflanzenkohle.</p></article>
+      <footer>complaint lawsuit scam</footer>
+    </body></html>
+    """
+    text = extract_article_text(markup)
+    assert "Chibi" in text
+    assert "Pflanzenkohle" in text
+    assert "complaint" not in text.lower()
+    assert "lawsuit" not in text.lower()
+
+
 def test_parse_duckduckgo_unwraps_redirect():
     rows = parse_duckduckgo_html(DDG_HTML)
     assert rows[0]["url"] == "https://news.example.com/kritik"
@@ -100,6 +143,15 @@ def test_reputation_crawl_and_deletion_request(auth_client, monkeypatch):
         linkedin_hits = [row for row in all_mentions.json()["mentions"] if row["channel"] == "linkedin"]
         assert linkedin_hits
         assert "linkedin.com" in linkedin_hits[0]["url"]
+
+        scored = auth_client.get("/api/reputation/mentions")
+        by_url = {row["url"]: row for row in scored.json()["mentions"]}
+        kritik = by_url["https://news.example.com/kritik"]
+        assert kritik["sentiment"] == "negative"
+        assert "Betrug" in (kritik["excerpt"] or kritik["snippet"])
+        about = by_url["https://carbonauten.com/about"]
+        assert about["sentiment"] == "positive"
+        assert "Innovation" in (about["excerpt"] or about["snippet"])
 
         negative = auth_client.get("/api/reputation/mentions", params={"sentiment": "negative"})
         assert negative.status_code == 200
@@ -239,11 +291,13 @@ def test_parse_wordpress_json_chibi_post():
     payload = """
     [{"link":"https://carbonauten.com/unkategorisiert/bau-der-minus-co2-factory-002-in-chibi-gestartet/",
       "title":{"rendered":"Bau der minus CO2 factory 002 in Chibi gestartet"},
-      "excerpt":{"rendered":"<p>Die carbonauten GmbH startete den Bau in Chibi.</p>"}}]
+      "excerpt":{"rendered":"<p>Die carbonauten GmbH startete den Bau in Chibi.</p>"},
+      "content":{"rendered":"<p>Die carbonauten GmbH startete den Bau der weltweit größten Anlage in Chibi. Nachhaltig und Innovation.</p>"}}]
     """
     rows = parse_wordpress_json(payload)
     assert rows[0]["url"].endswith("/bau-der-minus-co2-factory-002-in-chibi-gestartet/")
     assert "Chibi" in rows[0]["title"]
+    assert "weltweit" in rows[0]["excerpt"]
     assert rows[0]["channel"] == "web"
 
 
@@ -406,7 +460,7 @@ def test_reputation_crawl_returns_before_work_finishes(auth_client, monkeypatch)
         assert crawl.status_code == 200
         assert elapsed < 1.0
         assert crawl.json()["run"]["status"] in {"running", "ok"}
-        run = _wait_for_crawl(auth_client, timeout=8)
+        run = _wait_for_crawl(auth_client, timeout=12)
         assert run["status"] == "ok"
         assert run["found"] >= 1
 

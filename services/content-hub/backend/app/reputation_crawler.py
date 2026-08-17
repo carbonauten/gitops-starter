@@ -4,9 +4,10 @@ Searches public DuckDuckGo HTML and Google News RSS (DE / US / 中文 / HK),
 including LinkedIn ``site:`` queries. China coverage (Chibi / 赤壁) is taken
 from the company WordPress search, Google News with 碳基科技, and a short
 list of known public China press URLs — news aggregators often omit those
-posts. DuckDuckGo is often blocked from datacenter IPs. Uses search snippets,
-runs queries in parallel, and stops after a short time budget. Does not log
-in, bypass paywalls, or ignore rate limits.
+posts. DuckDuckGo is often blocked from datacenter IPs. Fetches public article
+bodies where possible and scores sentiment from title plus content, not from
+the search query. Runs queries in parallel and stops after a short time
+budget. Does not log in, bypass paywalls, or ignore rate limits.
 """
 
 from __future__ import annotations
@@ -136,10 +137,11 @@ CHINA_COVERAGE_TOKENS = (
 )
 
 MAX_QUERIES = 12
-MAX_PAGE_FETCHES = 0
+MAX_PAGE_FETCHES = 24
 FETCH_TIMEOUT_SEC = 5.0
-CRAWL_BUDGET_SEC = 40.0
+CRAWL_BUDGET_SEC = 70.0
 SEARCH_WORKERS = 6
+PAGE_FETCH_WORKERS = 6
 
 NEWS_EDITION_DE = {"hl": "de", "gl": "DE", "ceid": "DE:de"}
 NEWS_EDITION_US = {"hl": "en-US", "gl": "US", "ceid": "US:en"}
@@ -268,6 +270,12 @@ def _strip_tags(markup: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def mention_sentiment_text(*, title: str = "", snippet: str = "", excerpt: str = "") -> str:
+    """Title plus article body. Search queries are excluded so they cannot skew the score."""
+    title = (title or "").strip()
+    return " ".join(part for part in (title, title, snippet, excerpt) if part and str(part).strip())
+
+
 def classify_sentiment(text: str) -> tuple[str, int, str]:
     blob = (text or "").lower()
     negative_hits = [term for term in NEGATIVE_TERMS if term in blob]
@@ -350,9 +358,13 @@ def parse_wordpress_json(payload: str) -> list[dict[str, str]]:
         url = normalize_url(str(item.get("link") or ""))
         title_raw = item.get("title") or ""
         excerpt_raw = item.get("excerpt") or ""
+        content_raw = item.get("content") or ""
         title = _strip_tags(title_raw.get("rendered") if isinstance(title_raw, dict) else str(title_raw))
         snippet = _strip_tags(
             excerpt_raw.get("rendered") if isinstance(excerpt_raw, dict) else str(excerpt_raw)
+        )
+        content = _strip_tags(
+            content_raw.get("rendered") if isinstance(content_raw, dict) else str(content_raw)
         )
         if not url or not title:
             continue
@@ -360,6 +372,7 @@ def parse_wordpress_json(payload: str) -> list[dict[str, str]]:
             "url": url,
             "title": title[:500],
             "snippet": snippet[:800],
+            "excerpt": (content or snippet)[:4000],
             "channel": detect_channel(url, fallback="web"),
         })
     return results
@@ -432,8 +445,15 @@ def search_china_press(*, fetch: FetchFn | None = None) -> list[dict[str, str]]:
         if match:
             title = _strip_tags(match.group(1))[:500]
         snippet = _strip_tags(markup)[:800]
+        excerpt = extract_article_text(markup)
         kept = _keep_china_row(
-            {"url": url, "title": title or url, "snippet": snippet, "channel": "news"},
+            {
+                "url": url,
+                "title": title or url,
+                "snippet": snippet,
+                "excerpt": excerpt,
+                "channel": "news",
+            },
             query=query,
         )
         if kept:
@@ -492,27 +512,49 @@ def search_news(
     return rows
 
 
+def extract_article_text(markup: str, *, limit: int = 6000) -> str:
+    """Plain text from a public HTML page: title plus main body, without nav chrome."""
+    raw = markup or ""
+    cleaned = re.sub(r"(?is)<(script|style|noscript|nav|footer|aside|form)[^>]*>.*?</\1>", " ", raw)
+    body_html = cleaned
+    for pattern in (r"(?is)<article\b[^>]*>(.*?)</article>", r"(?is)<main\b[^>]*>(.*?)</main>"):
+        match = re.search(pattern, cleaned)
+        if match and len(_strip_tags(match.group(1))) > 80:
+            body_html = match.group(1)
+            break
+    title = ""
+    title_match = re.search(r"(?is)<title[^>]*>(.*?)</title>", raw)
+    if title_match:
+        title = _strip_tags(title_match.group(1))
+    body = _strip_tags(body_html)
+    combined = re.sub(r"\s+", " ", f"{title} {body}".strip())
+    return combined[:limit]
+
+
+def can_fetch_page(url: str) -> bool:
+    parsed = urlparse(url or "")
+    if parsed.scheme not in {"http", "https"}:
+        return False
+    if parsed.path.lower().endswith((".pdf", ".zip", ".jpg", ".jpeg", ".png", ".gif", ".mp4", ".webp")):
+        return False
+    if is_linkedin_url(url):
+        return False
+    host = source_host(url)
+    if host in {"news.google.com", "google.com"} or host.endswith(".google.com"):
+        return False
+    return True
+
+
 def fetch_excerpt(url: str, *, fetch: FetchFn | None = None) -> str:
     fetch = fetch or default_fetch
-    parsed = urlparse(url)
-    if parsed.scheme not in {"http", "https"}:
-        return ""
-    if parsed.path.lower().endswith((".pdf", ".zip", ".jpg", ".png", ".gif", ".mp4")):
-        return ""
-    if is_linkedin_url(url):
+    if not can_fetch_page(url):
         return ""
     try:
         markup = fetch(url, None, None)
     except Exception:  # noqa: BLE001
         logger.info("Could not fetch mention %s", url)
         return ""
-    title = ""
-    match = re.search(r"(?is)<title[^>]*>(.*?)</title>", markup)
-    if match:
-        title = _strip_tags(match.group(1))
-    body = _strip_tags(markup)
-    combined = f"{title} {body}".strip()
-    return combined[:2500]
+    return extract_article_text(markup)
 
 
 def crawl_run_to_dict(row: ReputationCrawlRun) -> dict[str, Any]:
@@ -536,7 +578,7 @@ def mention_to_dict(row: ReputationMention, deletion: dict[str, Any] | None = No
         "url": row.url,
         "title": row.title,
         "snippet": row.snippet,
-        "excerpt": (row.excerpt or "")[:600],
+        "excerpt": (row.excerpt or "")[:1200],
         "source_host": row.source_host,
         "query": row.query,
         "channel": row.channel,
@@ -553,8 +595,11 @@ def mention_to_dict(row: ReputationMention, deletion: dict[str, Any] | None = No
 def _upsert_mention(db: Session, payload: dict[str, str], *, excerpt: str = "") -> tuple[ReputationMention, bool]:
     url = payload["url"]
     existing = db.scalar(select(ReputationMention).where(ReputationMention.url == url))
-    text = " ".join(
-        part for part in (payload.get("title"), payload.get("snippet"), excerpt, payload.get("query")) if part
+    excerpt = excerpt or payload.get("excerpt") or ""
+    text = mention_sentiment_text(
+        title=payload.get("title") or "",
+        snippet=payload.get("snippet") or "",
+        excerpt=excerpt,
     )
     sentiment, score, reasons = classify_sentiment(text)
     now = _utc_now()
@@ -624,7 +669,7 @@ def run_reputation_crawl(
     settings: Settings | None = None,
     fetch: FetchFn | None = None,
     include_news: bool = True,
-    fetch_pages: bool = False,
+    fetch_pages: bool = True,
     existing_run_id: str | None = None,
 ) -> ReputationCrawlRun:
     settings = settings or get_settings()
@@ -658,7 +703,7 @@ def run_reputation_crawl(
     deadline = time.monotonic() + CRAWL_BUDGET_SEC
     try:
         jobs = [(query, include_news) for query in queries]
-        pool = ThreadPoolExecutor(max_workers=min(SEARCH_WORKERS, max(1, len(jobs))))
+        pool = ThreadPoolExecutor(max_workers=min(SEARCH_WORKERS, max(1, len(jobs) + 2)))
         futures = {
             pool.submit(_search_query, query, include_news=news, fetch=active_fetch): query
             for query, news in jobs
@@ -666,6 +711,7 @@ def run_reputation_crawl(
         futures[pool.submit(search_company_china, fetch=active_fetch)] = "company-china"
         futures[pool.submit(search_china_press, fetch=active_fetch)] = "china-press"
         remaining = max(0.1, deadline - time.monotonic())
+        pending: list[dict[str, str]] = []
         try:
             completed = as_completed(futures, timeout=remaining)
             for future in completed:
@@ -681,27 +727,58 @@ def run_reputation_crawl(
                     if not url or url in seen_urls:
                         continue
                     seen_urls.add(url)
-                    excerpt = ""
-                    if fetch_pages and MAX_PAGE_FETCHES and len(seen_urls) <= MAX_PAGE_FETCHES and not is_linkedin_url(url):
-                        excerpt = fetch_excerpt(url, fetch=active_fetch)
-                    _row, is_new = _upsert_mention(db, item, excerpt=excerpt)
-                    if is_new:
-                        created += 1
-                    else:
-                        updated += 1
-                    if _row.sentiment == "negative":
-                        negative += 1
+                    pending.append(item)
                 run.queries = len(queries)
                 run.found = len(seen_urls)
-                run.created = created
-                run.updated = updated
-                run.negative = negative
                 db.add(run)
                 db.commit()
                 if time.monotonic() >= deadline:
                     break
         except TimeoutError:
-            logger.info("Reputation crawl reached %ss budget with %s hits", CRAWL_BUDGET_SEC, len(seen_urls))
+            logger.info("Reputation crawl reached %ss search budget with %s hits", CRAWL_BUDGET_SEC, len(seen_urls))
+
+        to_fetch = [
+            item
+            for item in pending
+            if fetch_pages
+            and not (item.get("excerpt") or "").strip()
+            and can_fetch_page(item.get("url") or "")
+        ][:MAX_PAGE_FETCHES]
+        remaining = max(0.0, deadline - time.monotonic())
+        if to_fetch and remaining > 0.2:
+            page_futures = {
+                pool.submit(fetch_excerpt, item["url"], fetch=active_fetch): item for item in to_fetch
+            }
+            try:
+                for future in as_completed(page_futures, timeout=remaining):
+                    item = page_futures[future]
+                    try:
+                        body = future.result() or ""
+                    except Exception:  # noqa: BLE001
+                        body = ""
+                    if body:
+                        item["excerpt"] = body
+                    if time.monotonic() >= deadline:
+                        break
+            except TimeoutError:
+                logger.info("Reputation crawl reached page-fetch budget with %s hits", len(seen_urls))
+
+        for item in pending:
+            excerpt = (item.get("excerpt") or "").strip()
+            _row, is_new = _upsert_mention(db, item, excerpt=excerpt)
+            if is_new:
+                created += 1
+            else:
+                updated += 1
+            if _row.sentiment == "negative":
+                negative += 1
+        run.queries = len(queries)
+        run.found = len(seen_urls)
+        run.created = created
+        run.updated = updated
+        run.negative = negative
+        db.add(run)
+        db.commit()
 
         run.status = "ok"
         run.queries = len(queries)

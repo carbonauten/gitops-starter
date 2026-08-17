@@ -856,7 +856,7 @@
   "reputation": {
     "eyebrow": "公开网络",
     "title": "网络声誉",
-    "subtitle": "公开检索 carbonauten GmbH 与 FuckCo2 的提及（含 LinkedIn、中国赤壁、网页与新闻），重点标出负面信息。删除申请仅内部记录，不会自动删除第三方网页。",
+    "subtitle": "公开检索 carbonauten GmbH 与 FuckCo2 的提及（含 LinkedIn、中国赤壁、网页与新闻）。情绪根据标题和正文评为负面 / 中性 / 正面。删除申请仅内部记录，不会自动删除第三方网页。",
     "runCrawl": "立即抓取",
     "crawlRunning": "正在抓取…",
     "crawlFailed": "抓取失败，请稍后重试。",
