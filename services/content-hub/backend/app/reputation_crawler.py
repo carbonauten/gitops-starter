@@ -1,16 +1,19 @@
 """Public-web reputation crawler for carbonauten GmbH / FuckCo2.
 
-Searches public DuckDuckGo HTML and Google News RSS, including LinkedIn
-``site:`` queries for carbonauten / FuckCo2 and named people (e.g. Torsten Becker).
-DuckDuckGo is often blocked from datacenter IPs; Google News RSS still returns
-LinkedIn sources. Uses search snippets, runs queries in parallel, and stops after
-a short time budget. Does not log in, bypass paywalls, or ignore rate limits.
+Searches public DuckDuckGo HTML and Google News RSS (DE / US / 中文 / HK),
+including LinkedIn ``site:`` queries. China coverage (Chibi / 赤壁) is taken
+from the company WordPress search, Google News with 碳基科技, and a short
+list of known public China press URLs — news aggregators often omit those
+posts. DuckDuckGo is often blocked from datacenter IPs. Uses search snippets,
+runs queries in parallel, and stops after a short time budget. Does not log
+in, bypass paywalls, or ignore rate limits.
 """
 
 from __future__ import annotations
 
 import contextvars
 import html as html_lib
+import json
 import logging
 import re
 import time
@@ -45,6 +48,14 @@ NEGATIVE_TERMS = (
     "klage",
     "insolvenz",
     "greenwashing",
+    "骗局",
+    "欺诈",
+    "丑闻",
+    "投诉",
+    "批评",
+    "假货",
+    "绿色清洗",
+    "破产",
     "fake",
     "lüge",
     "luege",
@@ -74,6 +85,11 @@ POSITIVE_TERMS = (
     "climate",
     "biochar",
     "pflanzenkohle",
+    "创新",
+    "可持续",
+    "合作",
+    "生物炭",
+    "负碳",
 )
 
 DEFAULT_QUERIES = (
@@ -87,12 +103,50 @@ LINKEDIN_QUERIES = (
     'site:linkedin.com/posts "carbonauten"',
     'site:linkedin.com/company/carbonauten',
 )
+CHINA_QUERIES = (
+    "carbonauten China OR 中国 OR Chibi OR 赤壁",
+    "carbonauten 生物炭 OR 植物炭 OR 负碳",
+    "碳基科技 赤壁 OR 咸宁 OR 负碳材料",
+)
+COMPANY_WP_ENDPOINTS = (
+    "https://carbonauten.com/wp-json/wp/v2/posts",
+    "https://carbonauten.com/en/wp-json/wp/v2/posts",
+)
+COMPANY_FEEDS = (
+    "https://carbonauten.com/feed/",
+    "https://carbonauten.com/en/feed/",
+)
+COMPANY_CHINA_SEARCH_TERMS = ("Chibi", "赤壁")
+CHINA_PRESS_URLS = (
+    "https://www.360powder.com/info_details/index/10911.html",
+    "https://hb.cri.cn/chinanews/20230803/f9823a7b-46a1-a3f0-70aa-bf3a57d75918.html",
+    "http://zhonglingj.com/index.php/en/industrytrends/1261.html",
+    "http://dacaijing.cc/dacaijing/39905.html",
+)
+CHINA_COVERAGE_TOKENS = (
+    "chibi",
+    "赤壁",
+    "hubei",
+    "湖北",
+    "xianning",
+    "咸宁",
+    "碳基科技",
+    "china",
+    "中国",
+)
 
-MAX_QUERIES = 10
+MAX_QUERIES = 12
 MAX_PAGE_FETCHES = 0
 FETCH_TIMEOUT_SEC = 5.0
-CRAWL_BUDGET_SEC = 35.0
+CRAWL_BUDGET_SEC = 40.0
 SEARCH_WORKERS = 6
+
+NEWS_EDITION_DE = {"hl": "de", "gl": "DE", "ceid": "DE:de"}
+NEWS_EDITION_US = {"hl": "en-US", "gl": "US", "ceid": "US:en"}
+NEWS_EDITION_ZH = {"hl": "zh-CN", "gl": "US", "ceid": "US:zh-Hans"}
+NEWS_EDITION_HK = {"hl": "en-HK", "gl": "HK", "ceid": "HK:en"}
+NEWS_EDITIONS_DEFAULT = (NEWS_EDITION_DE, NEWS_EDITION_US)
+NEWS_EDITIONS_CHINA = (NEWS_EDITION_DE, NEWS_EDITION_US, NEWS_EDITION_ZH, NEWS_EDITION_HK)
 
 FetchFn = Callable[[str, dict[str, str] | None, dict[str, str] | None], str]
 _http_client: contextvars.ContextVar[httpx.Client | None] = contextvars.ContextVar(
@@ -120,7 +174,7 @@ def default_queries(settings: Settings | None = None) -> list[str]:
     seen: set[str] = set()
     queries: list[str] = []
     people_queries = [f'site:linkedin.com "{person}" carbonauten' for person in default_people(settings)]
-    for item in list(DEFAULT_QUERIES) + list(LINKEDIN_QUERIES) + people_queries:
+    for item in list(DEFAULT_QUERIES) + list(LINKEDIN_QUERIES) + list(CHINA_QUERIES) + people_queries:
         key = item.lower()
         if key in seen:
             continue
@@ -129,9 +183,42 @@ def default_queries(settings: Settings | None = None) -> list[str]:
     return queries[:MAX_QUERIES]
 
 
-def is_on_brand(text: str) -> bool:
+def is_company_host(url: str) -> bool:
+    host = source_host(url)
+    return host == "carbonauten.com" or host.endswith(".carbonauten.com") or host in {"fuckco2.shop", "fuckco2.com"}
+
+
+def is_on_brand(text: str, url: str = "") -> bool:
+    if is_company_host(url):
+        return True
     blob = (text or "").lower()
-    return "carbonauten" in blob or "fuckco2" in blob or "fuck co2" in blob
+    original = text or ""
+    return (
+        "carbonauten" in blob
+        or "fuckco2" in blob
+        or "fuck co2" in blob
+        or "fuck co₂" in blob
+        or "碳基科技" in original
+    )
+
+
+def is_china_coverage(text: str) -> bool:
+    blob = text or ""
+    lower = blob.lower()
+    return any(token in lower or token in blob for token in CHINA_COVERAGE_TOKENS)
+
+
+def news_editions_for(query: str) -> tuple[dict[str, str], ...]:
+    blob = query or ""
+    lower = blob.lower()
+    if "linkedin" in lower:
+        return (NEWS_EDITION_DE,)
+    if any(
+        token in blob
+        for token in ("中国", "赤壁", "生物炭", "植物炭", "负碳", "碳基科技", "咸宁", "Chibi", "China")
+    ):
+        return NEWS_EDITIONS_CHINA
+    return NEWS_EDITIONS_DEFAULT
 
 
 def normalize_url(raw: str) -> str:
@@ -249,8 +336,113 @@ def parse_news_rss(markup: str, *, limit: int = 12) -> list[dict[str, str]]:
     return results[:limit]
 
 
+def parse_wordpress_json(payload: str) -> list[dict[str, str]]:
+    try:
+        data = json.loads(payload or "[]")
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(data, list):
+        return []
+    results: list[dict[str, str]] = []
+    for item in data:
+        if not isinstance(item, dict):
+            continue
+        url = normalize_url(str(item.get("link") or ""))
+        title_raw = item.get("title") or ""
+        excerpt_raw = item.get("excerpt") or ""
+        title = _strip_tags(title_raw.get("rendered") if isinstance(title_raw, dict) else str(title_raw))
+        snippet = _strip_tags(
+            excerpt_raw.get("rendered") if isinstance(excerpt_raw, dict) else str(excerpt_raw)
+        )
+        if not url or not title:
+            continue
+        results.append({
+            "url": url,
+            "title": title[:500],
+            "snippet": snippet[:800],
+            "channel": detect_channel(url, fallback="web"),
+        })
+    return results
+
+
+def _keep_china_row(row: dict[str, str], *, query: str) -> dict[str, str] | None:
+    url = row.get("url") or ""
+    coverage_text = " ".join(part for part in (row.get("title"), row.get("snippet"), url) if part)
+    brand_text = " ".join(part for part in (row.get("title"), row.get("snippet"), query, url) if part)
+    if not url or not is_china_coverage(coverage_text) or not is_on_brand(brand_text, url):
+        return None
+    row = dict(row)
+    row["query"] = query
+    row["channel"] = row.get("channel") or detect_channel(url, fallback="web")
+    return row
+
+
+def search_company_china(*, fetch: FetchFn | None = None) -> list[dict[str, str]]:
+    """Find Chibi/China posts on carbonauten.com via WordPress search, with RSS fallback."""
+    fetch = fetch or default_fetch
+    rows: list[dict[str, str]] = []
+    seen: set[str] = set()
+    query = "site:carbonauten.com Chibi/China"
+
+    def add_all(items: list[dict[str, str]]) -> None:
+        for item in items:
+            kept = _keep_china_row(item, query=query)
+            url = (kept or {}).get("url") or ""
+            if not kept or url in seen:
+                continue
+            seen.add(url)
+            rows.append(kept)
+
+    for endpoint in COMPANY_WP_ENDPOINTS:
+        for term in COMPANY_CHINA_SEARCH_TERMS:
+            try:
+                body = fetch(endpoint, {"search": term, "per_page": "10"}, {"Accept": "application/json"})
+            except Exception:  # noqa: BLE001
+                logger.info("Company WP search failed for %s %s", endpoint, term)
+                continue
+            add_all(parse_wordpress_json(body))
+    if rows:
+        return rows
+    for feed in COMPANY_FEEDS:
+        try:
+            xml = fetch(feed, None, None)
+        except Exception:  # noqa: BLE001
+            logger.info("Company feed fetch failed for %s", feed)
+            continue
+        add_all(parse_news_rss(xml, limit=20))
+    return rows
+
+
+def search_china_press(*, fetch: FetchFn | None = None) -> list[dict[str, str]]:
+    """Fetch known public China articles that news aggregators often omit."""
+    fetch = fetch or default_fetch
+    rows: list[dict[str, str]] = []
+    query = "China press Chibi/赤壁"
+    for raw in CHINA_PRESS_URLS:
+        url = normalize_url(raw)
+        if not url:
+            continue
+        try:
+            markup = fetch(url, None, None)
+        except Exception:  # noqa: BLE001
+            logger.info("China press fetch failed for %s", url)
+            continue
+        title = ""
+        match = re.search(r"(?is)<title[^>]*>(.*?)</title>", markup)
+        if match:
+            title = _strip_tags(match.group(1))[:500]
+        snippet = _strip_tags(markup)[:800]
+        kept = _keep_china_row(
+            {"url": url, "title": title or url, "snippet": snippet, "channel": "news"},
+            query=query,
+        )
+        if kept:
+            rows.append(kept)
+    return rows
+
+
 def default_fetch(url: str, params: dict[str, str] | None = None, headers: dict[str, str] | None = None) -> str:
-    merged = {"User-Agent": USER_AGENT, "Accept-Language": "de,en;q=0.8"}
+    merged = {"User-Agent": USER_AGENT, "Accept-Language": "de,zh-CN,zh;q=0.9,en;q=0.8"}
     if headers:
         merged.update(headers)
     shared = _http_client.get()
@@ -273,16 +465,30 @@ def search_web(query: str, *, fetch: FetchFn | None = None) -> list[dict[str, st
     return rows
 
 
-def search_news(query: str, *, fetch: FetchFn | None = None, limit: int = 12) -> list[dict[str, str]]:
+def search_news(
+    query: str,
+    *,
+    fetch: FetchFn | None = None,
+    limit: int = 12,
+    editions: tuple[dict[str, str], ...] | None = None,
+) -> list[dict[str, str]]:
     fetch = fetch or default_fetch
-    xml = fetch(
-        NEWS_RSS,
-        {"q": query, "hl": "de", "gl": "DE", "ceid": "DE:de"},
-        None,
-    )
-    rows = parse_news_rss(xml, limit=limit)
-    for row in rows:
-        row["query"] = query
+    editions = editions or news_editions_for(query)
+    rows: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for edition in editions:
+        xml = fetch(
+            NEWS_RSS,
+            {"q": query, "hl": edition["hl"], "gl": edition["gl"], "ceid": edition["ceid"]},
+            None,
+        )
+        for row in parse_news_rss(xml, limit=limit):
+            url = row.get("url") or ""
+            if not url or url in seen:
+                continue
+            seen.add(url)
+            row["query"] = query
+            rows.append(row)
     return rows
 
 
@@ -399,10 +605,17 @@ def _search_query(query: str, *, include_news: bool, fetch: FetchFn) -> list[dic
         logger.info("Web search failed for query %s", query)
     if include_news:
         try:
-            rows.extend(search_news(query, fetch=fetch, limit=40 if linkedin_query else 12))
+            rows.extend(
+                search_news(
+                    query,
+                    fetch=fetch,
+                    limit=40 if linkedin_query else 12,
+                    editions=news_editions_for(query),
+                )
+            )
         except Exception:  # noqa: BLE001
             logger.info("News search failed for query %s", query)
-    return [row for row in rows if is_on_brand(" ".join((row.get("title") or "", row.get("snippet") or "", query)))]
+    return [row for row in rows if is_on_brand(" ".join((row.get("title") or "", row.get("snippet") or "", query)), row.get("url") or "")]
 
 
 def run_reputation_crawl(
@@ -438,7 +651,7 @@ def run_reputation_crawl(
         owned_client = httpx.Client(
             timeout=FETCH_TIMEOUT_SEC,
             follow_redirects=True,
-            headers={"User-Agent": USER_AGENT, "Accept-Language": "de,en;q=0.8"},
+            headers={"User-Agent": USER_AGENT, "Accept-Language": "de,zh-CN,zh;q=0.9,en;q=0.8"},
         )
         client_token = _http_client.set(owned_client)
 
@@ -450,6 +663,8 @@ def run_reputation_crawl(
             pool.submit(_search_query, query, include_news=news, fetch=active_fetch): query
             for query, news in jobs
         }
+        futures[pool.submit(search_company_china, fetch=active_fetch)] = "company-china"
+        futures[pool.submit(search_china_press, fetch=active_fetch)] = "china-press"
         remaining = max(0.1, deadline - time.monotonic())
         try:
             completed = as_completed(futures, timeout=remaining)

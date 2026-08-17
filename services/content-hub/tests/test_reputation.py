@@ -8,9 +8,15 @@ from app.reputation_crawler import (
     classify_sentiment,
     default_queries,
     detect_channel,
+    is_china_coverage,
     is_on_brand,
+    news_editions_for,
     parse_duckduckgo_html,
     parse_news_rss,
+    parse_wordpress_json,
+    search_china_press,
+    search_company_china,
+    search_news,
 )
 
 
@@ -190,7 +196,134 @@ def test_default_queries_include_linkedin():
     assert any("linkedin.com" in item for item in queries)
     assert any("Torsten Becker" in item for item in queries)
     assert any("linkedin.com/posts" in item for item in queries)
-    assert len(queries) <= 10
+    assert any("赤壁" in item or "Chibi" in item or "中国" in item for item in queries)
+    assert any("碳基科技" in item for item in queries)
+    assert len(queries) <= 12
+
+
+def test_news_editions_cover_china():
+    china = news_editions_for("carbonauten 中国 OR Chibi")
+    assert any(item["hl"].startswith("zh") for item in china)
+    assert any(item["gl"] == "HK" for item in china)
+    linkedin = news_editions_for('site:linkedin.com "carbonauten"')
+    assert len(linkedin) == 1
+    assert linkedin[0]["gl"] == "DE"
+
+
+def test_search_news_queries_multiple_editions():
+    seen_ceid = []
+
+    def fetch(url, params=None, headers=None):
+        seen_ceid.append((params or {}).get("ceid"))
+        return NEWS_XML
+
+    rows = search_news("carbonauten 赤壁", fetch=fetch, editions=None)
+    assert rows
+    assert "DE:de" in seen_ceid
+    assert "US:zh-Hans" in seen_ceid
+
+
+def test_is_on_brand_accepts_chinese_trade_name_and_company_site():
+    assert is_on_brand("德国碳基科技在赤壁投资")
+    assert is_on_brand("Bau der minus CO2 factory 002 in Chibi gestartet", "https://carbonauten.com/unkategorisiert/bau-der-minus-co2-factory-002-in-chibi-gestartet/")
+    assert not is_on_brand("Unrelated Torsten Becker – lawyer")
+
+
+def test_is_china_coverage():
+    assert is_china_coverage("Construction of minus CO2 factory 002 begins in Chibi, China")
+    assert is_china_coverage("德国碳基科技在赤壁投资15亿欧元")
+    assert not is_china_coverage("CO2-negative parts for the ICE")
+
+
+def test_parse_wordpress_json_chibi_post():
+    payload = """
+    [{"link":"https://carbonauten.com/unkategorisiert/bau-der-minus-co2-factory-002-in-chibi-gestartet/",
+      "title":{"rendered":"Bau der minus CO2 factory 002 in Chibi gestartet"},
+      "excerpt":{"rendered":"<p>Die carbonauten GmbH startete den Bau in Chibi.</p>"}}]
+    """
+    rows = parse_wordpress_json(payload)
+    assert rows[0]["url"].endswith("/bau-der-minus-co2-factory-002-in-chibi-gestartet/")
+    assert "Chibi" in rows[0]["title"]
+    assert rows[0]["channel"] == "web"
+
+
+def test_search_company_china_uses_wordpress_then_feed(monkeypatch):
+    wp = """
+    [{"link":"https://carbonauten.com/en/unkategorisiert/construction-of-minus-co2-factory-002-begins-in-chibi-china/",
+      "title":{"rendered":"Construction of minus CO2 factory 002 begins in Chibi, China"},
+      "excerpt":{"rendered":"<p>carbonauten GmbH started construction in Hubei.</p>"}}]
+    """
+    ice = """
+    [{"link":"https://carbonauten.com/fuck-co2/ice/",
+      "title":{"rendered":"CO2-negative parts for the ICE"},
+      "excerpt":{"rendered":"<p>carbonauten seat shells</p>"}}]
+    """
+
+    def fetch(url, params=None, headers=None):
+        if "wp-json" in url:
+            return wp if (params or {}).get("search") == "Chibi" else ice
+        raise AssertionError("feed should not be used when WP search returns hits")
+
+    rows = search_company_china(fetch=fetch)
+    urls = {row["url"] for row in rows}
+    assert any("chibi-china" in url for url in urls)
+    assert not any("/ice/" in url for url in urls)
+
+
+def test_search_company_china_falls_back_to_feed():
+    feed = """
+    <rss><channel>
+    <item>
+      <title>Bau der minus CO2 factory 002 in Chibi gestartet</title>
+      <link>https://carbonauten.com/unkategorisiert/bau-der-minus-co2-factory-002-in-chibi-gestartet/</link>
+      <description>Die carbonauten GmbH startete den Bau in Chibi.</description>
+    </item>
+    <item>
+      <title>CO2-negative Teile für den ICE</title>
+      <link>https://carbonauten.com/fuck-co2/ice/</link>
+      <description>carbonauten Sitzschalen</description>
+    </item>
+    </channel></rss>
+    """
+
+    def fetch(url, params=None, headers=None):
+        if "wp-json" in url:
+            return "not-json"
+        if url.endswith("/feed/") or url.endswith("/en/feed/"):
+            return feed
+        raise AssertionError(url)
+
+    rows = search_company_china(fetch=fetch)
+    assert any("chibi" in row["url"] for row in rows)
+    assert not any("/ice/" in row["url"] for row in rows)
+
+
+def test_search_china_press_keeps_chibi_articles_only():
+    pages = {
+        "https://360powder.com/info_details/index/10911.html": (
+            "<html><title>德国carbonauten公司负碳材料中国总部基地项目开工</title>"
+            "<body>11月7日赤壁开工 carbonauten</body></html>"
+        ),
+        "https://hb.cri.cn/chinanews/20230803/f9823a7b-46a1-a3f0-70aa-bf3a57d75918.html": (
+            "<html><title>德国碳基科技在赤壁投资15亿欧元</title><body>湖北日报 赤壁</body></html>"
+        ),
+        "http://zhonglingj.com/index.php/en/industrytrends/1261.html": (
+            "<html><title>Unrelated factory news</title><body>No brand here</body></html>"
+        ),
+        "http://dacaijing.cc/dacaijing/39905.html": (
+            "<html><title>About</title><body>Innovation nachhaltig carbonauten</body></html>"
+        ),
+    }
+
+    def fetch(url, params=None, headers=None):
+        return pages[url]
+
+    rows = search_china_press(fetch=fetch)
+    urls = {row["url"] for row in rows}
+    assert "https://360powder.com/info_details/index/10911.html" in urls
+    assert "https://hb.cri.cn/chinanews/20230803/f9823a7b-46a1-a3f0-70aa-bf3a57d75918.html" in urls
+    assert "http://zhonglingj.com/index.php/en/industrytrends/1261.html" not in urls
+    assert "http://dacaijing.cc/dacaijing/39905.html" not in urls
 
 
 def test_reputation_mentions_optional_date_range(auth_client, monkeypatch):

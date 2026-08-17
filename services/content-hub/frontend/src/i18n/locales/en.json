@@ -856,7 +856,7 @@
   "reputation": {
     "eyebrow": "Public web",
     "title": "Web reputation",
-    "subtitle": "Public mentions of carbonauten GmbH and FuckCo2 — including LinkedIn posts, web, and news. Especially negative coverage. Deletion requests are logged internally; they do not automatically take down third-party pages.",
+    "subtitle": "Public mentions of carbonauten GmbH and FuckCo2 — including LinkedIn, China (Chibi/赤壁), web, and news. Especially negative coverage. Deletion requests are logged internally; they do not automatically take down third-party pages.",
     "runCrawl": "Run crawl",
     "crawlRunning": "Crawl running…",
     "crawlFailed": "Crawl failed. Please try again later.",
