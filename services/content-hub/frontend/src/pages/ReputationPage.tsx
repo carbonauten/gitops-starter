@@ -24,6 +24,8 @@ export function ReputationPage() {
   const [items, setItems] = useState<ReputationMention[]>([]);
   const [sentiment, setSentiment] = useState("negative");
   const [query, setQuery] = useState("");
+  const [seenFrom, setSeenFrom] = useState("");
+  const [seenTo, setSeenTo] = useState("");
   const [loading, setLoading] = useState(true);
   const [crawling, setCrawling] = useState(false);
   const [error, setError] = useState("");
@@ -41,7 +43,12 @@ export function ReputationPage() {
     try {
       const [nextSummary, nextItems] = await Promise.all([
         fetchReputationSummary(),
-        fetchReputationMentions({ sentiment: sentiment || undefined, q: query || undefined }),
+        fetchReputationMentions({
+          sentiment: sentiment || undefined,
+          q: query || undefined,
+          seen_from: seenFrom || undefined,
+          seen_to: seenTo || undefined,
+        }),
       ]);
       setSummary(nextSummary);
       setItems(nextItems);
@@ -54,7 +61,7 @@ export function ReputationPage() {
 
   useEffect(() => {
     void load();
-  }, [sentiment]);
+  }, [sentiment, seenFrom, seenTo]);
 
   async function crawl() {
     setCrawling(true);
@@ -162,6 +169,14 @@ export function ReputationPage() {
             </option>
           ))}
         </select>
+        <label className="toolbar-field">
+          <span>{t("reputation.seenFrom")}</span>
+          <input type="date" value={seenFrom} onChange={(event) => setSeenFrom(event.target.value)} />
+        </label>
+        <label className="toolbar-field">
+          <span>{t("reputation.seenTo")}</span>
+          <input type="date" value={seenTo} onChange={(event) => setSeenTo(event.target.value)} />
+        </label>
         <input
           type="search"
           value={query}
@@ -184,7 +199,12 @@ export function ReputationPage() {
           {letter}
         </pre>
       ) : null}
-      {!loading && items.length === 0 ? <EmptyState message={t("reputation.empty")} icon="⌕" /> : null}
+      {!loading && items.length === 0 ? (
+        <EmptyState
+          message={query || seenFrom || seenTo ? t("reputation.emptyFiltered") : t("reputation.empty")}
+          icon="⌕"
+        />
+      ) : null}
 
       <div className="list-stack">
         {items.map((item) => (
@@ -211,6 +231,9 @@ export function ReputationPage() {
               <p className="muted">
                 {item.source_host} ·{" "}
                 {t(`reputation.channels.${item.channel}`, { defaultValue: item.channel })} · {item.query}
+                {item.last_seen_at
+                  ? ` · ${new Date(item.last_seen_at).toLocaleDateString(i18n.language)}`
+                  : ""}
                 {item.sentiment_reasons ? ` · ${item.sentiment_reasons}` : ""}
               </p>
               <p>{item.snippet || item.excerpt}</p>

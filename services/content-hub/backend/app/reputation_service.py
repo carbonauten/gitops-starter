@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, time, timezone
 from typing import Any, Optional
 from uuid import uuid4
 
@@ -21,6 +21,14 @@ DELETION_REASONS = {"gdpr", "inaccurate", "defamation", "other"}
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _day_start(value: date) -> datetime:
+    return datetime.combine(value, time.min, tzinfo=timezone.utc)
+
+
+def _day_end(value: date) -> datetime:
+    return datetime.combine(value, time.max, tzinfo=timezone.utc)
 
 
 def guess_publisher_email(url: str) -> str:
@@ -91,6 +99,8 @@ def list_mentions(
     *,
     sentiment: Optional[str] = None,
     query: Optional[str] = None,
+    seen_from: Optional[date] = None,
+    seen_to: Optional[date] = None,
     limit: int = 100,
 ) -> list[tuple[ReputationMention, ReputationDeletionRequest | None]]:
     stmt = select(ReputationMention).order_by(
@@ -107,6 +117,14 @@ def list_mentions(
             | (ReputationMention.source_host.ilike(like))
             | (ReputationMention.url.ilike(like))
         )
+    start = _day_start(seen_from) if seen_from else None
+    end = _day_end(seen_to) if seen_to else None
+    if start and end and start > end:
+        start, end = _day_start(seen_to), _day_end(seen_from)
+    if start:
+        stmt = stmt.where(ReputationMention.last_seen_at >= start)
+    if end:
+        stmt = stmt.where(ReputationMention.last_seen_at <= end)
     rows = list(db.scalars(stmt.limit(max(1, min(limit, 200)))).all())
     deletions = latest_deletion_map(db, [row.id for row in rows])
     return [(row, deletions.get(row.id)) for row in rows]

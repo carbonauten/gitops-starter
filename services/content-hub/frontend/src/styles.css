@@ -1066,6 +1066,17 @@ a {
   min-width: 220px;
 }
 
+.toolbar-field {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  color: #64748b;
+}
+
+.toolbar-field input {
+  min-width: 160px;
+}
+
 .link-button {
   display: inline-flex;
   align-items: center;
@@ -1769,6 +1780,10 @@ a {
   .toolbar select,
   .view-toggle {
     width: 100%;
+  }
+
+  .toolbar-field input {
+    min-width: 0;
   }
 
   .list-card-actions,

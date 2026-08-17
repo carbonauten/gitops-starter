@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -39,10 +40,12 @@ def reputation_summary(
 def reputation_mentions(
     sentiment: Optional[str] = Query(default=None),
     q: Optional[str] = Query(default=None),
+    seen_from: Optional[date] = Query(default=None),
+    seen_to: Optional[date] = Query(default=None),
     db: Session = Depends(get_db),
     _user: dict = Depends(require_editor),
 ) -> dict:
-    rows = list_mentions(db, sentiment=sentiment, query=q)
+    rows = list_mentions(db, sentiment=sentiment, query=q, seen_from=seen_from, seen_to=seen_to)
     return {
         "mentions": [
             mention_to_dict(row, deletion_to_dict(deletion) if deletion else None) for row, deletion in rows

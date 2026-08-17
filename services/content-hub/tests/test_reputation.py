@@ -1,4 +1,7 @@
+from datetime import date, datetime, timedelta, timezone
 from unittest.mock import patch
+
+from sqlalchemy import select
 
 from app.reputation_crawler import (
     classify_sentiment,
@@ -146,3 +149,63 @@ def test_default_queries_include_linkedin():
     queries = default_queries()
     assert any("linkedin.com" in item for item in queries)
     assert any("linkedin.com/posts" in item for item in queries)
+
+
+def test_reputation_mentions_optional_date_range(auth_client, monkeypatch):
+    from app.config import get_settings
+    from app.database import ReputationMention, _SessionLocal, init_database
+
+    monkeypatch.setattr(
+        "app.reputation_crawler.default_queries",
+        lambda settings=None: ["carbonauten GmbH"],
+    )
+    with patch("app.reputation_crawler.default_fetch", side_effect=_fake_fetch), patch(
+        "app.reputation_crawler.time.sleep", return_value=None
+    ):
+        crawl = auth_client.post("/api/reputation/crawl")
+        assert crawl.status_code == 200
+
+    if _SessionLocal is None:
+        init_database(get_settings().effective_database_url)
+    from app.database import _SessionLocal as session_factory
+
+    db = session_factory()
+    try:
+        rows = list(db.scalars(select(ReputationMention)).all())
+        assert rows
+        old = rows[0]
+        old.last_seen_at = datetime.now(timezone.utc) - timedelta(days=40)
+        old_url = old.url
+        db.add(old)
+        db.commit()
+    finally:
+        db.close()
+
+    today = date.today()
+    recent = auth_client.get(
+        "/api/reputation/mentions",
+        params={"seen_from": (today - timedelta(days=7)).isoformat()},
+    )
+    assert recent.status_code == 200
+    recent_urls = {row["url"] for row in recent.json()["mentions"]}
+    assert old_url not in recent_urls
+
+    unfiltered = auth_client.get("/api/reputation/mentions")
+    assert old_url in {row["url"] for row in unfiltered.json()["mentions"]}
+
+    past = auth_client.get(
+        "/api/reputation/mentions",
+        params={
+            "seen_from": (today - timedelta(days=50)).isoformat(),
+            "seen_to": (today - timedelta(days=30)).isoformat(),
+        },
+    )
+    assert past.status_code == 200
+    past_urls = {row["url"] for row in past.json()["mentions"]}
+    assert old_url in past_urls
+
+    future = auth_client.get(
+        "/api/reputation/mentions",
+        params={"seen_from": (today + timedelta(days=2)).isoformat()},
+    )
+    assert future.json()["mentions"] == []
