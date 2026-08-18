@@ -30,7 +30,12 @@ Auf **Veröffentlichen → Kanal-Konfiguration** (IT-Master) können Microsoft 3
    - `Mail.ReadWrite`
    - `Calendars.ReadWrite` (persönlicher Kalender im Kalender-Tab)
    - `Files.Read` (persönliches OneDrive unter Dateien)
-4. **Grant admin consent** (empfohlen für alle Nutzer)
+4. **API permissions** → Microsoft Graph → **Application** (für **M365-Verwaltung**, IT-Master):
+   - `User.Read.All`
+   - `User.ReadWrite.All`
+   - `Directory.Read.All`
+   - `Organization.Read.All`
+5. **Grant admin consent** für die Organisation
 
 ### Railway Variablen
 
@@ -54,6 +59,14 @@ Auf **Veröffentlichen → Kanal-Konfiguration** (IT-Master) können Microsoft 3
 3. Outlook-Termine, E-Mail und OneDrive werden nutzerbezogen freigeschaltet
 4. Word/Excel/PowerPoint: unter **Dateien** → **Öffnen** für Office Online Vorschau/Bearbeiten
 5. Unabhängig von der IT-Publish-Integration
+
+**M365-Verwaltung (IT-Master):**
+1. Application-Berechtigungen wie oben setzen und **Admin Consent** erteilen
+2. In der App: **Administration → M365-Verwaltung**
+3. Benutzer anlegen, Sign-in sperren, Passwort zurücksetzen
+4. Oder Ask Carbonauten: „Welche M365 Benutzer gibt es?“, „Sperre user@carbonauten.com“
+
+Optional: `M365_DIRECTORY_MOCK_MODE=true` zeigt ein Beispielverzeichnis statt Graph.
 
 ---
 

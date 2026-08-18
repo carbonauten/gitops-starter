@@ -200,8 +200,9 @@ https://app.carbonauten.com/api/integrations/outlook/callback
 ### 8.3 API Permissions
 
 1. App → **API permissions** → **Add a permission** → **Microsoft Graph** → **Delegated**
-2. Hinzufügen: `openid`, `profile`, `email`, `User.Read`
-3. Optional: **Grant admin consent** für die Organisation
+2. Hinzufügen (Delegated): `openid`, `profile`, `email`, `User.Read`
+3. Für **M365-Verwaltung** zusätzlich **Application**: `User.Read.All`, `User.ReadWrite.All`, `Directory.Read.All`, `Organization.Read.All`
+4. **Grant admin consent** für die Organisation
 
 ### 8.4 Railway Variables (zusätzlich)
 

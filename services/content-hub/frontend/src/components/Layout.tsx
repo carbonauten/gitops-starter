@@ -121,6 +121,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
   const admin: NavItem[] = canManageUsers
     ? [
         { to: "/users", label: t("nav.users"), icon: "☰" },
+        { to: "/m365", label: t("nav.m365"), icon: "☁" },
         { to: "/audit", label: t("nav.audit"), icon: "≡" },
       ]
     : [];

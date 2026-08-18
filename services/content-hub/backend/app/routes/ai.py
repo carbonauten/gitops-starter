@@ -33,7 +33,7 @@ def _require_ai() -> None:
 def ai_status(_user: dict = Depends(get_current_user)) -> dict:
     return {
         "available": ai_configured(),
-        "features": ["search_ask", "translate", "summarize"],
+        "features": ["search_ask", "translate", "summarize", "m365_directory"],
         "assistant_name": "Ask Carbonauten",
     }
 

@@ -5,9 +5,12 @@ from typing import Literal, Optional
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
+from ..audit_service import log_audit
 from ..ai_service import ai_configured, expand_search_query, generate_search_answer, suggest_follow_up_queries
 from ..dependencies import get_current_user
 from ..database import get_db
+from ..m365_ai_service import handle_directory_question, looks_like_m365_admin_question
+from ..roles import ROLE_IT_MASTER
 from ..schemas import SearchAskRequest
 from ..search_service import (
     build_keyword_answer,
@@ -41,12 +44,40 @@ def search(
 
 
 @router.post("/ask")
-def ask_search(
+async def ask_search(
     payload: SearchAskRequest,
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ) -> dict:
     language = payload.language or user.get("language") or "de"
+    if user.get("role") == ROLE_IT_MASTER and looks_like_m365_admin_question(payload.question):
+        directory = await handle_directory_question(payload.question, language=language)
+        if directory.get("action") in {"create", "disable", "enable", "reset_password"} and directory.get("user"):
+            log_audit(
+                db,
+                entity_type="m365_user",
+                entity_id=directory["user"]["id"],
+                action=f"ai_{directory['action']}",
+                actor=user,
+                details={"question": payload.question[:300], "upn": directory["user"].get("user_principal_name")},
+            )
+        return {
+            "question": payload.question,
+            "search_query": payload.question.strip(),
+            "answer": directory["answer"],
+            "mode": "ai",
+            "results": [],
+            "counts": {"article": 0, "file": 0, "certificate": 0},
+            "suggested_queries": [
+                "Welche M365 Benutzer gibt es?",
+                "Sperre chibi.guest@carbonauten.com",
+                "Lege user anna@carbonauten.com an",
+            ],
+            "ai_available": ai_configured(),
+            "assistant_name": "Ask Carbonauten",
+            "m365_action": directory.get("action"),
+        }
+
     search_query = payload.question.strip()
     mode = "keyword"
 

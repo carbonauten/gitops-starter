@@ -76,6 +76,7 @@ flowchart LR
 | K | 2–4 Tage | ✅ Abgeschlossen (MVP) | Shop-Versandverfolgung + Status-Mails |
 | L | 2–4 Tage | ✅ Abgeschlossen (MVP) | Shop-Rechnungs-PDF |
 | M | 2–4 Tage | ✅ Abgeschlossen (MVP) | Web-Reputation-Crawler + Löschanträge |
+| N | 2–4 Tage | ✅ Abgeschlossen (MVP) | M365-Verwaltung + Ask Carbonauten |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -545,6 +546,7 @@ flowchart LR
 | Shop Versand | Sendungsverfolgung + Status-E-Mails | ~~Mittel~~ ✅ Sprint K |
 | Shop Rechnung PDF | Rechnungs-/Beleg-PDF Download | ~~Mittel~~ ✅ Sprint L |
 | Web-Reputation | Crawler + negative Treffer + Löschantrag | ~~Mittel~~ ✅ Sprint M |
+| M365-Verwaltung | Entra-Benutzer als IT-Master inkl. KI | ~~Hoch~~ ✅ Sprint N |
 
 ---
 
@@ -732,8 +734,32 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ---
 
+## Sprint N — M365-Verwaltung ✅ (MVP)
+
+**Ziel:** IT-Master (z. B. M365-Admin) verwaltet carbonauten-Benutzer direkt in der Plattform — analog zur Microsoft-365-Benutzerliste — und per Ask Carbonauten.
+
+### Deliverables
+
+- [x] Bereich **M365-Verwaltung** (nur `it_master`)
+- [x] Benutzerliste: Name, UPN, Position, Abteilung, Lizenzen, Anmeldung aktiv/gesperrt
+- [x] Anlegen, Sign-in sperren/aktivieren, temporäres Passwort
+- [x] Ask Carbonauten: „Welche M365 Benutzer gibt es?“, „Sperre user@…“, „Lege user … an“
+- [x] Dieselbe KI auch in der zentralen Suche (nur IT-Master)
+- [x] Graph Application Permissions: `User.Read.All`, `User.ReadWrite.All`, `Directory.Read.All`
+- [x] Mock-Verzeichnis wenn Entra nicht konfiguriert
+- [x] Audit-Log für Mutationen
+- [x] DE / EN / 中文 + Tests
+
+### Akzeptanzkriterien
+
+- [x] Editor/Viewer sehen den Bereich nicht (403)
+- [x] IT-Master legt Benutzer an und erhält ein temporäres Passwort
+- [x] Ask Carbonauten führt Listen- und Sperr-Befehle nur als IT-Master aus
+
+---
+
 ## Nächster Schritt
 
-**Sprint N (Vorschlag):** Entra-Gruppen-Mapping oder Volltext-Diff — nach PO-Priorität.
+Entra-Gruppen-Mapping oder Lizenz-Zuweisung in der M365-Verwaltung — nach PO-Priorität.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.

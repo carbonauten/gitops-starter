@@ -1541,6 +1541,93 @@ export async function fetchUsers(): Promise<User[]> {
   return payload.users;
 }
 
+export type M365DirectoryUser = {
+  id: string;
+  display_name: string;
+  user_principal_name: string;
+  mail: string;
+  job_title: string;
+  department: string;
+  account_enabled: boolean;
+  user_type: string;
+  licenses: string[];
+  usage_location: string;
+  created_at?: string | null;
+};
+
+export type M365DirectoryStatus = {
+  mock: boolean;
+  graph_configured: boolean;
+  permissions: string[];
+  assistant_name?: string;
+};
+
+export async function fetchM365Status(): Promise<M365DirectoryStatus> {
+  return request<M365DirectoryStatus>("/api/m365/status");
+}
+
+export async function fetchM365Users(query = ""): Promise<{ users: M365DirectoryUser[]; mock: boolean }> {
+  const params = new URLSearchParams();
+  if (query.trim()) params.set("q", query.trim());
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  return request<{ users: M365DirectoryUser[]; mock: boolean }>(`/api/m365/users${suffix}`);
+}
+
+export async function createM365User(data: {
+  display_name: string;
+  user_principal_name: string;
+  password?: string;
+  job_title?: string;
+  department?: string;
+  usage_location?: string;
+}): Promise<{ user: M365DirectoryUser; temporary_password: string }> {
+  return request<{ user: M365DirectoryUser; temporary_password: string }>("/api/m365/users", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function setM365UserEnabled(
+  userId: string,
+  accountEnabled: boolean,
+): Promise<M365DirectoryUser> {
+  const payload = await request<{ user: M365DirectoryUser }>(`/api/m365/users/${encodeURIComponent(userId)}/enabled`, {
+    method: "PATCH",
+    body: JSON.stringify({ account_enabled: accountEnabled }),
+  });
+  return payload.user;
+}
+
+export async function resetM365Password(
+  userId: string,
+): Promise<{ user: M365DirectoryUser; temporary_password: string }> {
+  return request<{ user: M365DirectoryUser; temporary_password: string }>(
+    `/api/m365/users/${encodeURIComponent(userId)}/reset-password`,
+    { method: "POST", body: JSON.stringify({}) },
+  );
+}
+
+export async function askM365Directory(
+  question: string,
+  language?: string,
+): Promise<{
+  question: string;
+  answer: string;
+  action: string;
+  users: M365DirectoryUser[];
+  temporary_password: string;
+  assistant_name?: string;
+}> {
+  return request(
+    "/api/m365/ask",
+    {
+      method: "POST",
+      body: JSON.stringify({ question, language }),
+    },
+    45000,
+  );
+}
+
 export async function createUser(data: {
   email: string;
   name: string;

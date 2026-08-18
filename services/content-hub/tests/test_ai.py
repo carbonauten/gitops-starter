@@ -12,6 +12,7 @@ def test_ai_status_without_keys(auth_client):
     assert payload["available"] is False
     assert payload["assistant_name"] == "Ask Carbonauten"
     assert "translate" in payload["features"]
+    assert "m365_directory" in payload["features"]
 
 
 def test_translate_requires_ai(auth_client):

@@ -15,6 +15,7 @@ import { AcceptInvitePage } from "./pages/AcceptInvitePage";
 import { PublishPage } from "./pages/PublishPage";
 import { AuditLogPage } from "./pages/AuditLogPage";
 import { WorkflowPage } from "./pages/WorkflowPage";
+import { M365AdminPage } from "./pages/M365AdminPage";
 import { UsersAdminPage } from "./pages/UsersAdminPage";
 import { SearchPage } from "./pages/SearchPage";
 import { PublishCalendarPage } from "./pages/PublishCalendarPage";
@@ -199,6 +200,14 @@ export default function App() {
         }
       />
       <Route path="/shop/*" element={<ShopApp />} />
+      <Route
+        path="/m365"
+        element={
+          <MasterRoute>
+            <M365AdminPage />
+          </MasterRoute>
+        }
+      />
       <Route
         path="/users"
         element={
