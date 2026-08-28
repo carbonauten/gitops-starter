@@ -318,7 +318,8 @@
     "tabs": {
       "employees": "Mitarbeiter",
       "invites": "Einladungen",
-      "departments": "Abteilungen"
+      "departments": "Abteilungen",
+      "groups": "Entra-Gruppen"
     },
     "create": {
       "title": "Neuen Mitarbeiter anlegen",
@@ -366,6 +367,25 @@
     "shopAccess": {
       "on": "Shop sichtbar",
       "off": "Shop ausgeblendet"
+    },
+    "roleSource": {
+      "entraGroup": "via Entra-Gruppe",
+      "entraGroupHint": "Diese Rolle wurde automatisch aus einer Entra-Gruppenmitgliedschaft übernommen. Wird sie hier geändert, gilt sie als manuell gesetzt und wird beim nächsten Login nicht mehr automatisch überschrieben."
+    },
+    "groups": {
+      "hint": "Entra-ID-(Azure-AD-)Sicherheitsgruppen einer Plattform-Rolle zuordnen. Beim Login setzt die Gruppenmitgliedschaft automatisch die Rolle — außer ein IT-Master hat sie hier manuell festgelegt.",
+      "searchTitle": "Entra-Gruppe suchen",
+      "searchPlaceholder": "Gruppenname…",
+      "search": "Suchen",
+      "createTitle": "Mapping hinzufügen",
+      "groupId": "Entra-Gruppen-ID",
+      "groupName": "Gruppenname (optional)",
+      "add": "Mapping hinzufügen",
+      "columns": {
+        "group": "Entra-Gruppe"
+      },
+      "empty": "Noch keine Gruppen-Mappings.",
+      "confirmDelete": "Mapping für {{name}} entfernen?"
     }
   },
   "invite": {
@@ -950,6 +970,9 @@
       "licenses": "Lizenzen",
       "status": "Anmeldung",
       "actions": "Aktionen"
-    }
+    },
+    "assignLicense": "Zuweisen",
+    "assignLicensePlaceholder": "Lizenz wählen…",
+    "removeLicense": "Lizenz entfernen"
   }
 }

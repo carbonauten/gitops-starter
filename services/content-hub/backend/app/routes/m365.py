@@ -10,16 +10,24 @@ from ..audit_service import log_audit
 from ..database import get_db
 from ..dependencies import require_it_master
 from ..graph_directory_service import (
+    assign_license,
     create_directory_user,
     directory_status,
     get_directory_user,
+    list_available_licenses,
+    list_directory_groups,
     list_directory_users,
+    remove_license,
     reset_directory_password,
     set_directory_user_enabled,
 )
 from ..m365_ai_service import handle_directory_question, looks_like_m365_admin_question
 
 router = APIRouter(prefix="/api/m365", tags=["m365"])
+
+
+class LicenseAssignRequest(BaseModel):
+    sku_id: str = Field(..., min_length=1, max_length=200)
 
 
 class DirectoryUserCreate(BaseModel):
@@ -128,6 +136,54 @@ async def m365_reset_password(
         details={"upn": updated["user_principal_name"]},
     )
     return {"user": updated, "temporary_password": temporary_password}
+
+
+@router.get("/groups")
+async def m365_groups(q: str = "", _user: dict = Depends(require_it_master)) -> dict:
+    return {"groups": await list_directory_groups(query=q)}
+
+
+@router.get("/licenses")
+async def m365_licenses(_user: dict = Depends(require_it_master)) -> dict:
+    return {"licenses": await list_available_licenses()}
+
+
+@router.post("/users/{user_id}/licenses")
+async def m365_assign_license(
+    user_id: str,
+    payload: LicenseAssignRequest,
+    db: Session = Depends(get_db),
+    user: dict = Depends(require_it_master),
+) -> dict:
+    updated = await assign_license(user_id, payload.sku_id)
+    log_audit(
+        db,
+        entity_type="m365_user",
+        entity_id=updated["id"],
+        action="assign_license",
+        actor=user,
+        details={"upn": updated["user_principal_name"], "sku_id": payload.sku_id},
+    )
+    return {"user": updated}
+
+
+@router.delete("/users/{user_id}/licenses/{sku_id}")
+async def m365_remove_license(
+    user_id: str,
+    sku_id: str,
+    db: Session = Depends(get_db),
+    user: dict = Depends(require_it_master),
+) -> dict:
+    updated = await remove_license(user_id, sku_id)
+    log_audit(
+        db,
+        entity_type="m365_user",
+        entity_id=updated["id"],
+        action="remove_license",
+        actor=user,
+        details={"upn": updated["user_principal_name"], "sku_id": sku_id},
+    )
+    return {"user": updated}
 
 
 @router.post("/ask")

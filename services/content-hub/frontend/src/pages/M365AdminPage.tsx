@@ -3,12 +3,16 @@ import { useTranslation } from "react-i18next";
 
 import {
   askM365Directory,
+  assignM365License,
   createM365User,
+  fetchM365Licenses,
   fetchM365Status,
   fetchM365Users,
+  removeM365License,
   resetM365Password,
   setM365UserEnabled,
   type M365DirectoryUser,
+  type M365License,
 } from "../api/client";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingState } from "../components/LoadingState";
@@ -16,6 +20,8 @@ import { LoadingState } from "../components/LoadingState";
 export function M365AdminPage() {
   const { t, i18n } = useTranslation();
   const [users, setUsers] = useState<M365DirectoryUser[]>([]);
+  const [licenses, setLicenses] = useState<M365License[]>([]);
+  const [licensePick, setLicensePick] = useState<Record<string, string>>({});
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -34,13 +40,49 @@ export function M365AdminPage() {
     setLoading(true);
     setError("");
     try {
-      const [listing, status] = await Promise.all([fetchM365Users(nextQuery), fetchM365Status()]);
+      const [listing, status, licenseList] = await Promise.all([
+        fetchM365Users(nextQuery),
+        fetchM365Status(),
+        fetchM365Licenses(),
+      ]);
       setUsers(listing.users);
       setMock(listing.mock || status.mock);
+      setLicenses(licenseList);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleAssignLicense(user: M365DirectoryUser) {
+    const skuId = licensePick[user.id];
+    if (!skuId) {
+      return;
+    }
+    setBusyId(user.id);
+    setError("");
+    try {
+      await assignM365License(user.id, skuId);
+      setLicensePick((prev) => ({ ...prev, [user.id]: "" }));
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function handleRemoveLicense(user: M365DirectoryUser, skuId: string) {
+    setBusyId(user.id);
+    setError("");
+    try {
+      await removeM365License(user.id, skuId);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setBusyId("");
     }
   }
 
@@ -259,7 +301,55 @@ export function M365AdminPage() {
                     <td>{user.user_principal_name}</td>
                     <td>{user.job_title || "—"}</td>
                     <td>{user.department || "—"}</td>
-                    <td>{user.licenses.length ? user.licenses.join(", ") : t("m365.noLicense")}</td>
+                    <td>
+                      {user.license_skus.length ? (
+                        <ul className="license-chip-list">
+                          {user.license_skus.map((entry) => (
+                            <li key={entry.sku_id} className="license-chip">
+                              {entry.name}
+                              <button
+                                type="button"
+                                className="license-chip-remove"
+                                disabled={busy}
+                                title={t("m365.removeLicense")}
+                                onClick={() => void handleRemoveLicense(user, entry.sku_id)}
+                              >
+                                ×
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="muted">{t("m365.noLicense")}</span>
+                      )}
+                      <div className="license-assign-row">
+                        <select
+                          className="admin-select"
+                          value={licensePick[user.id] ?? ""}
+                          disabled={busy}
+                          onChange={(event) =>
+                            setLicensePick((prev) => ({ ...prev, [user.id]: event.target.value }))
+                          }
+                        >
+                          <option value="">{t("m365.assignLicensePlaceholder")}</option>
+                          {licenses
+                            .filter((license) => !user.licenses.includes(license.name))
+                            .map((license) => (
+                              <option key={license.sku_id} value={license.sku_id}>
+                                {license.name} ({license.available}/{license.total})
+                              </option>
+                            ))}
+                        </select>
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          disabled={busy || !licensePick[user.id]}
+                          onClick={() => void handleAssignLicense(user)}
+                        >
+                          {t("m365.assignLicense")}
+                        </button>
+                      </div>
+                    </td>
                     <td>
                       <span
                         className={

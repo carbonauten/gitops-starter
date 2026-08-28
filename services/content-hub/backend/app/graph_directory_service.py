@@ -86,6 +86,21 @@ _SEED_USERS: list[dict[str, Any]] = [
 
 _mock_users: list[dict[str, Any]] = []
 
+# Sample Entra security groups shown when Graph is not connected (demo/dev),
+# used by the group -> role mapping picker in the M365 admin UI.
+_SEED_GROUPS: list[dict[str, Any]] = [
+    {"id": "grp-it-master", "display_name": "IT-Master"},
+    {"id": "grp-redaktion", "display_name": "Redaktion"},
+    {"id": "grp-zertifikate", "display_name": "Zertifikats-Manager"},
+    {"id": "grp-china-team", "display_name": "China Team"},
+]
+
+# Sample license catalog shown when Graph is not connected (demo/dev).
+_MOCK_LICENSE_CATALOG: list[dict[str, Any]] = [
+    {"sku_id": "mock-biz-premium", "name": "Microsoft 365 Business Premium", "total": 10},
+    {"sku_id": "mock-biz-standard", "name": "Microsoft 365 Business Standard", "total": 5},
+]
+
 
 def reset_mock_directory() -> None:
     global _mock_users
@@ -93,6 +108,13 @@ def reset_mock_directory() -> None:
 
 
 reset_mock_directory()
+
+
+def _mock_sku_for_name(name: str) -> dict[str, Any]:
+    for entry in _MOCK_LICENSE_CATALOG:
+        if entry["name"] == name:
+            return entry
+    return {"sku_id": f"mock-{re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')}", "name": name, "total": 0}
 
 
 def directory_uses_mock(settings: Settings | None = None) -> bool:
@@ -122,6 +144,12 @@ def directory_status(settings: Settings | None = None) -> dict[str, Any]:
 
 
 def user_to_dict(row: dict[str, Any]) -> dict[str, Any]:
+    licenses = list(row.get("licenses") or [])
+    # Graph rows (_from_graph_user) pass real {sku_id, name} pairs; mock rows only
+    # store license names, so derive a stable synthetic sku_id from the mock catalog.
+    license_skus = row.get("license_skus") or [
+        {"sku_id": _mock_sku_for_name(name)["sku_id"], "name": name} for name in licenses
+    ]
     return {
         "id": row.get("id") or "",
         "display_name": row.get("display_name") or "",
@@ -131,7 +159,8 @@ def user_to_dict(row: dict[str, Any]) -> dict[str, Any]:
         "department": row.get("department") or "",
         "account_enabled": bool(row.get("account_enabled", True)),
         "user_type": row.get("user_type") or "Member",
-        "licenses": list(row.get("licenses") or []),
+        "licenses": licenses,
+        "license_skus": license_skus,
         "usage_location": row.get("usage_location") or "",
         "created_at": row.get("created_at"),
     }
@@ -189,10 +218,13 @@ async def _sku_map(token: str) -> dict[str, str]:
 
 def _from_graph_user(item: dict[str, Any], skus: dict[str, str]) -> dict[str, Any]:
     licenses = []
+    license_skus = []
     for assignment in item.get("assignedLicenses") or []:
         sku_id = str(assignment.get("skuId") or "")
         if sku_id:
-            licenses.append(skus.get(sku_id) or sku_id)
+            name = skus.get(sku_id) or sku_id
+            licenses.append(name)
+            license_skus.append({"sku_id": sku_id, "name": name})
     created = item.get("createdDateTime")
     return user_to_dict(
         {
@@ -205,6 +237,7 @@ def _from_graph_user(item: dict[str, Any], skus: dict[str, str]) -> dict[str, An
             "account_enabled": bool(item.get("accountEnabled", True)),
             "user_type": item.get("userType") or "Member",
             "licenses": licenses,
+            "license_skus": license_skus,
             "usage_location": item.get("usageLocation") or "",
             "created_at": created,
         }
@@ -388,3 +421,98 @@ def find_user_in_list(rows: list[dict[str, Any]], needle: str) -> dict[str, Any]
         if value in row["display_name"].lower() or value in row["user_principal_name"].lower():
             return row
     return None
+
+
+def group_to_dict(row: dict[str, Any]) -> dict[str, Any]:
+    return {"id": row.get("id") or "", "display_name": row.get("display_name") or ""}
+
+
+async def list_directory_groups(*, query: str = "", settings: Settings | None = None) -> list[dict[str, Any]]:
+    """List Entra security groups for the group -> role mapping picker."""
+    settings = settings or get_settings()
+    needle = (query or "").strip().lower()
+    if directory_uses_mock(settings):
+        rows = [group_to_dict(item) for item in _SEED_GROUPS]
+        if needle:
+            rows = [row for row in rows if needle in row["display_name"].lower()]
+        return rows
+    token = await get_app_access_token(settings)
+    params = {"$select": "id,displayName", "$top": "999", "$orderby": "displayName"}
+    if needle:
+        params["$search"] = f'"displayName:{needle}"'
+    payload = await _graph_json("GET", "/groups", token=token, params=params)
+    return [group_to_dict({"id": item.get("id"), "display_name": item.get("displayName")}) for item in payload.get("value") or []]
+
+
+def license_to_dict(sku_id: str, name: str, total: int, consumed: int) -> dict[str, Any]:
+    return {
+        "sku_id": sku_id,
+        "name": name,
+        "total": total,
+        "consumed": consumed,
+        "available": max(total - consumed, 0),
+    }
+
+
+async def list_available_licenses(*, settings: Settings | None = None) -> list[dict[str, Any]]:
+    settings = settings or get_settings()
+    if directory_uses_mock(settings):
+        result = []
+        for entry in _MOCK_LICENSE_CATALOG:
+            consumed = sum(1 for user in _mock_users if entry["name"] in (user.get("licenses") or []))
+            result.append(license_to_dict(entry["sku_id"], entry["name"], entry["total"], consumed))
+        return result
+    token = await get_app_access_token(settings)
+    payload = await _graph_json("GET", "/subscribedSkus", token=token)
+    result = []
+    for item in payload.get("value") or []:
+        sku_id = str(item.get("skuId") or "")
+        if not sku_id:
+            continue
+        name = str(item.get("skuPartNumber") or sku_id).replace("_", " ")
+        prepaid = item.get("prepaidUnits") or {}
+        total = int(prepaid.get("enabled") or 0)
+        consumed = int(item.get("consumedUnits") or 0)
+        result.append(license_to_dict(sku_id, name, total, consumed))
+    return result
+
+
+async def assign_license(user_id: str, sku_id: str, *, settings: Settings | None = None) -> dict[str, Any]:
+    settings = settings or get_settings()
+    if directory_uses_mock(settings):
+        for item in _mock_users:
+            if item["id"] == user_id or item["user_principal_name"].lower() == user_id.lower():
+                entry = next((sku for sku in _MOCK_LICENSE_CATALOG if sku["sku_id"] == sku_id), None)
+                name = entry["name"] if entry else sku_id
+                if name not in item.get("licenses", []):
+                    item.setdefault("licenses", []).append(name)
+                return user_to_dict(item)
+        raise HTTPException(status_code=404, detail="not_found")
+    token = await get_app_access_token(settings)
+    await _graph_json(
+        "POST",
+        f"/users/{user_id}/assignLicense",
+        token=token,
+        json_body={"addLicenses": [{"skuId": sku_id}], "removeLicenses": []},
+    )
+    return await get_directory_user(user_id, settings=settings)
+
+
+async def remove_license(user_id: str, sku_id: str, *, settings: Settings | None = None) -> dict[str, Any]:
+    settings = settings or get_settings()
+    if directory_uses_mock(settings):
+        for item in _mock_users:
+            if item["id"] == user_id or item["user_principal_name"].lower() == user_id.lower():
+                entry = next((sku for sku in _MOCK_LICENSE_CATALOG if sku["sku_id"] == sku_id), None)
+                name = entry["name"] if entry else sku_id
+                item["licenses"] = [existing for existing in item.get("licenses", []) if existing != name]
+                return user_to_dict(item)
+        raise HTTPException(status_code=404, detail="not_found")
+    token = await get_app_access_token(settings)
+    await _graph_json(
+        "POST",
+        f"/users/{user_id}/assignLicense",
+        token=token,
+        json_body={"addLicenses": [], "removeLicenses": [sku_id]},
+    )
+    return await get_directory_user(user_id, settings=settings)

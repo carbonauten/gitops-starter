@@ -399,6 +399,63 @@ a {
   color: var(--text);
 }
 
+.license-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+}
+
+.license-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.license-chip-remove {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+}
+
+.license-chip-remove:hover,
+.license-chip-remove:focus-visible {
+  color: var(--primary);
+}
+
+.license-assign-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.license-assign-row .admin-select {
+  min-width: 8rem;
+}
+
+.role-source-tag {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
 .department-form {
   display: grid;
   grid-template-columns: 1fr 1fr auto;

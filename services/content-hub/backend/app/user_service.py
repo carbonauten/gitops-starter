@@ -9,15 +9,34 @@ from sqlalchemy.orm import Session
 
 from .config import Settings, get_settings
 from .database import Department, UserAccount
+from .entra_group_service import resolve_role_from_groups
 from .i18n import normalize_language
 from .password_service import hash_password, verify_password
 from .roles import ALL_ROLES, ROLE_EDITOR, ROLE_IT_MASTER, can_manage_shop as role_can_manage_shop
+
+ROLE_SOURCE_MANUAL = "manual"  # set explicitly by an IT master (UI, invite, direct create) — blocks group sync
+ROLE_SOURCE_DEFAULT = "default"  # fell back to IT_ADMIN_EMAILS / default_user_role at first login
+ROLE_SOURCE_ENTRA_GROUP = "entra_group"  # currently driven by Entra group membership
 
 
 def sync_master_role_from_env(db: Session, user: UserAccount) -> UserAccount:
     settings = get_settings()
     if user.email.lower() in settings.it_admin_emails_list and user.role != ROLE_IT_MASTER:
         user.role = ROLE_IT_MASTER
+        db.commit()
+        db.refresh(user)
+    return user
+
+
+def sync_role_from_groups(db: Session, user: UserAccount, group_ids: list[str] | None) -> UserAccount:
+    """Auto-assign the platform role from Entra group membership, unless an
+    IT master has manually set this user's role (role_source == manual)."""
+    if not group_ids or user.role_source == ROLE_SOURCE_MANUAL:
+        return user
+    resolved_role = resolve_role_from_groups(db, group_ids)
+    if resolved_role and resolved_role != user.role:
+        user.role = resolved_role
+        user.role_source = ROLE_SOURCE_ENTRA_GROUP
         db.commit()
         db.refresh(user)
     return user
@@ -41,6 +60,7 @@ def user_to_session(user: UserAccount, department: Department | None = None) -> 
         "name": user.name,
         "email": user.email,
         "role": user.role,
+        "role_source": user.role_source,
         "department_id": user.department_id,
         "department_name": department.name if department else None,
         "language": user.language,
@@ -73,6 +93,7 @@ def upsert_user_from_login(
     email: str,
     name: str,
     language: str | None = None,
+    group_ids: list[str] | None = None,
 ) -> UserAccount:
     settings = get_settings()
     normalized_email = email.strip().lower()
@@ -92,6 +113,7 @@ def upsert_user_from_login(
                 email=normalized_email,
                 name=name,
                 role=resolve_role_for_email(normalized_email, settings),
+                role_source=ROLE_SOURCE_DEFAULT,
                 language=language,
                 is_active=True,
                 last_login_at=now,
@@ -106,6 +128,7 @@ def upsert_user_from_login(
     user.last_login_at = now
     if language:
         user.language = language
+    sync_role_from_groups(db, user, group_ids)
     sync_master_role_from_env(db, user)
 
     db.commit()
@@ -149,6 +172,7 @@ def ensure_initial_admin(db: Session) -> None:
             email=email,
             name=display_name,
             role=resolve_role_for_email(email, settings),
+            role_source=ROLE_SOURCE_MANUAL,
             password_hash=password_hash,
             language=settings.default_language,
             is_active=True,
@@ -198,6 +222,7 @@ def create_user_account(
         email=normalized_email,
         name=normalized_name,
         role=resolved_role,
+        role_source=ROLE_SOURCE_MANUAL,
         department_id=department_id,
         password_hash=hash_password(password),
         language=get_settings().default_language,
@@ -239,6 +264,7 @@ def update_user_role(db: Session, user_id: str, role: str) -> UserAccount:
     if role != ROLE_IT_MASTER and user.email.lower() in get_settings().it_admin_emails_list:
         raise HTTPException(status_code=400, detail="it_role_locked")
     user.role = role
+    user.role_source = ROLE_SOURCE_MANUAL
     if role == ROLE_IT_MASTER:
         user.can_manage_shop = True
     db.commit()

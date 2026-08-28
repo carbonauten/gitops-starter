@@ -3,11 +3,15 @@ import { useTranslation } from "react-i18next";
 
 import {
   createDepartment,
+  createGroupMapping,
   createInvite,
   createUser,
   deleteDepartment,
+  deleteGroupMapping,
   fetchDepartments,
+  fetchGroupMappings,
   fetchInvites,
+  fetchM365Groups,
   fetchUsers,
   resendInvite,
   revokeInvite,
@@ -18,6 +22,8 @@ import {
   updateUserRole,
   updateUserShopAccess,
   type Department,
+  type EntraGroupMapping,
+  type M365Group,
   type User,
   type UserInvite,
 } from "../api/client";
@@ -35,10 +41,16 @@ function slugifyDepartmentCode(name: string): string {
 
 export function UsersAdminPage() {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<"employees" | "invites" | "departments">("employees");
+  const [tab, setTab] = useState<"employees" | "invites" | "departments" | "groups">("employees");
   const [users, setUsers] = useState<User[]>([]);
   const [invites, setInvites] = useState<UserInvite[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [groupMappings, setGroupMappings] = useState<EntraGroupMapping[]>([]);
+  const [groupOptions, setGroupOptions] = useState<M365Group[]>([]);
+  const [groupSearch, setGroupSearch] = useState("");
+  const [newMappingGroupId, setNewMappingGroupId] = useState("");
+  const [newMappingGroupName, setNewMappingGroupName] = useState("");
+  const [newMappingRole, setNewMappingRole] = useState<User["role"]>("editor");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -59,14 +71,16 @@ export function UsersAdminPage() {
     setLoading(true);
     setError("");
     try {
-      const [nextUsers, nextDepartments, nextInvites] = await Promise.all([
+      const [nextUsers, nextDepartments, nextInvites, nextMappings] = await Promise.all([
         fetchUsers(),
         fetchDepartments(true),
         fetchInvites(),
+        fetchGroupMappings(),
       ]);
       setUsers(nextUsers);
       setDepartments(nextDepartments);
       setInvites(nextInvites);
+      setGroupMappings(nextMappings);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
@@ -77,6 +91,60 @@ export function UsersAdminPage() {
   useEffect(() => {
     void load();
   }, []);
+
+  async function handleSearchGroups(event: React.FormEvent) {
+    event.preventDefault();
+    try {
+      setGroupOptions(await fetchM365Groups(groupSearch));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    }
+  }
+
+  function handlePickGroupOption(group: M365Group) {
+    setNewMappingGroupId(group.id);
+    setNewMappingGroupName(group.display_name);
+  }
+
+  async function handleCreateGroupMapping(event: React.FormEvent) {
+    event.preventDefault();
+    if (!newMappingGroupId.trim()) {
+      return;
+    }
+    setBusyId("new-mapping");
+    try {
+      await createGroupMapping({
+        entra_group_id: newMappingGroupId.trim(),
+        entra_group_name: newMappingGroupName.trim(),
+        role: newMappingRole,
+      });
+      setNewMappingGroupId("");
+      setNewMappingGroupName("");
+      setNewMappingRole("editor");
+      setGroupOptions([]);
+      setGroupSearch("");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleDeleteGroupMapping(mapping: EntraGroupMapping) {
+    if (!window.confirm(t("users.groups.confirmDelete", { name: mapping.entra_group_name || mapping.entra_group_id }))) {
+      return;
+    }
+    setBusyId(mapping.id);
+    try {
+      await deleteGroupMapping(mapping.id);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   async function handleRoleChange(user: User, role: User["role"]) {
     if (role === user.role) {
@@ -335,6 +403,13 @@ export function UsersAdminPage() {
         >
           {t("users.tabs.departments")}
         </button>
+        <button
+          type="button"
+          className={tab === "groups" ? "admin-tab active" : "admin-tab"}
+          onClick={() => setTab("groups")}
+        >
+          {t("users.tabs.groups")}
+        </button>
       </div>
 
       {tab === "employees" ? (
@@ -463,6 +538,11 @@ export function UsersAdminPage() {
                           </option>
                         ))}
                       </select>
+                      {user.role_source === "entra_group" ? (
+                        <span className="role-source-tag" title={t("users.roleSource.entraGroupHint")}>
+                          {t("users.roleSource.entraGroup")}
+                        </span>
+                      ) : null}
                     </td>
                     <td>
                       <label className="access-toggle">
@@ -704,6 +784,109 @@ export function UsersAdminPage() {
             </div>
           ) : (
             <p className="muted">{t("departments.empty")}</p>
+          )}
+        </>
+      ) : null}
+
+      {!loading && tab === "groups" ? (
+        <>
+          <p className="muted">{t("users.groups.hint")}</p>
+
+          <form className="employee-create-form" onSubmit={(event) => void handleSearchGroups(event)}>
+            <h2>{t("users.groups.searchTitle")}</h2>
+            <div className="employee-create-grid">
+              <input
+                type="text"
+                value={groupSearch}
+                placeholder={t("users.groups.searchPlaceholder")}
+                onChange={(event) => setGroupSearch(event.target.value)}
+                style={{ gridColumn: "1 / -2" }}
+              />
+              <button type="submit" className="ghost-button">
+                {t("users.groups.search")}
+              </button>
+            </div>
+            {groupOptions.length > 0 ? (
+              <ul className="license-chip-list">
+                {groupOptions.map((group) => (
+                  <li key={group.id}>
+                    <button type="button" className="ghost-button" onClick={() => handlePickGroupOption(group)}>
+                      {group.display_name || group.id}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </form>
+
+          <form className="employee-create-form" onSubmit={(event) => void handleCreateGroupMapping(event)}>
+            <h2>{t("users.groups.createTitle")}</h2>
+            <div className="employee-create-grid">
+              <input
+                type="text"
+                value={newMappingGroupId}
+                placeholder={t("users.groups.groupId")}
+                onChange={(event) => setNewMappingGroupId(event.target.value)}
+                required
+              />
+              <input
+                type="text"
+                value={newMappingGroupName}
+                placeholder={t("users.groups.groupName")}
+                onChange={(event) => setNewMappingGroupName(event.target.value)}
+              />
+              <select
+                className="admin-select"
+                value={newMappingRole}
+                onChange={(event) => setNewMappingRole(event.target.value as User["role"])}
+              >
+                {ROLES.map((role) => (
+                  <option key={role} value={role}>
+                    {t(`users.roles.${role}`)}
+                  </option>
+                ))}
+              </select>
+              <button type="submit" className="primary-button" disabled={busyId === "new-mapping"}>
+                {t("users.groups.add")}
+              </button>
+            </div>
+          </form>
+
+          {groupMappings.length > 0 ? (
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>{t("users.groups.columns.group")}</th>
+                    <th>{t("users.columns.role")}</th>
+                    <th>{t("departments.columns.actions")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {groupMappings.map((mapping) => (
+                    <tr key={mapping.id}>
+                      <td>
+                        <strong>{mapping.entra_group_name || mapping.entra_group_id}</strong>
+                        <div className="muted">{mapping.entra_group_id}</div>
+                      </td>
+                      <td>{t(`users.roles.${mapping.role}`)}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          disabled={busyId === mapping.id}
+                          onClick={() => void handleDeleteGroupMapping(mapping)}
+                        >
+                          {t("departments.delete")}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="muted">{t("users.groups.empty")}</p>
           )}
         </>
       ) : null}

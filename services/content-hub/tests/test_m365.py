@@ -125,3 +125,55 @@ def test_duplicate_m365_user_conflict(it_auth_client):
         json={"display_name": "Anna", "user_principal_name": "anna.beispiel@carbonauten.com"},
     )
     assert duplicate.status_code == 409
+
+
+def test_it_master_lists_mock_groups(it_auth_client):
+    response = it_auth_client.get("/api/m365/groups")
+    assert response.status_code == 200
+    names = {row["display_name"] for row in response.json()["groups"]}
+    assert "IT-Master" in names
+
+    filtered = it_auth_client.get("/api/m365/groups", params={"q": "redaktion"})
+    assert filtered.status_code == 200
+    assert all("redaktion" in row["display_name"].lower() for row in filtered.json()["groups"])
+
+
+def test_editor_cannot_list_groups(auth_client):
+    assert auth_client.get("/api/m365/groups").status_code == 403
+
+
+def test_it_master_lists_mock_licenses(it_auth_client):
+    response = it_auth_client.get("/api/m365/licenses")
+    assert response.status_code == 200
+    licenses = response.json()["licenses"]
+    names = {row["name"] for row in licenses}
+    assert "Microsoft 365 Business Premium" in names
+    premium = next(row for row in licenses if row["name"] == "Microsoft 365 Business Premium")
+    assert premium["available"] == premium["total"] - premium["consumed"]
+
+
+def test_it_master_can_assign_and_remove_license(it_auth_client):
+    listing = it_auth_client.get("/api/m365/users", params={"q": "chibi"})
+    guest = listing.json()["users"][0]
+    assert guest["licenses"] == []
+
+    licenses = it_auth_client.get("/api/m365/licenses").json()["licenses"]
+    sku_id = next(row["sku_id"] for row in licenses if row["name"] == "Microsoft 365 Business Standard")
+
+    assigned = it_auth_client.post(f"/api/m365/users/{guest['id']}/licenses", json={"sku_id": sku_id})
+    assert assigned.status_code == 200
+    updated_user = assigned.json()["user"]
+    assert "Microsoft 365 Business Standard" in updated_user["licenses"]
+    assert any(entry["sku_id"] == sku_id for entry in updated_user["license_skus"])
+
+    removed = it_auth_client.delete(f"/api/m365/users/{guest['id']}/licenses/{sku_id}")
+    assert removed.status_code == 200
+    assert "Microsoft 365 Business Standard" not in removed.json()["user"]["licenses"]
+
+
+def test_editor_cannot_assign_license(auth_client):
+    response = auth_client.post(
+        "/api/m365/users/m365-guest-chibi/licenses",
+        json={"sku_id": "mock-biz-standard"},
+    )
+    assert response.status_code == 403

@@ -93,6 +93,7 @@ class UserAccount(Base):
     email: Mapped[str] = mapped_column(String(200), index=True)
     name: Mapped[str] = mapped_column(String(200))
     role: Mapped[str] = mapped_column(String(30), default="editor")
+    role_source: Mapped[str] = mapped_column(String(20), default="manual")
     department_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
     password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     language: Mapped[str] = mapped_column(String(10), default="en")
@@ -119,6 +120,22 @@ class UserInvite(Base):
     invited_by_name: Mapped[str] = mapped_column(String(200))
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     accepted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class EntraGroupRoleMapping(Base):
+    """Maps an Entra ID (Azure AD) security group to a platform role.
+
+    On login, a user's Entra group memberships are matched against these
+    mappings to auto-assign a role (see entra_group_service.resolve_role_from_groups).
+    """
+
+    __tablename__ = "entra_group_role_mappings"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    entra_group_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    entra_group_name: Mapped[str] = mapped_column(String(200), default="")
+    role: Mapped[str] = mapped_column(String(30))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
@@ -543,6 +560,18 @@ def ensure_schema_updates(engine, is_sqlite: bool) -> None:
                     )
             except Exception as exc:  # noqa: BLE001
                 logger.warning("Could not add users.can_manage_shop: %s", exc)
+        if "role_source" not in columns:
+            try:
+                with engine.begin() as connection:
+                    connection.execute(
+                        text("ALTER TABLE users ADD COLUMN role_source VARCHAR(20) DEFAULT 'manual'")
+                    )
+                    # Existing roles were all assigned manually (or via IT_ADMIN_EMAILS) before
+                    # Entra group sync existed; keep them locked to manual so a later group sync
+                    # rollout does not silently overwrite roles nobody chose from group membership.
+                    connection.execute(text("UPDATE users SET role_source = 'manual' WHERE role_source IS NULL"))
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Could not add users.role_source: %s", exc)
     if inspector.has_table("file_assets"):
         columns = {column["name"] for column in inspector.get_columns("file_assets")}
         if "folder_id" not in columns:
