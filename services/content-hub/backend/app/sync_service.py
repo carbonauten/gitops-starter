@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 
 from .config import Settings, get_settings
 from .database import Article, Certificate, SyncLog
+from .embedding_service import reembed_entity
 
 logger = logging.getLogger(__name__)
 
@@ -185,6 +186,14 @@ def import_sync_payload(db: Session, payload: dict) -> dict:
         certificate_stats[result] = certificate_stats.get(result, 0) + 1
 
     db.commit()
+
+    # Re-embed after commit (not per-row above) so a mid-loop failure can't leave the
+    # sync's own commit half-done; skipped items are cheap no-ops via the text-hash check.
+    for article in payload.get("articles", []):
+        reembed_entity(db, entity_type="article", entity_id=article["id"])
+    for certificate in payload.get("certificates", []):
+        reembed_entity(db, entity_type="certificate", entity_id=certificate["id"])
+
     return {
         "articles": article_stats,
         "certificates": certificate_stats,

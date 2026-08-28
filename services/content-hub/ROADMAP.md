@@ -817,6 +817,12 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 Nach dem ersten Setzen dieser Variablen: einmal auf **Suche → Suchindex aktualisieren** klicken (IT-Master), um bestehende Inhalte zu indexieren.
 
+### Bugfixes (Bug-Scan nach Sprint P)
+
+- [x] `embed_text_for_entity` verglich beim Reindex nur den Text-Hash, nicht das konfigurierte Embedding-Modell — ein Modellwechsel ließ unveränderte Inhalte auf dem alten Modell hängen, obwohl "Suchindex aktualisieren" genau dafür gedacht ist
+- [x] SharePoint-Zertifikat-Import und SharePoint-Datei-Import lösten kein Embedding aus (einziger Erstellungsweg ohne `queue_reembed`) — importierte Inhalte waren bis zum manuellen Reindex für die semantische Suche unsichtbar
+- [x] SSL-Auto-Import (Key Vault / Let's Encrypt / manueller PEM-Import) und die EU↔China-Inhaltssynchronisation embedden jetzt ebenfalls automatisch, statt komplett ohne Embedding-Anbindung zu laufen
+
 ---
 
 ## Nächster Schritt

@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
-from fastapi import HTTPException
+from fastapi import BackgroundTasks, HTTPException
 from sqlalchemy.orm import Session
 
 from .config import get_settings
 from .database import FileAsset
+from .embedding_service import queue_reembed
 from .file_folder_service import folder_path, resolve_upload_folder
 from .graph_files_service import download_sharepoint_item
 from .storage import save_upload
@@ -35,6 +36,7 @@ async def import_sharepoint_item_as_file_asset(
     item_id: str,
     user: dict[str, Any],
     folder: str = "certificates",
+    background_tasks: Optional[BackgroundTasks] = None,
 ) -> tuple[FileAsset, dict[str, Any]]:
     settings = get_settings()
     downloaded = await download_sharepoint_item(item_id, settings)
@@ -62,4 +64,6 @@ async def import_sharepoint_item_as_file_asset(
     db.add(file_asset)
     db.commit()
     db.refresh(file_asset)
+    if background_tasks is not None:
+        queue_reembed(background_tasks, entity_type="file", entity_id=file_asset.id)
     return file_asset, downloaded

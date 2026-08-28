@@ -190,6 +190,7 @@ async def browse_files(
 @router.post("/import-from-sharepoint", status_code=201)
 async def import_file_from_sharepoint(
     payload: SharePointFileImportBody,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     user: dict = Depends(require_editor),
 ) -> dict:
@@ -198,6 +199,7 @@ async def import_file_from_sharepoint(
         item_id=payload.item_id,
         user=user,
         folder=payload.folder or "certificates",
+        background_tasks=background_tasks,
     )
     return {
         "file": _to_response(file_asset),

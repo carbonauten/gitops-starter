@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from .config import Settings, get_settings
 from .database import Certificate, FileAsset
+from .embedding_service import reembed_entity
 from .ssl_cert_parser import ParsedSslCertificate, parse_ssl_certificate, try_parse_ssl_certificate
 from .storage import read_upload, save_upload
 
@@ -97,6 +98,7 @@ def upsert_ssl_certificate(
             existing.escalate_email = escalate_email
         db.commit()
         db.refresh(existing)
+        reembed_entity(db, entity_type="certificate", entity_id=existing.id)
         return existing, False
 
     certificate = Certificate(
@@ -119,6 +121,7 @@ def upsert_ssl_certificate(
     db.add(certificate)
     db.commit()
     db.refresh(certificate)
+    reembed_entity(db, entity_type="certificate", entity_id=certificate.id)
     return certificate, True
 
 
