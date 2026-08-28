@@ -30,12 +30,16 @@ Auf **Veröffentlichen → Kanal-Konfiguration** (IT-Master) können Microsoft 3
    - `Mail.ReadWrite`
    - `Calendars.ReadWrite` (persönlicher Kalender im Kalender-Tab)
    - `Files.Read` (persönliches OneDrive unter Dateien)
+   - `GroupMember.Read.All` (eigene Gruppenmitgliedschaft beim Login, für Entra-Gruppen-Rollen-Mapping)
 4. **API permissions** → Microsoft Graph → **Application** (für **M365-Verwaltung**, IT-Master):
    - `User.Read.All`
    - `User.ReadWrite.All`
    - `Directory.Read.All`
    - `Organization.Read.All`
+   - `Group.Read.All` (Gruppenliste für den Mapping-Picker)
 5. **Grant admin consent** für die Organisation
+
+> Ohne `GroupMember.Read.All`-Consent scheitert nur die Gruppenabfrage beim Login (loggt eine Warnung) — der Login selbst funktioniert trotzdem, nur ohne automatischen Rollen-Sync aus Entra-Gruppen. Siehe [ROADMAP.md](./ROADMAP.md#sprint-o--entra-gruppen-mapping--lizenz-zuweisung--mvp).
 
 ### Railway Variablen
 

@@ -421,7 +421,8 @@
     "tabs": {
       "employees": "Employees",
       "invites": "Invites",
-      "departments": "Departments"
+      "departments": "Departments",
+      "groups": "Entra groups"
     },
     "create": {
       "title": "Add employee",
@@ -469,6 +470,25 @@
     "shopAccess": {
       "on": "Shop visible",
       "off": "Shop hidden"
+    },
+    "roleSource": {
+      "entraGroup": "via Entra group",
+      "entraGroupHint": "This role was auto-assigned from an Entra group membership. Changing it here switches to manual and stops future group sync for this user."
+    },
+    "groups": {
+      "hint": "Map Entra ID (Azure AD) security groups to a platform role. On sign-in, a user's group membership sets their role automatically — unless an IT master has set it manually here.",
+      "searchTitle": "Find an Entra group",
+      "searchPlaceholder": "Group name…",
+      "search": "Search",
+      "createTitle": "Add mapping",
+      "groupId": "Entra group ID",
+      "groupName": "Group name (optional)",
+      "add": "Add mapping",
+      "columns": {
+        "group": "Entra group"
+      },
+      "empty": "No group mappings yet.",
+      "confirmDelete": "Remove the mapping for {{name}}?"
     }
   },
   "invite": {
@@ -950,6 +970,9 @@
       "licenses": "Licenses",
       "status": "Sign-in",
       "actions": "Actions"
-    }
+    },
+    "assignLicense": "Assign",
+    "assignLicensePlaceholder": "Choose a license…",
+    "removeLicense": "Remove license"
   }
 }

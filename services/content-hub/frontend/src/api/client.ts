@@ -4,12 +4,21 @@ export type User = {
   name: string;
   email: string;
   role: "it_master" | "editor" | "certificate_manager" | "viewer";
+  role_source?: "manual" | "default" | "entra_group";
   department_id?: string | null;
   department_name?: string | null;
   language: string;
   is_active: boolean;
   can_manage_shop?: boolean;
   last_login_at?: string | null;
+};
+
+export type EntraGroupMapping = {
+  id: string;
+  entra_group_id: string;
+  entra_group_name: string;
+  role: User["role"];
+  created_at?: string | null;
 };
 
 export type Department = {
@@ -1541,6 +1550,8 @@ export async function fetchUsers(): Promise<User[]> {
   return payload.users;
 }
 
+export type M365LicenseRef = { sku_id: string; name: string };
+
 export type M365DirectoryUser = {
   id: string;
   display_name: string;
@@ -1551,8 +1562,19 @@ export type M365DirectoryUser = {
   account_enabled: boolean;
   user_type: string;
   licenses: string[];
+  license_skus: M365LicenseRef[];
   usage_location: string;
   created_at?: string | null;
+};
+
+export type M365Group = { id: string; display_name: string };
+
+export type M365License = {
+  sku_id: string;
+  name: string;
+  total: number;
+  consumed: number;
+  available: number;
 };
 
 export type M365DirectoryStatus = {
@@ -1605,6 +1627,35 @@ export async function resetM365Password(
     `/api/m365/users/${encodeURIComponent(userId)}/reset-password`,
     { method: "POST", body: JSON.stringify({}) },
   );
+}
+
+export async function fetchM365Groups(query = ""): Promise<M365Group[]> {
+  const params = new URLSearchParams();
+  if (query.trim()) params.set("q", query.trim());
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  const payload = await request<{ groups: M365Group[] }>(`/api/m365/groups${suffix}`);
+  return payload.groups;
+}
+
+export async function fetchM365Licenses(): Promise<M365License[]> {
+  const payload = await request<{ licenses: M365License[] }>("/api/m365/licenses");
+  return payload.licenses;
+}
+
+export async function assignM365License(userId: string, skuId: string): Promise<M365DirectoryUser> {
+  const payload = await request<{ user: M365DirectoryUser }>(
+    `/api/m365/users/${encodeURIComponent(userId)}/licenses`,
+    { method: "POST", body: JSON.stringify({ sku_id: skuId }) },
+  );
+  return payload.user;
+}
+
+export async function removeM365License(userId: string, skuId: string): Promise<M365DirectoryUser> {
+  const payload = await request<{ user: M365DirectoryUser }>(
+    `/api/m365/users/${encodeURIComponent(userId)}/licenses/${encodeURIComponent(skuId)}`,
+    { method: "DELETE" },
+  );
+  return payload.user;
 }
 
 export async function askM365Directory(
@@ -1713,6 +1764,27 @@ export async function updateDepartment(
 
 export async function deleteDepartment(departmentId: string): Promise<void> {
   await request<void>(`/api/departments/${departmentId}`, { method: "DELETE" });
+}
+
+export async function fetchGroupMappings(): Promise<EntraGroupMapping[]> {
+  const payload = await request<{ mappings: EntraGroupMapping[] }>("/api/user/group-mappings");
+  return payload.mappings;
+}
+
+export async function createGroupMapping(data: {
+  entra_group_id: string;
+  entra_group_name: string;
+  role: User["role"];
+}): Promise<EntraGroupMapping> {
+  const payload = await request<{ mapping: EntraGroupMapping }>("/api/user/group-mappings", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return payload.mapping;
+}
+
+export async function deleteGroupMapping(mappingId: string): Promise<void> {
+  await request<void>(`/api/user/group-mappings/${mappingId}`, { method: "DELETE" });
 }
 
 export async function fetchInvites(): Promise<UserInvite[]> {

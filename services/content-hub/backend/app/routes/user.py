@@ -6,10 +6,17 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request,
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
+from ..audit_service import log_audit
 from ..auth import get_session, set_session
 from ..config import get_settings
 from ..database import UserAccount, get_db
 from ..dependencies import get_current_user, require_it_master
+from ..entra_group_service import (
+    create_group_mapping,
+    delete_group_mapping,
+    list_group_mappings,
+    mapping_to_dict,
+)
 from ..i18n import normalize_language, translate
 from ..roles import ALL_ROLES
 from ..invite_service import (
@@ -71,6 +78,12 @@ class InviteCreate(BaseModel):
     email: str = Field(..., min_length=3, max_length=200)
     role: str = Field(..., description="it_master, editor, certificate_manager, or viewer")
     department_id: Optional[str] = None
+
+
+class GroupMappingCreate(BaseModel):
+    entra_group_id: str = Field(..., min_length=1, max_length=100)
+    entra_group_name: str = Field(default="", max_length=200)
+    role: str = Field(..., description="it_master, editor, certificate_manager, or viewer")
 
 
 @router.patch("/language")
@@ -251,4 +264,55 @@ def delete_invite(
     _admin: dict = Depends(require_it_master),
 ) -> Response:
     revoke_invite(db, invite_id)
+    return Response(status_code=204)
+
+
+@router.get("/group-mappings")
+def get_group_mappings(
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(require_it_master),
+) -> dict:
+    return {"mappings": list_group_mappings(db)}
+
+
+@router.post("/group-mappings")
+def create_group_mapping_route(
+    payload: GroupMappingCreate,
+    db: Session = Depends(get_db),
+    admin: dict = Depends(require_it_master),
+) -> dict:
+    if payload.role not in ALL_ROLES:
+        raise HTTPException(status_code=422, detail="validation")
+    mapping = create_group_mapping(
+        db,
+        entra_group_id=payload.entra_group_id,
+        entra_group_name=payload.entra_group_name,
+        role=payload.role,
+    )
+    log_audit(
+        db,
+        entity_type="entra_group_mapping",
+        entity_id=mapping.id,
+        action="create",
+        actor=admin,
+        details={"entra_group_id": mapping.entra_group_id, "role": mapping.role},
+    )
+    return {"mapping": mapping_to_dict(mapping)}
+
+
+@router.delete("/group-mappings/{mapping_id}")
+def delete_group_mapping_route(
+    mapping_id: str,
+    db: Session = Depends(get_db),
+    admin: dict = Depends(require_it_master),
+) -> Response:
+    delete_group_mapping(db, mapping_id)
+    log_audit(
+        db,
+        entity_type="entra_group_mapping",
+        entity_id=mapping_id,
+        action="delete",
+        actor=admin,
+        details={},
+    )
     return Response(status_code=204)

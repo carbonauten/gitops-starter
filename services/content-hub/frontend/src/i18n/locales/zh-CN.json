@@ -318,7 +318,8 @@
     "tabs": {
       "employees": "员工",
       "invites": "邀请",
-      "departments": "部门"
+      "departments": "部门",
+      "groups": "Entra 组"
     },
     "create": {
       "title": "添加员工",
@@ -366,6 +367,25 @@
     "shopAccess": {
       "on": "显示商店",
       "off": "隐藏商店"
+    },
+    "roleSource": {
+      "entraGroup": "来自 Entra 组",
+      "entraGroupHint": "该角色是根据 Entra 组成员身份自动分配的。在此更改后将转为手动设置，之后登录不会再自动覆盖。"
+    },
+    "groups": {
+      "hint": "将 Entra ID（Azure AD）安全组映射到平台角色。登录时会根据组成员身份自动设置角色——除非 IT 主管理员在此手动设置。",
+      "searchTitle": "查找 Entra 组",
+      "searchPlaceholder": "组名称…",
+      "search": "搜索",
+      "createTitle": "添加映射",
+      "groupId": "Entra 组 ID",
+      "groupName": "组名称（可选）",
+      "add": "添加映射",
+      "columns": {
+        "group": "Entra 组"
+      },
+      "empty": "暂无组映射。",
+      "confirmDelete": "移除 {{name}} 的映射？"
     }
   },
   "invite": {
@@ -950,6 +970,9 @@
       "licenses": "许可证",
       "status": "登录",
       "actions": "操作"
-    }
+    },
+    "assignLicense": "分配",
+    "assignLicensePlaceholder": "选择许可证…",
+    "removeLicense": "移除许可证"
   }
 }

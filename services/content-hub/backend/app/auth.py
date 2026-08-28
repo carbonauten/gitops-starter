@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import secrets
 from typing import Any
 from urllib.parse import urlencode
@@ -11,8 +12,15 @@ from itsdangerous import BadSignature, URLSafeSerializer
 from .config import Settings, get_settings
 from .i18n import normalize_language, translate
 
+logger = logging.getLogger(__name__)
+
 SESSION_COOKIE = "content_hub_session"
 SHOP_SESSION_COOKIE = "fuckco2_shop_session"
+
+# GroupMember.Read.All lets a signed-in user's own group memberships be read
+# (via /me/memberOf) for Entra-group-to-role mapping; it does not grant access
+# to other users' data.
+ENTRA_LOGIN_SCOPE = "openid profile email User.Read GroupMember.Read.All offline_access"
 
 
 def _serializer(settings: Settings) -> URLSafeSerializer:
@@ -97,7 +105,7 @@ def entra_authorize_url(state: str, settings: Settings | None = None) -> str:
         "response_type": "code",
         "redirect_uri": settings.effective_redirect_uri,
         "response_mode": "query",
-        "scope": "openid profile email User.Read offline_access",
+        "scope": ENTRA_LOGIN_SCOPE,
         "state": state,
     }
     return (
@@ -115,7 +123,7 @@ async def exchange_code_for_user(code: str, settings: Settings | None = None) ->
         "grant_type": "authorization_code",
         "code": code,
         "redirect_uri": settings.effective_redirect_uri,
-        "scope": "openid profile email User.Read offline_access",
+        "scope": ENTRA_LOGIN_SCOPE,
     }
 
     async with httpx.AsyncClient(timeout=20.0) as client:
@@ -128,14 +136,13 @@ async def exchange_code_for_user(code: str, settings: Settings | None = None) ->
         if not access_token:
             raise HTTPException(status_code=502, detail="token_exchange_failed")
 
-        profile_response = await client.get(
-            "https://graph.microsoft.com/v1.0/me",
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
+        headers = {"Authorization": f"Bearer {access_token}"}
+        profile_response = await client.get("https://graph.microsoft.com/v1.0/me", headers=headers)
         if profile_response.status_code != 200:
             raise HTTPException(status_code=502, detail="profile_fetch_failed")
 
         profile = profile_response.json()
+        group_ids = await _fetch_member_group_ids(client, headers)
 
     display_name = profile.get("displayName") or profile.get("userPrincipalName") or "User"
     email = profile.get("mail") or profile.get("userPrincipalName") or ""
@@ -145,7 +152,29 @@ async def exchange_code_for_user(code: str, settings: Settings | None = None) ->
         "name": display_name,
         "email": email,
         "language": get_settings().default_language,
+        "group_ids": group_ids,
     }
+
+
+async def _fetch_member_group_ids(client: httpx.AsyncClient, headers: dict[str, str]) -> list[str]:
+    """Best-effort read of the signed-in user's Entra group ids for role mapping.
+
+    Not fatal when it fails (missing consent, conditional access, throttling) —
+    the user still logs in, just without group-based role sync for this session.
+    """
+    try:
+        response = await client.get(
+            "https://graph.microsoft.com/v1.0/me/memberOf?$select=id",
+            headers=headers,
+        )
+        if response.status_code != 200:
+            logger.warning("memberOf lookup failed: %s %s", response.status_code, response.text[:300])
+            return []
+        payload = response.json()
+        return [str(item["id"]) for item in payload.get("value") or [] if item.get("id")]
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("memberOf lookup errored: %s", exc)
+        return []
 
 
 def mock_user(language: str | None = None) -> dict[str, Any]:

@@ -36,13 +36,22 @@ class AcceptInviteRequest(BaseModel):
     password: str = Field(..., min_length=8, max_length=200)
 
 
-def _login_user(db: Session, *, entra_id: str, email: str, name: str, language: str | None) -> dict:
+def _login_user(
+    db: Session,
+    *,
+    entra_id: str,
+    email: str,
+    name: str,
+    language: str | None,
+    group_ids: list[str] | None = None,
+) -> dict:
     user = upsert_user_from_login(
         db,
         entra_id=entra_id,
         email=email,
         name=name,
         language=language,
+        group_ids=group_ids,
     )
     return enrich_user_session(db, user)
 
@@ -100,6 +109,7 @@ async def callback(
         email=profile["email"],
         name=profile["name"],
         language=language or profile.get("language"),
+        group_ids=profile.get("group_ids"),
     )
     response = RedirectResponse(url="/", status_code=302)
     set_session(response, {"user": user})

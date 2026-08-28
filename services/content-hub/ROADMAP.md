@@ -77,6 +77,7 @@ flowchart LR
 | L | 2–4 Tage | ✅ Abgeschlossen (MVP) | Shop-Rechnungs-PDF |
 | M | 2–4 Tage | ✅ Abgeschlossen (MVP) | Web-Reputation-Crawler + Löschanträge |
 | N | 2–4 Tage | ✅ Abgeschlossen (MVP) | M365-Verwaltung + Ask Carbonauten |
+| O | 2–4 Tage | ✅ Abgeschlossen (MVP) | Entra-Gruppen-Mapping + Lizenz-Zuweisung |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -758,8 +759,34 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ---
 
+## Sprint O — Entra-Gruppen-Mapping & Lizenz-Zuweisung ✅ (MVP)
+
+**Ziel:** Rollenvergabe automatisieren und M365-Lizenzen direkt in der Plattform zuweisen, statt jeden Nutzer einzeln manuell einzustellen.
+
+### Deliverables
+
+- [x] Tabelle `entra_group_role_mappings`: Entra-Gruppen-ID → Plattform-Rolle, per UI konfigurierbar (kein Redeploy nötig)
+- [x] `role_source` pro Nutzer (`manual` / `default` / `entra_group`) — manuell gesetzte Rollen werden vom Gruppen-Sync nie überschrieben
+- [x] Login-Scope um `GroupMember.Read.All` erweitert; `/me/memberOf` wird beim Microsoft-Login abgefragt (best effort, blockiert Login nicht)
+- [x] Rollen-Priorität bei mehreren Gruppen: `it_master` > `certificate_manager` > `editor` > `viewer`
+- [x] UI: Tab **Entra-Gruppen** in der Mitarbeiter-Verwaltung (Gruppensuche über Graph, Mapping anlegen/löschen, Badge „via Entra-Gruppe“ auf synchronisierten Rollen)
+- [x] Lizenz-Zuweisung: `POST/DELETE /api/m365/users/{id}/licenses` (Graph `assignLicense`), Lizenz-Katalog mit Frei-/Belegt-Anzeige (`GET /api/m365/licenses`)
+- [x] UI: Lizenz-Chips mit Entfernen-Button + Zuweisen-Dropdown pro Benutzer in der M365-Verwaltung
+- [x] Mock-Verzeichnis für Gruppen + Lizenzkatalog wenn Graph nicht konfiguriert
+- [x] Audit-Log für Mapping-Änderungen und Lizenz-Zuweisung/-Entzug
+- [x] DE / EN / 中文 + Tests
+
+### Akzeptanzkriterien
+
+- [x] IT-Master ordnet eine Entra-Gruppe einer Rolle zu, ohne Code/Redeploy
+- [x] Mitglied einer gemappten Gruppe erhält beim nächsten Login automatisch die passende Rolle
+- [x] Eine vom IT-Master manuell gesetzte Rolle wird beim nächsten Login nicht durch Gruppen-Sync überschrieben
+- [x] IT-Master weist einem Nutzer eine Lizenz zu und entfernt sie wieder, jeweils sofort sichtbar in der Benutzerliste
+
+---
+
 ## Nächster Schritt
 
-Entra-Gruppen-Mapping oder Lizenz-Zuweisung in der M365-Verwaltung — nach PO-Priorität.
+Entra-Gruppen-Mapping für Rollen und Lizenz-Zuweisung sind live (Sprint O). Nächste Kandidaten aus dem Backlog: Kafka MirrorMaker 2 für China-Sync auf Produktionsskala, Load Balancer/Geo-Routing EU↔CN, oder Volltext-Diff/Restore für Versionierung — nach PO-Priorität.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
