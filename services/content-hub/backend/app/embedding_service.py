@@ -123,19 +123,23 @@ def _entity_text(db: Session, entity_type: str, entity_id: str) -> str | None:
 
 def embed_text_for_entity(db: Session, *, entity_type: str, entity_id: str, text: str) -> bool:
     """Compute and store the embedding for one entity. Skips the API call when the
-    text is unchanged since the last run. Returns True on a stored/kept embedding."""
+    text is unchanged AND it was embedded with the currently configured model —
+    switching AZURE_OPENAI_EMBEDDING_DEPLOYMENT / OPENAI_EMBEDDING_MODEL and
+    reindexing must actually refresh vectors, not just no-op on unchanged text.
+    Returns True on a stored/kept embedding."""
     settings = get_settings()
     clean = (text or "").strip()
     if not clean:
         return False
     text_hash = hashlib.sha256(clean.encode("utf-8")).hexdigest()
+    current_model = _embedding_model_name(settings)
 
     existing = db.scalar(
         select(ContentEmbedding).where(
             ContentEmbedding.entity_type == entity_type, ContentEmbedding.entity_id == entity_id
         )
     )
-    if existing and existing.text_hash == text_hash:
+    if existing and existing.text_hash == text_hash and existing.model == current_model:
         return True
 
     vector = generate_embedding(clean, settings=settings)
@@ -145,7 +149,7 @@ def embed_text_for_entity(db: Session, *, entity_type: str, entity_id: str, text
     if existing:
         existing.text_hash = text_hash
         existing.embedding = json.dumps(vector)
-        existing.model = _embedding_model_name(settings)
+        existing.model = current_model
         existing.updated_at = datetime.now(timezone.utc)
     else:
         db.add(
@@ -154,7 +158,7 @@ def embed_text_for_entity(db: Session, *, entity_type: str, entity_id: str, text
                 entity_id=entity_id,
                 text_hash=text_hash,
                 embedding=json.dumps(vector),
-                model=_embedding_model_name(settings),
+                model=current_model,
             )
         )
     db.commit()

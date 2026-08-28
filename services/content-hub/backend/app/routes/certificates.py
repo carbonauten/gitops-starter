@@ -355,6 +355,7 @@ async def sync_key_vault_certificates(
 @router.post("/import-from-sharepoint", status_code=201)
 async def import_certificate_from_sharepoint(
     payload: SharePointCertificateImport,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     user: dict = Depends(require_editor),
 ) -> dict:
@@ -363,6 +364,7 @@ async def import_certificate_from_sharepoint(
         item_id=payload.item_id,
         user=user,
         folder="certificates",
+        background_tasks=background_tasks,
     )
     original_name = file_asset.original_name
     today = date.today()
@@ -454,6 +456,7 @@ async def import_certificate_from_sharepoint(
             "mock": bool(downloaded.get("mock")),
         },
     )
+    queue_reembed(background_tasks, entity_type="certificate", entity_id=certificate.id)
     return {
         "certificate": _to_response(certificate, db),
         "file": {
