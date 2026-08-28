@@ -453,6 +453,12 @@
       "article": "Artikel",
       "file": "Dateien",
       "certificate": "Zertifikate"
+    },
+    "reindex": {
+      "title": "Suchindex",
+      "hint": "Aktualisiert die KI-Embeddings für bestehende Inhalte — z. B. nach dem ersten Aktivieren der KI oder einem Wechsel des Embedding-Modells. Neue und bearbeitete Inhalte werden automatisch indexiert.",
+      "action": "Suchindex aktualisieren",
+      "result": "{{article}} Artikel, {{certificate}} Zertifikate, {{file}} Dateien indexiert ({{failed}} fehlgeschlagen)."
     }
   },
   "calendar": {

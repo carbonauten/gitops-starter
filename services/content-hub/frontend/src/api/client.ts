@@ -183,6 +183,14 @@ export type SearchAskResponse = {
   ai_available: boolean;
 };
 
+export type ReindexCounts = {
+  article: number;
+  certificate: number;
+  file: number;
+  skipped: number;
+  failed: number;
+};
+
 export type Certificate = {
   id: string;
   name: string;
@@ -926,11 +934,19 @@ export async function askSearch(
 export async function fetchSearchSuggestions(): Promise<{
   suggestions: string[];
   ai_available: boolean;
+  embeddings_available?: boolean;
   assistant_name?: string;
 }> {
-  return request<{ suggestions: string[]; ai_available: boolean; assistant_name?: string }>(
+  return request<{ suggestions: string[]; ai_available: boolean; embeddings_available?: boolean; assistant_name?: string }>(
     "/api/search/suggestions",
   );
+}
+
+export async function reindexSearch(): Promise<{ counts: ReindexCounts; embeddings_available: boolean }> {
+  return request<{ counts: ReindexCounts; embeddings_available: boolean }>("/api/search/reindex", {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
 }
 
 export type AiStatus = {

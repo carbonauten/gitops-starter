@@ -1442,6 +1442,22 @@ a {
   margin-top: 0.5rem;
 }
 
+.search-reindex-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.search-reindex-panel .search-panel-label {
+  margin-bottom: 0.15rem;
+}
+
 .search-panel-link {
   color: var(--primary-dark);
   font-weight: 600;

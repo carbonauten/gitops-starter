@@ -133,8 +133,10 @@ class Settings(BaseSettings):
     azure_openai_endpoint: str = ""
     azure_openai_api_key: str = ""
     azure_openai_deployment: str = ""
+    azure_openai_embedding_deployment: str = ""
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
+    openai_embedding_model: str = "text-embedding-3-small"
 
     reputation_crawl_enabled: bool = True
     reputation_crawl_interval_hours: int = 6
@@ -279,6 +281,17 @@ class Settings(BaseSettings):
     def ai_search_configured(self) -> bool:
         if self.azure_openai_endpoint.strip() and self.azure_openai_api_key.strip():
             return bool(self.azure_openai_deployment.strip())
+        return bool(self.openai_api_key.strip())
+
+    @property
+    def embeddings_configured(self) -> bool:
+        """Whether a text-embedding deployment/model is available for semantic search.
+
+        Separate from ai_search_configured because Azure OpenAI needs its own
+        embedding deployment (chat and embedding models are deployed independently).
+        """
+        if self.azure_openai_endpoint.strip() and self.azure_openai_api_key.strip():
+            return bool(self.azure_openai_embedding_deployment.strip())
         return bool(self.openai_api_key.strip())
 
     @property

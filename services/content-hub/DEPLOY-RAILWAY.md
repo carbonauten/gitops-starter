@@ -125,6 +125,16 @@ Danach verfügbar:
 - **Übersetzen** DE / EN / 中文 im Artikel-Editor
 - **Zusammenfassen** im Artikel-Editor
 
+Für **semantische Suche** (findet Inhalte auch bei anderer Wortwahl/Sprache als im Original, siehe [ROADMAP.md](./ROADMAP.md#sprint-p--semantische-suche-embeddings--mvp)) zusätzlich:
+
+| Variable | Wert | Beschreibung |
+|----------|------|--------------|
+| `AZURE_OPENAI_EMBEDDING_DEPLOYMENT` | z. B. `text-embedding-3-small` | eigenes Embedding-Deployment, getrennt vom Chat-Deployment |
+
+**Alternative (OpenAI direkt):** `OPENAI_API_KEY` genügt bereits (s. o.); optional `OPENAI_EMBEDDING_MODEL` (Default `text-embedding-3-small`).
+
+Nach dem Setzen einmal als IT-Master auf **Suche → Suchindex aktualisieren** klicken, um bestehende Inhalte nachzuindexieren — neue/bearbeitete Inhalte werden danach automatisch indexiert.
+
 **SMTP (nur Railway Pro oder anderer Host):**
 
 | Variable | Wert |

@@ -288,6 +288,30 @@ class AuditLog(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class ContentEmbedding(Base):
+    """Cached text embedding for one article/file/certificate, used for semantic search.
+
+    text_hash lets embed_text_for_entity() skip re-calling the embeddings API when the
+    source text hasn't changed since the last index run.
+    """
+
+    __tablename__ = "content_embeddings"
+    __table_args__ = (UniqueConstraint("entity_type", "entity_id", name="uq_content_embeddings_entity"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    entity_type: Mapped[str] = mapped_column(String(20), index=True)
+    entity_id: Mapped[str] = mapped_column(String(36), index=True)
+    text_hash: Mapped[str] = mapped_column(String(64))
+    model: Mapped[str] = mapped_column(String(100), default="")
+    embedding: Mapped[str] = mapped_column(Text)  # JSON-encoded list[float]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
 class ContentRevision(Base):
     __tablename__ = "content_revisions"
 

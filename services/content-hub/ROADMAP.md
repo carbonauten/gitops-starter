@@ -78,6 +78,7 @@ flowchart LR
 | M | 2–4 Tage | ✅ Abgeschlossen (MVP) | Web-Reputation-Crawler + Löschanträge |
 | N | 2–4 Tage | ✅ Abgeschlossen (MVP) | M365-Verwaltung + Ask Carbonauten |
 | O | 2–4 Tage | ✅ Abgeschlossen (MVP) | Entra-Gruppen-Mapping + Lizenz-Zuweisung |
+| P | 2–4 Tage | ✅ Abgeschlossen (MVP) | Semantische Suche (Embeddings) |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -785,8 +786,41 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 ---
 
+## Sprint P — Semantische Suche (Embeddings) ✅ (MVP)
+
+**Ziel:** Ask Carbonauten findet die richtigen Quellen auch bei anderer Wortwahl oder Sprache als im Originaltext — Keyword-Suche (`ILIKE` + Wortstamm-Varianten) trifft das nicht.
+
+### Deliverables
+
+- [x] Tabelle `content_embeddings`: gecachter Text-Embedding-Vektor pro Artikel/Datei/Zertifikat (JSON in Text-Spalte, `text_hash` verhindert unnötige Re-Embeddings)
+- [x] `embedding_service.py`: Embedding-Erzeugung über Azure OpenAI (eigenes Embedding-Deployment) oder OpenAI, Cosine-Similarity in reinem Python (kein pgvector/numpy nötig)
+- [x] Automatisches Nach-Indexieren im Hintergrund bei Artikel-/Zertifikat-Erstellung & -Änderung sowie Datei-Upload; Embedding wird beim Löschen mit entfernt
+- [x] Semantische Treffer werden mit der Keyword-Suche gemischt (`merge_results`) — sowohl in `/api/search` als auch im RAG-Kontext von `/api/search/ask`, Treffer aus beiden Wegen werden geboostet
+- [x] `POST /api/search/reindex` (nur IT-Master): einmaliger Backfill für bestehende Inhalte bzw. nach Modellwechsel
+- [x] UI: "Suchindex"-Panel auf der Such-Seite (nur IT-Master, nur sichtbar wenn Embeddings konfiguriert sind)
+- [x] `ai_status` und `search/suggestions` melden `embeddings_available` separat von `ai_available` (Azure braucht ein eigenes Embedding-Deployment neben dem Chat-Deployment)
+- [x] Tests (Cosine-Similarity, Hash-basiertes Skip-Re-Embedding, Reindex-Endpoint, End-to-End: Paraphrase ohne Keyword-Überlappung wird gefunden)
+
+### Akzeptanzkriterien
+
+- [x] Eine Frage ohne wörtliche Übereinstimmung mit Titel/Inhalt findet den passenden Artikel, wenn Embeddings konfiguriert sind
+- [x] Ohne konfiguriertes Embedding-Modell verhält sich die Suche exakt wie zuvor (reine Keyword-Suche, kein Fehler)
+- [x] Unverändertes Artikel/Zertifikat wird beim Speichern nicht erneut ans Embedding-API geschickt (Hash-Vergleich)
+- [x] IT-Master kann den Suchindex manuell aktualisieren und sieht die Anzahl indexierter/fehlgeschlagener Einträge
+
+### Konfiguration
+
+| Variable | Zweck |
+|----------|-------|
+| `AZURE_OPENAI_EMBEDDING_DEPLOYMENT` | Azure-Embedding-Deployment (separat vom Chat-Deployment `AZURE_OPENAI_DEPLOYMENT`) |
+| `OPENAI_EMBEDDING_MODEL` | OpenAI-Embedding-Modell, Default `text-embedding-3-small` |
+
+Nach dem ersten Setzen dieser Variablen: einmal auf **Suche → Suchindex aktualisieren** klicken (IT-Master), um bestehende Inhalte zu indexieren.
+
+---
+
 ## Nächster Schritt
 
-Entra-Gruppen-Mapping für Rollen und Lizenz-Zuweisung sind live (Sprint O). Nächste Kandidaten aus dem Backlog: Kafka MirrorMaker 2 für China-Sync auf Produktionsskala, Load Balancer/Geo-Routing EU↔CN, oder Volltext-Diff/Restore für Versionierung — nach PO-Priorität.
+Semantische Suche ist live (Sprint P). Nächste Kandidaten aus dem Backlog: echtes LLM-Function-Calling für die M365-Verwaltung statt Regex-Intents, KI-Schreibassistenz im Editor (Ton/Stil, Entwurf aus Stichpunkten), Kafka MirrorMaker 2 für China-Sync, oder Load Balancer/Geo-Routing EU↔CN — nach PO-Priorität.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.

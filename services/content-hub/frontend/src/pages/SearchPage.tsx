@@ -2,12 +2,13 @@ import { FormEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import type { SearchAskResponse, SearchResult, SearchResultType } from "../api/client";
+import { reindexSearch, type ReindexCounts, type SearchAskResponse, type SearchResult, type SearchResultType } from "../api/client";
 import { EmptyState } from "../components/EmptyState";
 import { GlobalSearch } from "../components/GlobalSearch";
 import { LoadingState } from "../components/LoadingState";
 import { SearchResultList } from "../components/SearchResultList";
 import { navigateToSearchResult, useDebouncedSearch, useSearchSuggestions } from "../hooks/useSearch";
+import { usePermissions } from "../hooks/usePermissions";
 
 const FILTERS: Array<SearchResultType | ""> = ["", "article", "file", "certificate"];
 
@@ -19,12 +20,16 @@ export function SearchPage() {
   const initialMode = searchParams.get("mode") === "ask" ? "ask" : "search";
 
   const { query, setQuery, type, setType, data, loading, error, ask } = useDebouncedSearch();
-  const { suggestions, aiAvailable } = useSearchSuggestions();
+  const { suggestions, aiAvailable, embeddingsAvailable } = useSearchSuggestions();
+  const { isItMaster } = usePermissions();
   const [mode, setMode] = useState<"search" | "ask">(initialMode);
   const [askInput, setAskInput] = useState(initialQuery);
   const [askLoading, setAskLoading] = useState(false);
   const [askError, setAskError] = useState("");
   const [askResponse, setAskResponse] = useState<SearchAskResponse | null>(null);
+  const [reindexBusy, setReindexBusy] = useState(false);
+  const [reindexResult, setReindexResult] = useState<ReindexCounts | null>(null);
+  const [reindexError, setReindexError] = useState("");
 
   useEffect(() => {
     setQuery(initialQuery);
@@ -57,6 +62,20 @@ export function SearchPage() {
       setAskResponse(null);
     } finally {
       setAskLoading(false);
+    }
+  }
+
+  async function handleReindex() {
+    setReindexBusy(true);
+    setReindexError("");
+    setReindexResult(null);
+    try {
+      const response = await reindexSearch();
+      setReindexResult(response.counts);
+    } catch (err) {
+      setReindexError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setReindexBusy(false);
     }
   }
 
@@ -242,6 +261,29 @@ export function SearchPage() {
             <p className="stat-label">{t("nav.certificates")}</p>
             <p className="stat-value">{data.counts.certificate ?? 0}</p>
           </article>
+        </div>
+      ) : null}
+
+      {isItMaster && embeddingsAvailable ? (
+        <div className="search-reindex-panel">
+          <div>
+            <p className="search-panel-label">{t("search.reindex.title")}</p>
+            <p className="muted">{t("search.reindex.hint")}</p>
+          </div>
+          <button type="button" className="ghost-button" disabled={reindexBusy} onClick={() => void handleReindex()}>
+            {reindexBusy ? t("common.loading") : t("search.reindex.action")}
+          </button>
+          {reindexResult ? (
+            <p className="muted">
+              {t("search.reindex.result", {
+                article: reindexResult.article,
+                certificate: reindexResult.certificate,
+                file: reindexResult.file,
+                failed: reindexResult.failed,
+              })}
+            </p>
+          ) : null}
+          {reindexError ? <p className="error-text">{reindexError}</p> : null}
         </div>
       ) : null}
     </section>

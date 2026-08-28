@@ -244,6 +244,45 @@ def search_content(
     return results[:limit], counts
 
 
+def merge_results(
+    primary: list[SearchResult],
+    secondary: list[SearchResult],
+    *,
+    limit: int = 30,
+) -> list[SearchResult]:
+    """Union keyword results with semantic-search results, deduplicated by (type, id).
+
+    A hit found by both keyword and semantic search gets a relevance boost — it's
+    the strongest signal we have that it's actually what the user wants.
+    """
+    by_key: dict[tuple[str, str], SearchResult] = {(item.type, item.id): item for item in primary}
+    for item in secondary:
+        key = (item.type, item.id)
+        existing = by_key.get(key)
+        if existing:
+            existing.relevance = (existing.relevance or 0.0) + (item.relevance or 0.0) * 0.25
+        else:
+            by_key[key] = item
+
+    merged = list(by_key.values())
+    merged.sort(
+        key=lambda entry: (
+            entry.relevance or 0.0,
+            entry.updated_at if isinstance(entry.updated_at, datetime) else datetime.min,
+        ),
+        reverse=True,
+    )
+    return merged[:limit]
+
+
+def count_by_type(results: list[SearchResult]) -> dict[str, int]:
+    return {
+        "article": sum(1 for item in results if item.type == "article"),
+        "file": sum(1 for item in results if item.type == "file"),
+        "certificate": sum(1 for item in results if item.type == "certificate"),
+    }
+
+
 def list_recent_certificates(db: Session, *, limit: int = 12) -> list[SearchResult]:
     certificates = db.scalars(
         select(Certificate).order_by(Certificate.updated_at.desc()).limit(limit)
