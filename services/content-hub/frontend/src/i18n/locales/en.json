@@ -353,6 +353,12 @@
       "article": "Articles",
       "file": "Files",
       "certificate": "Certificates"
+    },
+    "reindex": {
+      "title": "Search index",
+      "hint": "Refresh semantic-search embeddings for existing content — e.g. after first enabling AI, or after switching embedding models. New and edited content is embedded automatically.",
+      "action": "Update search index",
+      "result": "Indexed {{article}} articles, {{certificate}} certificates, {{file}} files ({{failed}} failed)."
     }
   },
   "calendar": {

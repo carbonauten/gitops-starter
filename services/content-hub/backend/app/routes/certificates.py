@@ -6,7 +6,7 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Query, Response, UploadFile
 from fastapi.responses import StreamingResponse
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
@@ -32,6 +32,7 @@ from ..certificate_service import (
 from ..certificates import compute_certificate_status, days_until_expiry
 from ..database import Certificate, FileAsset, get_db
 from ..dependencies import get_current_user, require_editor
+from ..embedding_service import delete_embedding, queue_reembed
 from ..schemas import (
     CertificateChildSummary,
     CertificateCreate,
@@ -473,6 +474,7 @@ async def import_certificate_from_sharepoint(
 @router.post("", status_code=201)
 def create_certificate(
     payload: CertificateCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     user: dict = Depends(require_editor),
 ) -> dict:
@@ -535,6 +537,7 @@ def create_certificate(
         actor=user,
         details={"name": certificate.name, "parent_id": certificate.parent_id},
     )
+    queue_reembed(background_tasks, entity_type="certificate", entity_id=certificate.id)
     return {"certificate": _to_response(certificate, db)}
 
 
@@ -554,6 +557,7 @@ def get_certificate(
 def update_certificate(
     certificate_id: str,
     payload: CertificateUpdate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     user: dict = Depends(require_editor),
 ) -> dict:
@@ -613,6 +617,7 @@ def update_certificate(
         actor=user,
         details={"name": certificate.name, "parent_id": certificate.parent_id},
     )
+    queue_reembed(background_tasks, entity_type="certificate", entity_id=certificate.id)
     return {"certificate": _to_response(certificate, db)}
 
 
@@ -637,4 +642,5 @@ def delete_certificate(
     )
     db.delete(certificate)
     db.commit()
+    delete_embedding(db, entity_type="certificate", entity_id=certificate_id)
     return Response(status_code=204)

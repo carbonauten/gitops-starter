@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal, Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, Response, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import or_, select
@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from ..config import get_settings
 from ..database import FileAsset, get_db
 from ..dependencies import get_current_user, require_editor
+from ..embedding_service import delete_embedding, queue_reembed
 from ..file_folder_service import (
     build_folder_tree,
     create_folder,
@@ -275,6 +276,7 @@ def public_file_preview(
 
 @router.post("/upload", status_code=201)
 async def upload_file(
+    background_tasks: BackgroundTasks,
     upload: UploadFile = File(...),
     folder: str = Form(default="general"),
     folder_id: Optional[str] = Form(default=None),
@@ -306,6 +308,7 @@ async def upload_file(
     db.add(file_asset)
     db.commit()
     db.refresh(file_asset)
+    queue_reembed(background_tasks, entity_type="file", entity_id=file_asset.id)
     return {"file": _to_response(file_asset)}
 
 
@@ -359,4 +362,5 @@ def delete_file(
     delete_upload(file_asset.storage_path)
     db.delete(file_asset)
     db.commit()
+    delete_embedding(db, entity_type="file", entity_id=file_id)
     return Response(status_code=204)

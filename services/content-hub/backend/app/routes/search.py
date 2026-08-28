@@ -7,18 +7,22 @@ from sqlalchemy.orm import Session
 
 from ..audit_service import log_audit
 from ..ai_service import ai_configured, expand_search_query, generate_search_answer, suggest_follow_up_queries
-from ..dependencies import get_current_user
+from ..config import get_settings
+from ..dependencies import get_current_user, require_it_master
 from ..database import get_db
+from ..embedding_service import reindex_all, semantic_search_content
 from ..m365_ai_service import handle_directory_question, looks_like_m365_admin_question
 from ..roles import ROLE_IT_MASTER
 from ..schemas import SearchAskRequest
 from ..search_service import (
     build_keyword_answer,
     build_suggestions,
+    count_by_type,
     enrich_context_for_ask,
     extract_keywords,
     list_recent_certificates,
     looks_like_certificate_inventory,
+    merge_results,
     search_content,
 )
 
@@ -34,6 +38,11 @@ def search(
     _user: dict = Depends(get_current_user),
 ) -> dict:
     results, counts = search_content(db, q, result_type=type, limit=limit)
+    if get_settings().embeddings_configured:
+        semantic_results = semantic_search_content(db, q, result_type=type, limit=limit)
+        if semantic_results:
+            results = merge_results(results, semantic_results, limit=limit)
+            counts = count_by_type(results)
     return {
         "query": q,
         "results": results,
@@ -99,6 +108,15 @@ async def ask_search(
         limit=12,
     )
 
+    # Semantic search catches paraphrases keyword matching misses (different wording,
+    # a question in a different language than the source article) — merge it in before
+    # building the RAG context so Ask Carbonauten's answer draws on those sources too.
+    if get_settings().embeddings_configured:
+        semantic_results = semantic_search_content(db, payload.question, result_type=payload.type, limit=12)
+        if semantic_results:
+            results = merge_results(results, semantic_results, limit=12)
+            counts = count_by_type(results)
+
     # Broad questions like "welche Zertifikate gibt es?" should list certificates
     # even when the word "Zertifikat" is not part of a certificate name.
     if not results and looks_like_certificate_inventory(payload.question) and payload.type in (None, "certificate"):
@@ -151,8 +169,24 @@ def search_suggestions(
     return {
         "suggestions": build_suggestions(db),
         "ai_available": ai_configured(),
+        "embeddings_available": get_settings().embeddings_configured,
         "assistant_name": "Ask Carbonauten",
     }
+
+
+@router.post("/reindex")
+def reindex_search(
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(require_it_master),
+) -> dict:
+    """Backfill/refresh semantic-search embeddings for existing content.
+
+    New and edited content is embedded automatically in the background; this manual
+    trigger is for the one-time backfill after configuring embeddings, or after
+    switching to a different embedding model/deployment.
+    """
+    counts = reindex_all(db)
+    return {"counts": counts, "embeddings_available": get_settings().embeddings_configured}
 
 
 @router.get("/folders")

@@ -13,6 +13,7 @@ import {
 export function useSearchSuggestions() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [aiAvailable, setAiAvailable] = useState(false);
+  const [embeddingsAvailable, setEmbeddingsAvailable] = useState(false);
 
   useEffect(() => {
     void (async () => {
@@ -20,13 +21,14 @@ export function useSearchSuggestions() {
         const payload = await fetchSearchSuggestions();
         setSuggestions(payload.suggestions);
         setAiAvailable(payload.ai_available);
+        setEmbeddingsAvailable(Boolean(payload.embeddings_available));
       } catch {
         setSuggestions([]);
       }
     })();
   }, []);
 
-  return { suggestions, aiAvailable };
+  return { suggestions, aiAvailable, embeddingsAvailable };
 }
 
 export function useDebouncedSearch(delayMs = 300) {

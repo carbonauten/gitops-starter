@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, Response
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
@@ -10,6 +10,7 @@ from ..audit_service import log_audit
 from ..version_service import article_snapshot, record_revision
 from ..dependencies import get_current_user, require_editor
 from ..database import Article, get_db
+from ..embedding_service import delete_embedding, queue_reembed
 from ..i18n import normalize_language
 from ..roles import ARTICLE_STATUSES, EDITABLE_ARTICLE_STATUSES
 from ..schemas import ArticleCreate, ArticleResponse, ArticleUpdate
@@ -70,6 +71,7 @@ def list_articles(
 @router.post("", status_code=201)
 def create_article(
     payload: ArticleCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     user: dict = Depends(require_editor),
 ) -> dict:
@@ -101,6 +103,7 @@ def create_article(
         actor=user,
         details={"title": article.title, "status": article.status},
     )
+    queue_reembed(background_tasks, entity_type="article", entity_id=article.id)
     return {"article": _to_response(article)}
 
 
@@ -120,6 +123,7 @@ def get_article(
 def update_article(
     article_id: str,
     payload: ArticleUpdate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     user: dict = Depends(require_editor),
 ) -> dict:
@@ -153,6 +157,8 @@ def update_article(
         actor=user,
         details={"title": article.title, "status": article.status},
     )
+    if payload.title is not None or payload.content is not None:
+        queue_reembed(background_tasks, entity_type="article", entity_id=article.id)
     return {"article": _to_response(article)}
 
 
@@ -175,4 +181,5 @@ def delete_article(
     )
     db.delete(article)
     db.commit()
+    delete_embedding(db, entity_type="article", entity_id=article_id)
     return Response(status_code=204)

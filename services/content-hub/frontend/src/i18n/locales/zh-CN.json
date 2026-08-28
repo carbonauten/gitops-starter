@@ -453,6 +453,12 @@
       "article": "文章",
       "file": "文件",
       "certificate": "证书"
+    },
+    "reindex": {
+      "title": "搜索索引",
+      "hint": "为现有内容刷新语义搜索的向量索引——例如首次启用 AI 后，或更换了向量模型之后。新建和编辑的内容会自动建立索引。",
+      "action": "更新搜索索引",
+      "result": "已索引 {{article}} 篇文章、{{certificate}} 个证书、{{file}} 个文件（{{failed}} 个失败）。"
     }
   },
   "calendar": {

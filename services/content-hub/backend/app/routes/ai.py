@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from ..ai_service import ai_configured, summarize_article, translate_article
+from ..config import get_settings
 from ..dependencies import get_current_user
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
@@ -31,9 +32,13 @@ def _require_ai() -> None:
 
 @router.get("/status")
 def ai_status(_user: dict = Depends(get_current_user)) -> dict:
+    features = ["search_ask", "translate", "summarize", "m365_directory"]
+    if get_settings().embeddings_configured:
+        features.append("semantic_search")
     return {
         "available": ai_configured(),
-        "features": ["search_ask", "translate", "summarize", "m365_directory"],
+        "embeddings_available": get_settings().embeddings_configured,
+        "features": features,
         "assistant_name": "Ask Carbonauten",
     }
 
