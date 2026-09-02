@@ -731,7 +731,9 @@
       "priceDesc": "Preis absteigend",
       "name": "Name A–Z"
     },
-    "relatedTitle": "Das könnte Ihnen auch gefallen"
+    "relatedTitle": "Das könnte Ihnen auch gefallen",
+    "freeShippingRemaining": "Noch {{amount}} bis zum kostenlosen Versand",
+    "freeShippingReached": "Kostenloser Versand freigeschaltet!"
   },
   "orders": {
     "title": "Shop-Bestellungen",

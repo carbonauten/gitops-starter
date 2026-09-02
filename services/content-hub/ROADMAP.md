@@ -538,6 +538,13 @@ flowchart LR
 - [x] "Ausverkauft"-Ribbon direkt auf dem Produktbild (bisher nur im Button erkennbar)
 - [x] DE / EN / 中文
 
+### UI-Erweiterung Teil 2 — Warenkorb & Checkout (September 2026)
+
+- [x] Warenkorb: Produktbild pro Zeile, klickbarer Produktname, einheitlicher Mengen-Stepper (statt einfachem Zahlenfeld)
+- [x] Gratisversand-Hinweis mit Fortschrittsbalken ("Noch X € bis zum kostenlosen Versand") auf Basis von `SHOP_FREE_SHIPPING_FROM_CENTS`
+- [x] Checkout: echte Bestellübersicht (Artikelbilder, Menge, Zwischensumme, Versand, Gesamt) neben dem Formular statt nur "€X · N Artikel" vor dem Absenden-Button
+- [x] DE / EN / 中文
+
 ---
 
 ## Backlog (Sprint 8+)

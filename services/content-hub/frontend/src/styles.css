@@ -3041,7 +3041,7 @@ a {
 
 .shop-cart-line {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 64px 1fr auto auto;
   gap: 1rem;
   align-items: center;
   padding: 1rem;
@@ -3049,6 +3049,39 @@ a {
   border-radius: 16px;
   background: rgba(26, 35, 32, 0.75);
   margin-bottom: 0.75rem;
+}
+
+.shop-cart-line-media {
+  display: block;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #22302b;
+}
+
+.shop-cart-line-media img,
+.shop-cart-line-media .shop-card-placeholder {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.shop-cart-line-info {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.shop-cart-line-name {
+  color: var(--shop-ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.shop-cart-line-name:hover {
+  color: var(--shop-accent);
 }
 
 .shop-cart-controls {
@@ -3075,6 +3108,148 @@ a {
   background: rgba(26, 35, 32, 0.88);
   display: grid;
   gap: 0.45rem;
+}
+
+.shop-shipping-nudge {
+  margin: 0 0 1.1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--shop-line);
+  border-radius: 14px;
+  background: rgba(26, 35, 32, 0.75);
+}
+
+.shop-shipping-nudge p {
+  margin: 0 0 0.5rem;
+  color: var(--shop-muted);
+  font-size: 0.9rem;
+}
+
+.shop-shipping-nudge-done {
+  margin: 0 0 1.1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(198, 245, 90, 0.35);
+  background: rgba(198, 245, 90, 0.1);
+  color: var(--shop-accent);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.shop-shipping-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(11, 16, 14, 0.6);
+  overflow: hidden;
+}
+
+.shop-shipping-progress-fill {
+  height: 100%;
+  background: var(--shop-accent);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.shop-checkout-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 1fr);
+  gap: 1.75rem;
+  align-items: start;
+}
+
+.shop-order-summary {
+  position: sticky;
+  top: 1.5rem;
+  padding: 1.25rem;
+  border: 1px solid var(--shop-line);
+  border-radius: 18px;
+  background: rgba(26, 35, 32, 0.88);
+}
+
+.shop-order-summary h2 {
+  margin: 0 0 1rem;
+  font-family: var(--shop-font-display);
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+}
+
+.shop-summary-lines {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.shop-summary-line {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  gap: 0.65rem;
+  align-items: center;
+}
+
+.shop-summary-line-media {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #22302b;
+}
+
+.shop-summary-line-media img,
+.shop-summary-line-media .shop-card-placeholder {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.shop-summary-line-qty {
+  position: absolute;
+  bottom: -0.3rem;
+  right: -0.3rem;
+  min-width: 1.2rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: var(--shop-accent);
+  color: var(--shop-accent-ink);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.2rem;
+}
+
+.shop-summary-line-body {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.88rem;
+  min-width: 0;
+}
+
+.shop-summary-line-body span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shop-summary-totals {
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--shop-line);
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--shop-muted);
+}
+
+.shop-summary-total {
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--shop-line);
+  color: var(--shop-ink);
+  font-size: 1.05rem;
+}
+
+.shop-summary-credits {
+  margin: 1rem 0 0;
+  font-size: 0.85rem;
 }
 
 .shop-payment-methods {
@@ -3313,6 +3488,15 @@ a {
 
   .shop-detail-grid {
     grid-template-columns: 1fr;
+  }
+
+  .shop-checkout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .shop-order-summary {
+    position: static;
+    order: -1;
   }
 
   .shop-topbar-actions {
