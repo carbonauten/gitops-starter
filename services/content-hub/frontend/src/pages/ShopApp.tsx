@@ -99,6 +99,57 @@ function ShopCo2Badge({ credits }: { credits: number }) {
   );
 }
 
+function ShopFreeShippingNudge({
+  subtotalCents,
+  freeFromCents,
+  currency,
+}: {
+  subtotalCents: number;
+  freeFromCents: number;
+  currency: string;
+}) {
+  const { t, i18n } = useTranslation();
+  if (!freeFromCents || freeFromCents <= 0) return null;
+
+  if (subtotalCents >= freeFromCents) {
+    return (
+      <p className="shop-shipping-nudge shop-shipping-nudge-done">
+        <span aria-hidden="true">🎉</span> {t("shop.freeShippingReached")}
+      </p>
+    );
+  }
+
+  const remaining = freeFromCents - subtotalCents;
+  const progress = Math.min(100, Math.round((subtotalCents / freeFromCents) * 100));
+  return (
+    <div className="shop-shipping-nudge">
+      <p>
+        {t("shop.freeShippingRemaining", {
+          amount: formatMoney(remaining, currency, i18n.language),
+        })}
+      </p>
+      <div className="shop-shipping-progress" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
+        <div className="shop-shipping-progress-fill" style={{ width: `${progress}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function ShopOrderSummaryLine({ item, i18n }: { item: { name: string; slug: string; image_url?: string | null; price_cents: number; currency: string; quantity: number }; i18n: { language: string } }) {
+  return (
+    <div className="shop-summary-line">
+      <div className="shop-summary-line-media">
+        {item.image_url ? <img src={item.image_url} alt="" /> : <div className="shop-card-placeholder" />}
+        <span className="shop-summary-line-qty">{item.quantity}</span>
+      </div>
+      <div className="shop-summary-line-body">
+        <span>{item.name}</span>
+        <strong>{formatMoney(item.price_cents * item.quantity, item.currency, i18n.language)}</strong>
+      </div>
+    </div>
+  );
+}
+
 function ShopQtyStepper({
   value,
   onChange,
@@ -544,19 +595,27 @@ function ShopCartPage({ config, base }: { config: ShopConfig | null; base: strin
   return (
     <section className="shop-cart">
       <h1>{t("shop.cart")}</h1>
+      <ShopFreeShippingNudge
+        subtotalCents={cart.subtotalCents}
+        freeFromCents={config?.free_shipping_from_cents || 0}
+        currency={config?.currency || "EUR"}
+      />
       <div className="list-stack">
         {cart.items.map((item) => (
           <article key={item.product_id} className="list-card shop-cart-line">
-            <div>
-              <strong>{item.name}</strong>
+            <Link to={`${base}/p/${item.slug}`} className="shop-cart-line-media">
+              {item.image_url ? <img src={item.image_url} alt="" /> : <div className="shop-card-placeholder" />}
+            </Link>
+            <div className="shop-cart-line-info">
+              <Link to={`${base}/p/${item.slug}`} className="shop-cart-line-name">
+                {item.name}
+              </Link>
               <p className="muted">{formatMoney(item.price_cents, item.currency, i18n.language)}</p>
             </div>
             <div className="shop-cart-controls">
-              <input
-                type="number"
-                min={1}
+              <ShopQtyStepper
                 value={item.quantity}
-                onChange={(event) => cart.setQuantity(item.product_id, Math.max(1, Number(event.target.value) || 1))}
+                onChange={(next) => cart.setQuantity(item.product_id, next)}
               />
               <button type="button" className="shop-btn shop-btn-ghost" onClick={() => cart.removeItem(item.product_id)}>
                 {t("shop.remove")}
@@ -681,25 +740,23 @@ function ShopCheckoutPage({ config, base }: { config: ShopConfig | null; base: s
     }
   }
 
+  const shipping = useMemo(() => {
+    const fee = config?.shipping_cents || 0;
+    const freeFrom = config?.free_shipping_from_cents || 0;
+    if (freeFrom > 0 && cart.subtotalCents >= freeFrom) return 0;
+    return fee;
+  }, [config, cart.subtotalCents]);
+
   const creditsPreview =
     customer && config?.co2_credits_per_euro
-      ? Math.floor((cart.subtotalCents + (config.shipping_cents || 0)) / 100) * (config.co2_credits_per_euro || 0)
+      ? Math.floor((cart.subtotalCents + shipping) / 100) * (config.co2_credits_per_euro || 0)
       : 0;
 
   return (
     <section className="shop-checkout">
       <h1>{t("shop.checkout")}</h1>
-      {!customer ? (
-        <p className="muted">
-          {t("shop.creditsHintGuest")}{" "}
-          <Link to={`${base}/register`}>{t("shop.register")}</Link>
-        </p>
-      ) : (
-        <p className="muted">
-          {t("shop.creditsHintMember", { credits: creditsPreview, balance: customer.co2_credit_balance })}
-        </p>
-      )}
-      <form className="editor-form" onSubmit={(event) => void handleSubmit(event)}>
+      <div className="shop-checkout-grid">
+      <form className="editor-form shop-checkout-form" onSubmit={(event) => void handleSubmit(event)}>
         <label>
           {t("shop.fieldEmail")}
           <input
@@ -767,15 +824,42 @@ function ShopCheckoutPage({ config, base }: { config: ShopConfig | null; base: s
           </label>
         </fieldset>
 
-        <p className="muted">
-          {t("shop.orderSummary")}: {formatMoney(cart.subtotalCents, config?.currency || "EUR", i18n.language)} · {cart.count}{" "}
-          {t("shop.items")}
-        </p>
         {error ? <p className="error-text">{error}</p> : null}
         <button type="submit" className="shop-btn shop-btn-primary" disabled={saving}>
           {saving ? t("common.loading") : t("shop.placeOrder")}
         </button>
       </form>
+
+      <aside className="shop-order-summary">
+        <h2>{t("shop.orderSummary")}</h2>
+        <div className="shop-summary-lines">
+          {cart.items.map((item) => (
+            <ShopOrderSummaryLine key={item.product_id} item={item} i18n={i18n} />
+          ))}
+        </div>
+        <div className="shop-summary-totals">
+          <p>
+            {t("shop.subtotal")}: <strong>{formatMoney(cart.subtotalCents, config?.currency || "EUR", i18n.language)}</strong>
+          </p>
+          <p>
+            {t("shop.shipping")}: <strong>{formatMoney(shipping, config?.currency || "EUR", i18n.language)}</strong>
+          </p>
+          <p className="shop-summary-total">
+            {t("shop.total")}:{" "}
+            <strong>{formatMoney(cart.subtotalCents + shipping, config?.currency || "EUR", i18n.language)}</strong>
+          </p>
+        </div>
+        {!customer ? (
+          <p className="muted shop-summary-credits">
+            {t("shop.creditsHintGuest")} <Link to={`${base}/register`}>{t("shop.register")}</Link>
+          </p>
+        ) : (
+          <p className="muted shop-summary-credits">
+            {t("shop.creditsHintMember", { credits: creditsPreview, balance: customer.co2_credit_balance })}
+          </p>
+        )}
+      </aside>
+      </div>
     </section>
   );
 }
