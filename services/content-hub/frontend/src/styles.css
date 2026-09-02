@@ -2814,8 +2814,24 @@ a {
 
 .shop-card-media,
 .shop-detail-media {
+  position: relative;
   background: #22302b;
   overflow: hidden;
+}
+
+.shop-card-ribbon {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(11, 16, 14, 0.82);
+  border: 1px solid var(--shop-line);
+  color: var(--shop-ink);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .shop-card-media img,
@@ -2880,6 +2896,59 @@ a {
   display: grid;
   gap: 0.65rem;
   margin-top: 0.35rem;
+}
+
+.shop-co2-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(198, 245, 90, 0.12);
+  border: 1px solid rgba(198, 245, 90, 0.3);
+  color: var(--shop-accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.shop-co2-badge-icon {
+  font-size: 0.9em;
+}
+
+.shop-catalog-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1.4rem;
+}
+
+.shop-catalog-search {
+  flex: 1 1 220px;
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--shop-line);
+  background: rgba(11, 16, 14, 0.45);
+  color: var(--shop-ink);
+  font: inherit;
+}
+
+.shop-catalog-search::placeholder {
+  color: var(--shop-muted);
+}
+
+.shop-catalog-sort {
+  padding: 0.7rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--shop-line);
+  background: rgba(11, 16, 14, 0.45);
+  color: var(--shop-ink);
+  font: inherit;
+}
+
+.shop-related {
+  width: min(1100px, calc(100% - 2rem));
+  margin: 3rem auto 0;
 }
 
 .shop-qty-stepper {

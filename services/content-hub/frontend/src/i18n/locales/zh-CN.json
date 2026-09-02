@@ -719,7 +719,19 @@
     "catalogTitle": "产品",
     "catalogSubtitle": "来自 carbonauten GmbH 的产品。",
     "companyLine": "由 {{company}} 运营的商店",
-    "companyAttribution": "{{company}} — FuckCo2 运营方"
+    "companyAttribution": "{{company}} — FuckCo2 运营方",
+    "earnCredits": "可获得 +{{credits}} 个 CO₂ 积分",
+    "earnCreditsHint": "付款后记入您的账户——登录或注册账户即可开始积累。",
+    "searchPlaceholder": "搜索产品…",
+    "searchEmpty": "没有找到匹配的产品。",
+    "sortLabel": "排序方式",
+    "sort": {
+      "default": "推荐",
+      "priceAsc": "价格从低到高",
+      "priceDesc": "价格从高到低",
+      "name": "名称 A–Z"
+    },
+    "relatedTitle": "您可能还喜欢"
   },
   "orders": {
     "title": "商店订单",
