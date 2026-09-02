@@ -81,6 +81,24 @@ function clampQty(value: number, max = 999) {
   return Math.min(max, Math.max(1, Math.floor(value)));
 }
 
+function co2CreditsForPrice(priceCents: number, creditsPerEuro?: number): number {
+  if (!creditsPerEuro || creditsPerEuro <= 0) return 0;
+  return Math.round((priceCents / 100) * creditsPerEuro);
+}
+
+function ShopCo2Badge({ credits }: { credits: number }) {
+  const { t } = useTranslation();
+  if (credits <= 0) return null;
+  return (
+    <span className="shop-co2-badge" title={t("shop.earnCreditsHint")}>
+      <span className="shop-co2-badge-icon" aria-hidden="true">
+        🌱
+      </span>
+      {t("shop.earnCredits", { credits })}
+    </span>
+  );
+}
+
 function ShopQtyStepper({
   value,
   onChange,
@@ -129,10 +147,12 @@ function ShopProductCard({
   product,
   base,
   index = 0,
+  config,
 }: {
   product: ShopProduct;
   base: string;
   index?: number;
+  config?: ShopConfig | null;
 }) {
   const { t, i18n } = useTranslation();
   const cart = useShopCart();
@@ -142,11 +162,13 @@ function ShopProductCard({
       ? Math.max(1, product.stock_available)
       : 999;
   const soldOut = product.in_stock === false;
+  const credits = co2CreditsForPrice(product.price_cents, config?.co2_credits_per_euro);
 
   return (
     <article className="shop-card shop-card-static" style={{ animationDelay: `${Math.min(index, 8) * 60}ms` }}>
       <Link to={`${base}/p/${product.slug}`} className="shop-card-media">
         {product.image_url ? <img src={product.image_url} alt={product.name} /> : <div className="shop-card-placeholder" />}
+        {soldOut ? <span className="shop-card-ribbon">{t("shop.soldOut")}</span> : null}
       </Link>
       <div className="shop-card-body">
         <Link to={`${base}/p/${product.slug}`}>
@@ -157,6 +179,7 @@ function ShopProductCard({
           <strong>{formatMoney(product.price_cents, product.currency, i18n.language)}</strong>
           <span>{t("shop.inclVat")}</span>
         </div>
+        <ShopCo2Badge credits={credits} />
         <div className="shop-card-actions">
           <ShopQtyStepper value={qty} onChange={setQty} disabled={soldOut} max={maxQty} />
           <button
@@ -268,11 +291,24 @@ function ShopShell({
   );
 }
 
+type ShopSortOrder = "default" | "price-asc" | "price-desc" | "name";
+
+function sortProducts(products: ShopProduct[], sort: ShopSortOrder): ShopProduct[] {
+  if (sort === "default") return products;
+  const sorted = [...products];
+  if (sort === "price-asc") sorted.sort((a, b) => a.price_cents - b.price_cents);
+  if (sort === "price-desc") sorted.sort((a, b) => b.price_cents - a.price_cents);
+  if (sort === "name") sorted.sort((a, b) => a.name.localeCompare(b.name));
+  return sorted;
+}
+
 function ShopHome({ config, base }: { config: ShopConfig | null; base: string }) {
   const { t } = useTranslation();
   const [products, setProducts] = useState<ShopProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<ShopSortOrder>("default");
   const brand = config?.brand_name || "FuckCo2";
   const company = shopCompany(config);
 
@@ -287,6 +323,19 @@ function ShopHome({ config, base }: { config: ShopConfig | null; base: string })
       }
     })();
   }, [t]);
+
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    const matched = needle
+      ? products.filter(
+          (product) =>
+            product.name.toLowerCase().includes(needle) ||
+            product.short_description.toLowerCase().includes(needle) ||
+            product.description.toLowerCase().includes(needle),
+        )
+      : products;
+    return sortProducts(matched, sort);
+  }, [products, query, sort]);
 
   return (
     <>
@@ -313,12 +362,40 @@ function ShopHome({ config, base }: { config: ShopConfig | null; base: string })
           <h2>{t("shop.catalogTitle")}</h2>
           <p>{t("shop.catalogSubtitle", { company })}</p>
         </header>
+
+        {!loading && products.length > 0 ? (
+          <div className="shop-catalog-toolbar">
+            <input
+              type="search"
+              className="shop-catalog-search"
+              value={query}
+              placeholder={t("shop.searchPlaceholder")}
+              onChange={(event) => setQuery(event.target.value)}
+              aria-label={t("shop.searchPlaceholder")}
+            />
+            <select
+              className="shop-catalog-sort"
+              value={sort}
+              onChange={(event) => setSort(event.target.value as ShopSortOrder)}
+              aria-label={t("shop.sortLabel")}
+            >
+              <option value="default">{t("shop.sort.default")}</option>
+              <option value="price-asc">{t("shop.sort.priceAsc")}</option>
+              <option value="price-desc">{t("shop.sort.priceDesc")}</option>
+              <option value="name">{t("shop.sort.name")}</option>
+            </select>
+          </div>
+        ) : null}
+
         {loading ? <LoadingState /> : null}
         {error ? <p className="error-text">{error}</p> : null}
         {!loading && products.length === 0 ? <EmptyState message={t("shop.empty")} icon="◈" /> : null}
+        {!loading && products.length > 0 && filtered.length === 0 ? (
+          <EmptyState message={t("shop.searchEmpty")} icon="⌕" />
+        ) : null}
         <div className="shop-grid">
-          {products.map((product, index) => (
-            <ShopProductCard key={product.id} product={product} base={base} index={index} />
+          {filtered.map((product, index) => (
+            <ShopProductCard key={product.id} product={product} base={base} index={index} config={config} />
           ))}
         </div>
       </section>
@@ -331,6 +408,7 @@ function ShopProductDetail({ config, base }: { config: ShopConfig | null; base: 
   const { slug = "" } = useParams();
   const cart = useShopCart();
   const [product, setProduct] = useState<ShopProduct | null>(null);
+  const [related, setRelated] = useState<ShopProduct[]>([]);
   const [qty, setQty] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -338,6 +416,7 @@ function ShopProductDetail({ config, base }: { config: ShopConfig | null; base: 
   useEffect(() => {
     void (async () => {
       setLoading(true);
+      setQty(1);
       try {
         setProduct(await fetchShopProduct(slug));
       } catch (err) {
@@ -347,6 +426,19 @@ function ShopProductDetail({ config, base }: { config: ShopConfig | null; base: 
       }
     })();
   }, [slug, t]);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const all = await fetchShopProducts();
+        setRelated(all.filter((item) => item.slug !== slug).slice(0, 4));
+      } catch {
+        setRelated([]);
+      }
+    })();
+  }, [slug]);
+
+  const credits = product ? co2CreditsForPrice(product.price_cents, config?.co2_credits_per_euro) : 0;
 
   if (loading) return <LoadingState />;
   if (error || !product) {
@@ -379,6 +471,7 @@ function ShopProductDetail({ config, base }: { config: ShopConfig | null; base: 
           <h1>{product.name}</h1>
           <p className="shop-price">{formatMoney(product.price_cents, product.currency, i18n.language)}</p>
           <p className="muted">{t("shop.inclVat")}</p>
+          <ShopCo2Badge credits={credits} />
           {product.short_description ? <p className="muted">{product.short_description}</p> : null}
           <div className="shop-description">{product.description || t("shop.noDescription")}</div>
           <div className="shop-qty-row">
@@ -409,6 +502,19 @@ function ShopProductDetail({ config, base }: { config: ShopConfig | null; base: 
           </Link>
         </div>
       </div>
+
+      {related.length > 0 ? (
+        <section className="shop-related">
+          <header className="shop-section-head">
+            <h2>{t("shop.relatedTitle")}</h2>
+          </header>
+          <div className="shop-grid">
+            {related.map((item, index) => (
+              <ShopProductCard key={item.id} product={item} base={base} index={index} config={config} />
+            ))}
+          </div>
+        </section>
+      ) : null}
     </article>
   );
 }

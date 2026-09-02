@@ -719,7 +719,19 @@
     "catalogTitle": "Products",
     "catalogSubtitle": "Products from carbonauten GmbH production.",
     "companyLine": "A shop by {{company}}",
-    "companyAttribution": "{{company}} — operator of FuckCo2"
+    "companyAttribution": "{{company}} — operator of FuckCo2",
+    "earnCredits": "Earn +{{credits}} CO₂ credits",
+    "earnCreditsHint": "Credited to your account after payment — sign in or create an account to collect them.",
+    "searchPlaceholder": "Search products…",
+    "searchEmpty": "No products match your search.",
+    "sortLabel": "Sort by",
+    "sort": {
+      "default": "Featured",
+      "priceAsc": "Price: low to high",
+      "priceDesc": "Price: high to low",
+      "name": "Name A–Z"
+    },
+    "relatedTitle": "You might also like"
   },
   "orders": {
     "title": "Shop orders",

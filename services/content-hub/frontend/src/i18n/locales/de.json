@@ -719,7 +719,19 @@
     "catalogTitle": "Produkte",
     "catalogSubtitle": "Produkte aus der Produktion der carbonauten GmbH.",
     "companyLine": "Ein Shop der {{company}}",
-    "companyAttribution": "{{company}} — Betreiberin von FuckCo2"
+    "companyAttribution": "{{company}} — Betreiberin von FuckCo2",
+    "earnCredits": "+{{credits}} CO₂-Credits sammeln",
+    "earnCreditsHint": "Wird nach Zahlung Ihrem Konto gutgeschrieben — mit Konto anmelden oder registrieren, um zu sammeln.",
+    "searchPlaceholder": "Produkte durchsuchen…",
+    "searchEmpty": "Keine Produkte gefunden.",
+    "sortLabel": "Sortieren nach",
+    "sort": {
+      "default": "Empfohlen",
+      "priceAsc": "Preis aufsteigend",
+      "priceDesc": "Preis absteigend",
+      "name": "Name A–Z"
+    },
+    "relatedTitle": "Das könnte Ihnen auch gefallen"
   },
   "orders": {
     "title": "Shop-Bestellungen",

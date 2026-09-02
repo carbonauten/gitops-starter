@@ -530,6 +530,14 @@ flowchart LR
 - [x] Ohne Stripe: Rechnungskauf mit Bestellnummer + E-Mail
 - [x] Redaktion sieht und bearbeitet Bestellungen in der Platform
 
+### UI-Erweiterung (September 2026)
+
+- [x] Katalog: Suche + Sortierung (Preis auf-/absteigend, Name) über die geladene Produktliste
+- [x] CO₂-Credits-Badge auf Produktkarte und -detailseite, berechnet aus `SHOP_CO2_CREDITS_PER_EURO` × Preis
+- [x] "Das könnte Ihnen auch gefallen" — verwandte Produkte auf der Detailseite
+- [x] "Ausverkauft"-Ribbon direkt auf dem Produktbild (bisher nur im Button erkennbar)
+- [x] DE / EN / 中文
+
 ---
 
 ## Backlog (Sprint 8+)
