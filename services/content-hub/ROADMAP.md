@@ -805,6 +805,10 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 - [x] Löschantrag erzeugt Brief + verhindert Duplikate (409)
 - [x] Viewer hat keinen Zugriff
 
+### Bugfix (September 2026)
+
+- [x] `request_deletion()` ignorierte den Rückgabewert von `send_plain_email()` — schlug der interne Mail-Versand fehl (nicht konfiguriert oder Zustellfehler), zeigte die UI trotzdem "…wurde intern erfasst und per E-Mail gesendet." an. Jetzt liefert die API `email_sent` mit, und die UI zeigt bei Fehlschlag eine Warnung statt einer falschen Erfolgsmeldung.
+
 ---
 
 ## Sprint N — M365-Verwaltung ✅ (MVP)

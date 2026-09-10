@@ -955,7 +955,8 @@
       "requested": "Requested",
       "sent": "Sent",
       "closed": "Closed"
-    }
+    },
+    "deletionRequestedNoEmail": "Deletion request saved, but the internal notification email could not be sent — please tell your team about this request manually."
   },
   "m365": {
     "eyebrow": "Microsoft 365",

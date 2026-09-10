@@ -615,6 +615,11 @@ a {
   margin: 0;
 }
 
+.warning-text {
+  color: #b54708;
+  margin: 0;
+}
+
 .calendar-event-outlook_event {
   border-left: 3px solid #0078d4;
 }

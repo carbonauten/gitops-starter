@@ -1316,7 +1316,7 @@ export async function runReputationCrawl(): Promise<ReputationCrawlRun> {
 export async function requestReputationDeletion(
   mentionId: string,
   data: { reason: string; notes?: string; publisher_email?: string },
-): Promise<{ request: ReputationDeletion; mention: ReputationMention }> {
+): Promise<{ request: ReputationDeletion; mention: ReputationMention; email_sent: boolean }> {
   return request(`/api/reputation/mentions/${mentionId}/deletion-requests`, {
     method: "POST",
     body: JSON.stringify(data),
