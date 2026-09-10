@@ -731,7 +731,9 @@
       "priceDesc": "Price: high to low",
       "name": "Name A–Z"
     },
-    "relatedTitle": "You might also like"
+    "relatedTitle": "You might also like",
+    "freeShippingRemaining": "Add {{amount}} more for free shipping",
+    "freeShippingReached": "You've unlocked free shipping!"
   },
   "orders": {
     "title": "Shop orders",

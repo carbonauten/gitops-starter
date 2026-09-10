@@ -731,7 +731,9 @@
       "priceDesc": "价格从高到低",
       "name": "名称 A–Z"
     },
-    "relatedTitle": "您可能还喜欢"
+    "relatedTitle": "您可能还喜欢",
+    "freeShippingRemaining": "再购买 {{amount}} 即可享受免运费",
+    "freeShippingReached": "您已获得免运费！"
   },
   "orders": {
     "title": "商店订单",
