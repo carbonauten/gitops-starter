@@ -375,6 +375,25 @@ flowchart LR
 
 ---
 
+## UI Sprint 4 — Navigation & Dateiliste (September 2026) ✅
+
+**Ziel:** Dringlichkeit ist schon in der Sidebar sichtbar, nicht erst auf dem Dashboard; Dateien sind auf einen Blick nach Typ unterscheidbar.
+
+### Deliverables
+
+- [x] Sidebar-Badge „Workflow": Anzahl offener Freigaben (Artikel in Prüfung + Zertifikat-Erneuerungen), rot hervorgehoben nur bei Bedarf
+- [x] Sidebar-Badge „Zertifikate": Anzahl in 30 Tagen ablaufender Zertifikate, gleiche Datenquelle wie das Dashboard (`/api/dashboard/stats`)
+- [x] Dateiliste: Typ-Icon pro Datei (PDF, Bild, Word, Excel, PowerPoint, Archiv, generisch) analog zum bestehenden 📁-Symbol für Ordner
+- [x] Badges laden asynchron und blockieren die Navigation nicht; scheitert der Abruf, bleiben sie einfach leer
+
+### Akzeptanzkriterien
+
+- [x] IT-Master/Freigeber sehen die Anzahl offener Freigaben, ohne das Dashboard zu öffnen
+- [x] Alle Nutzer sehen auf einen Blick, ob Zertifikate bald ablaufen
+- [x] Dateityp ist in der Liste ohne Klick auf die Datei erkennbar
+
+---
+
 ## Search + AI Sprint — Zentrale Suche ✅ (MVP)
 
 **Ziel:** Suche als wichtigstes Feature — inkl. KI-gestützter Fragen.
