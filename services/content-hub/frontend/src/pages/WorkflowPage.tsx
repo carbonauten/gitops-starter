@@ -23,6 +23,8 @@ export function WorkflowPage() {
   const [loading, setLoading] = useState(true);
   const [scheduleAt, setScheduleAt] = useState<Record<string, string>>({});
   const [rejectComment, setRejectComment] = useState<Record<string, string>>({});
+  const [busyId, setBusyId] = useState("");
+  const [error, setError] = useState("");
 
   async function load() {
     setLoading(true);
@@ -36,6 +38,59 @@ export function WorkflowPage() {
   useEffect(() => {
     void load();
   }, []);
+
+  async function handleApproveArticle(id: string) {
+    setBusyId(id);
+    setError("");
+    try {
+      const value = scheduleAt[id];
+      await approveArticle(id, value ? new Date(value).toISOString() : null);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function handleRejectArticle(id: string) {
+    setBusyId(id);
+    setError("");
+    try {
+      await rejectArticle(id, rejectComment[id] || "");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function handleApproveRenewal(id: string) {
+    setBusyId(id);
+    setError("");
+    try {
+      await approveCertificateRenewal(id);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function handleRejectRenewal(id: string) {
+    setBusyId(id);
+    setError("");
+    try {
+      await rejectCertificateRenewal(id, rejectComment[id] || "");
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setBusyId("");
+    }
+  }
 
   const isEmpty =
     !pending ||
@@ -51,6 +106,7 @@ export function WorkflowPage() {
       </header>
 
       {loading ? <LoadingState /> : null}
+      {error ? <p className="error-text">{error}</p> : null}
       {!loading && isEmpty ? <EmptyState message={t("workflow.empty")} icon="✓" /> : null}
 
       {pending && pending.articles_in_review.length > 0 ? (
@@ -65,7 +121,7 @@ export function WorkflowPage() {
                     <ArticleStatusBadge status="review" />
                   </div>
                   <p className="muted">
-                    {article.author_name} · {article.updated_at}
+                    {article.author_name} · {new Date(article.updated_at).toLocaleString()}
                   </p>
                 </div>
                 {canApprove ? (
@@ -73,6 +129,7 @@ export function WorkflowPage() {
                     <input
                       type="datetime-local"
                       value={scheduleAt[article.id] || ""}
+                      disabled={busyId === article.id}
                       onChange={(event) =>
                         setScheduleAt((current) => ({ ...current, [article.id]: event.target.value }))
                       }
@@ -81,20 +138,20 @@ export function WorkflowPage() {
                     <button
                       type="button"
                       className="primary-button"
-                      onClick={() =>
-                        void (async () => {
-                          const value = scheduleAt[article.id];
-                          await approveArticle(article.id, value ? new Date(value).toISOString() : null);
-                          await load();
-                        })()
-                      }
+                      disabled={busyId === article.id}
+                      onClick={() => void handleApproveArticle(article.id)}
                     >
-                      {scheduleAt[article.id] ? t("workflow.approveSchedule") : t("workflow.approve")}
+                      {busyId === article.id
+                        ? t("common.loading")
+                        : scheduleAt[article.id]
+                          ? t("workflow.approveSchedule")
+                          : t("workflow.approve")}
                     </button>
                     <input
                       type="text"
                       placeholder={t("workflow.rejectComment")}
                       value={rejectComment[article.id] || ""}
+                      disabled={busyId === article.id}
                       onChange={(event) =>
                         setRejectComment((current) => ({ ...current, [article.id]: event.target.value }))
                       }
@@ -102,14 +159,10 @@ export function WorkflowPage() {
                     <button
                       type="button"
                       className="ghost-button danger"
-                      onClick={() =>
-                        void (async () => {
-                          await rejectArticle(article.id, rejectComment[article.id] || "");
-                          await load();
-                        })()
-                      }
+                      disabled={busyId === article.id}
+                      onClick={() => void handleRejectArticle(article.id)}
                     >
-                      {t("workflow.reject")}
+                      {busyId === article.id ? t("common.loading") : t("workflow.reject")}
                     </button>
                     <Link to={`/articles/${article.id}/edit`} className="ghost-button link-button">
                       {t("articles.edit")}
@@ -134,7 +187,8 @@ export function WorkflowPage() {
                     <ArticleStatusBadge status="scheduled" />
                   </div>
                   <p className="muted">
-                    {t("articles.scheduledAt")}: {article.scheduled_publish_at}
+                    {t("articles.scheduledAt")}:{" "}
+                    {article.scheduled_publish_at ? new Date(article.scheduled_publish_at).toLocaleString() : "—"}
                   </p>
                 </div>
               </article>
@@ -155,7 +209,7 @@ export function WorkflowPage() {
                     <CertificateStatusBadge status="renewal" />
                   </div>
                   <p className="muted">
-                    {certificate.responsible_name} · {certificate.updated_at}
+                    {certificate.responsible_name} · {new Date(certificate.updated_at).toLocaleString()}
                   </p>
                 </div>
                 {canApproveCertificates ? (
@@ -163,26 +217,18 @@ export function WorkflowPage() {
                     <button
                       type="button"
                       className="primary-button"
-                      onClick={() =>
-                        void (async () => {
-                          await approveCertificateRenewal(certificate.id);
-                          await load();
-                        })()
-                      }
+                      disabled={busyId === certificate.id}
+                      onClick={() => void handleApproveRenewal(certificate.id)}
                     >
-                      {t("workflow.approveRenewal")}
+                      {busyId === certificate.id ? t("common.loading") : t("workflow.approveRenewal")}
                     </button>
                     <button
                       type="button"
                       className="ghost-button danger"
-                      onClick={() =>
-                        void (async () => {
-                          await rejectCertificateRenewal(certificate.id, rejectComment[certificate.id] || "");
-                          await load();
-                        })()
-                      }
+                      disabled={busyId === certificate.id}
+                      onClick={() => void handleRejectRenewal(certificate.id)}
                     >
-                      {t("workflow.rejectRenewal")}
+                      {busyId === certificate.id ? t("common.loading") : t("workflow.rejectRenewal")}
                     </button>
                     <Link to={`/certificates/${certificate.id}/edit`} className="ghost-button link-button">
                       {t("certificates.edit")}

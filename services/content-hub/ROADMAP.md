@@ -394,6 +394,24 @@ flowchart LR
 
 ---
 
+## UI Sprint 5 — Workflow-Seite robuster (September 2026) ✅
+
+**Ziel:** Die Freigabe-Seite (Artikel-Prüfung, Zertifikat-Erneuerungen) verhält sich wie der Rest der App: Aktionen sind während des Ladens gesperrt, Fehler werden angezeigt, Zeitstempel sind lesbar.
+
+### Deliverables
+
+- [x] Genehmigen/Ablehnen-Buttons sind während der Anfrage gesperrt (verhindert Doppel-Klick-Doppel-Ausführung) — bisher als einzige Seite ohne Busy-State bei kritischen Freigabe-Aktionen
+- [x] Fehlgeschlagene Freigabe-Aktionen zeigen eine Fehlermeldung statt stillschweigend nichts zu tun
+- [x] Zeitstempel (`updated_at`, `scheduled_publish_at`) lokalisiert formatiert statt als rohe ISO-Strings
+
+### Akzeptanzkriterien
+
+- [x] Ein Doppelklick auf „Genehmigen" löst die Aktion nur einmal aus
+- [x] Ein API-Fehler bei Genehmigen/Ablehnen ist für den Nutzer sichtbar
+- [x] Alle Zeitangaben auf der Seite sind menschenlesbar
+
+---
+
 ## Search + AI Sprint — Zentrale Suche ✅ (MVP)
 
 **Ziel:** Suche als wichtigstes Feature — inkl. KI-gestützter Fragen.
