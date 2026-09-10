@@ -91,7 +91,12 @@
     "syncNever": "Noch kein Sync",
     "renewalsPending": "Erneuerungen offen",
     "workflowTitle": "Freigabe-Warteschlange",
-    "workflowLink": "Freigaben öffnen"
+    "workflowLink": "Freigaben öffnen",
+    "daysLeft": "noch {{days}} Tage",
+    "approvalKind": {
+      "article_review": "Artikel-Prüfung",
+      "certificate_renewal": "Zertifikat-Erneuerung"
+    }
   },
   "articles": {
     "title": "Artikel",

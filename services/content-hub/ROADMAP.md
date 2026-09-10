@@ -356,6 +356,25 @@ flowchart LR
 
 ---
 
+## UI Sprint 3 — Dashboard-Status auf einen Blick (September 2026) ✅
+
+**Ziel:** „Mein Arbeitsplatz" nutzt dasselbe Badge-System wie der Rest der App, statt reinen Klartext — Status und Dringlichkeit sind sofort erkennbar.
+
+### Deliverables
+
+- [x] `ArticleStatusBadge` in „Meine Entwürfe" und „Meine Freigaben" statt Klartext-Status
+- [x] `CertificateStatusBadge` in „Meine Freigaben" (Zertifikat-Erneuerungen) und „Meine ablaufenden Zertifikate"
+- [x] „Meine Freigaben": Art der Freigabe (Artikel-Prüfung / Zertifikat-Erneuerung) übersetzt statt als Rohtext
+- [x] Ablauf-Kacheln (30/60/90 Tage): rote/gelbe Akzentfarbe, wenn tatsächlich Zertifikate in diesem Fenster ablaufen — bisher alle Kacheln visuell identisch
+- [x] DE / EN / 中文
+
+### Akzeptanzkriterien
+
+- [x] Entwürfe, Freigaben und ablaufende Zertifikate zeigen denselben Badge-Stil wie Artikel-/Zertifikatslisten
+- [x] Die 30-Tage-Kachel sticht bei offenen Ablaufterminen farblich hervor, bei 0 bleibt sie neutral
+
+---
+
 ## Search + AI Sprint — Zentrale Suche ✅ (MVP)
 
 **Ziel:** Suche als wichtigstes Feature — inkl. KI-gestützter Fragen.

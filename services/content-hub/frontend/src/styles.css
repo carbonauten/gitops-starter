@@ -773,6 +773,22 @@ a {
   border-color: rgba(37, 99, 235, 0.25);
 }
 
+.stat-card-urgent {
+  border-left: 4px solid #b42318;
+}
+
+.stat-card-urgent .stat-value {
+  color: #b42318;
+}
+
+.stat-card-warn {
+  border-left: 4px solid #b54708;
+}
+
+.stat-card-warn .stat-value {
+  color: #b54708;
+}
+
 .stat-value {
   margin: 0;
   font-size: 2.4rem;
@@ -2045,6 +2061,19 @@ a {
 .home-item:hover {
   border-color: rgba(37, 99, 235, 0.25);
   background: #fff;
+}
+
+.home-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.home-item-head strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .publish-calendar {
