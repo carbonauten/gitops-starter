@@ -91,7 +91,12 @@
     "syncNever": "No sync yet",
     "renewalsPending": "Renewals pending",
     "workflowTitle": "Approval queue",
-    "workflowLink": "Open approvals"
+    "workflowLink": "Open approvals",
+    "daysLeft": "{{days}} days left",
+    "approvalKind": {
+      "article_review": "Article review",
+      "certificate_renewal": "Certificate renewal"
+    }
   },
   "articles": {
     "title": "Articles",

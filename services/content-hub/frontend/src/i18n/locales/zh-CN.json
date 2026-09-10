@@ -91,7 +91,12 @@
     "syncNever": "尚未同步",
     "renewalsPending": "待审批续期",
     "workflowTitle": "审批队列",
-    "workflowLink": "打开审批"
+    "workflowLink": "打开审批",
+    "daysLeft": "还剩 {{days}} 天",
+    "approvalKind": {
+      "article_review": "文章审核",
+      "certificate_renewal": "证书续期"
+    }
   },
   "articles": {
     "title": "文章",

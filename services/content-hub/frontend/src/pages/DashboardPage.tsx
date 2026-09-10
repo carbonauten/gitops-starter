@@ -8,16 +8,32 @@ import {
   fetchPlatformInfo,
   fetchSyncStatus,
   runRegionSync,
+  type Article,
   type DashboardHome,
   type DashboardStats,
   type PlatformInfo,
   type SyncStatus,
 } from "../api/client";
+import { ArticleStatusBadge } from "../components/ArticleStatusBadge";
+import { CertificateStatusBadge } from "../components/CertificateStatusBadge";
 import { GlobalSearch } from "../components/GlobalSearch";
 import { LoadingState } from "../components/LoadingState";
 import { OnboardingTips } from "../components/OnboardingTips";
 import { PublishCalendarPanel } from "../components/PublishCalendarPanel";
 import { usePermissions } from "../hooks/usePermissions";
+
+const ARTICLE_STATUSES = new Set<Article["status"]>(["draft", "review", "scheduled", "published", "rejected"]);
+
+function asArticleStatus(status: string | undefined): Article["status"] {
+  return ARTICLE_STATUSES.has(status as Article["status"]) ? (status as Article["status"]) : "draft";
+}
+
+function expiryUrgencyClass(days: number, value: number): string {
+  if (value <= 0) return "";
+  if (days <= 30) return "stat-card-urgent";
+  if (days <= 60) return "stat-card-warn";
+  return "";
+}
 
 export function DashboardPage() {
   const { t } = useTranslation();
@@ -74,9 +90,9 @@ export function DashboardPage() {
   ];
 
   const expiryCards = [
-    { label: t("dashboard.expiring30"), value: stats.expiring_30 },
-    { label: t("dashboard.expiring60"), value: stats.expiring_60 },
-    { label: t("dashboard.expiring90"), value: stats.expiring_90 },
+    { label: t("dashboard.expiring30"), value: stats.expiring_30, days: 30 },
+    { label: t("dashboard.expiring60"), value: stats.expiring_60, days: 60 },
+    { label: t("dashboard.expiring90"), value: stats.expiring_90, days: 90 },
   ];
 
   const regionLabel =
@@ -128,8 +144,10 @@ export function DashboardPage() {
               <div className="list-stack">
                 {home.my_drafts.map((item) => (
                   <Link key={item.id} to={`/articles/${item.id}/edit`} className="home-item">
-                    <strong>{item.title}</strong>
-                    <span className="muted">{item.status}</span>
+                    <div className="home-item-head">
+                      <strong>{item.title}</strong>
+                      <ArticleStatusBadge status={asArticleStatus(item.status)} />
+                    </div>
                   </Link>
                 ))}
               </div>
@@ -159,8 +177,15 @@ export function DashboardPage() {
                     }
                     className="home-item"
                   >
-                    <strong>{item.title || item.name}</strong>
-                    <span className="muted">{item.kind}</span>
+                    <div className="home-item-head">
+                      <strong>{item.title || item.name}</strong>
+                      {item.kind === "certificate_renewal" ? (
+                        <CertificateStatusBadge status={item.status || "renewal"} />
+                      ) : (
+                        <ArticleStatusBadge status={asArticleStatus(item.status)} />
+                      )}
+                    </div>
+                    <span className="muted">{t(`dashboard.approvalKind.${item.kind}`, { defaultValue: item.kind })}</span>
                   </Link>
                 ))}
               </div>
@@ -180,9 +205,12 @@ export function DashboardPage() {
               <div className="list-stack">
                 {home.my_expiring_certificates.map((item) => (
                   <Link key={item.id} to={`/certificates/${item.id}/edit`} className="home-item">
-                    <strong>{item.name}</strong>
+                    <div className="home-item-head">
+                      <strong>{item.name}</strong>
+                      <CertificateStatusBadge status={item.status} />
+                    </div>
                     <span className="muted">
-                      {item.valid_to} · {item.days_until_expiry}d
+                      {item.valid_to} · {t("dashboard.daysLeft", { days: item.days_until_expiry })}
                     </span>
                   </Link>
                 ))}
@@ -243,7 +271,11 @@ export function DashboardPage() {
         <h2>{t("dashboard.expiringTitle")}</h2>
         <div className="card-grid compact-grid">
           {expiryCards.map((card) => (
-            <Link key={card.label} to="/certificates" className="stat-card stat-card-link">
+            <Link
+              key={card.label}
+              to="/certificates"
+              className={`stat-card stat-card-link ${expiryUrgencyClass(card.days, card.value)}`.trim()}
+            >
               <p className="stat-value">{card.value}</p>
               <p className="stat-label">{card.label}</p>
             </Link>
