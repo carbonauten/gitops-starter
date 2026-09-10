@@ -237,6 +237,28 @@ a {
   opacity: 1;
 }
 
+.nav-badge {
+  margin-left: auto;
+  min-width: 1.35rem;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.15rem;
+}
+
+.nav-link.active .nav-badge {
+  background: #fff;
+}
+
+.nav-badge-urgent {
+  background: #fef3f2;
+  color: #b42318;
+}
+
 .content {
   padding: 1.75rem 2rem 2.5rem;
   max-width: 1280px;

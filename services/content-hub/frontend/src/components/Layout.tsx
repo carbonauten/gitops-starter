@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 
+import { fetchDashboardStats } from "../api/client";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { SearchBar } from "./SearchBar";
 import { BrandLogo } from "./BrandLogo";
@@ -14,6 +15,8 @@ type NavItem = {
   label: string;
   icon: string;
   end?: boolean;
+  badge?: number;
+  badgeUrgent?: boolean;
 };
 
 function NavItems({ items, onNavigate }: { items: NavItem[]; onNavigate: () => void }) {
@@ -31,6 +34,9 @@ function NavItems({ items, onNavigate }: { items: NavItem[]; onNavigate: () => v
             {item.icon}
           </span>
           {item.label}
+          {item.badge ? (
+            <span className={item.badgeUrgent ? "nav-badge nav-badge-urgent" : "nav-badge"}>{item.badge}</span>
+          ) : null}
         </NavLink>
       ))}
     </>
@@ -81,6 +87,20 @@ export function TopBar({ onMenuToggle }: { onMenuToggle: () => void }) {
 export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
   const { t } = useTranslation();
   const { canEdit, canManageUsers, canManageShop, canApprove, canApproveCertificates } = usePermissions();
+  const [pendingApprovals, setPendingApprovals] = useState(0);
+  const [expiringSoon, setExpiringSoon] = useState(0);
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const stats = await fetchDashboardStats();
+        setPendingApprovals(stats.in_review + stats.renewals_pending);
+        setExpiringSoon(stats.expiring_30);
+      } catch {
+        // Nav badges are a convenience, not critical — a failed fetch just leaves them empty.
+      }
+    })();
+  }, []);
 
   const overview: NavItem[] = [
     { to: "/search", label: t("nav.search"), icon: "⌕" },
@@ -90,7 +110,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
   const content: NavItem[] = [
     { to: "/articles", label: t("nav.articles"), icon: "✎" },
     { to: "/files", label: t("nav.files"), icon: "▣" },
-    { to: "/certificates", label: t("nav.certificates"), icon: "◎" },
+    { to: "/certificates", label: t("nav.certificates"), icon: "◎", badge: expiringSoon, badgeUrgent: true },
   ];
   if (canEdit) {
     content.push({ to: "/reputation", label: t("nav.reputation"), icon: "⚑" });
@@ -115,7 +135,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
   ];
 
   if (canApprove || canApproveCertificates) {
-    publishing.push({ to: "/workflow", label: t("nav.workflow"), icon: "✓" });
+    publishing.push({ to: "/workflow", label: t("nav.workflow"), icon: "✓", badge: pendingApprovals });
   }
 
   const admin: NavItem[] = canManageUsers

@@ -41,6 +41,18 @@ function isOfficeFile(file: FileBrowseItem): boolean {
   return OFFICE_MIME.test(file.content_type || "");
 }
 
+function fileTypeIcon(file: FileBrowseItem): string {
+  const name = fileTitle(file).toLowerCase();
+  const type = (file.content_type || "").toLowerCase();
+  if (name.endsWith(".pdf") || type === "application/pdf") return "📕";
+  if (/\.(jpe?g|png|gif|webp|svg|bmp)$/.test(name) || type.startsWith("image/")) return "🖼️";
+  if (/\.docx?$/.test(name) || /msword|wordprocessingml/.test(type)) return "📄";
+  if (/\.xlsx?$/.test(name) || /ms-excel|spreadsheetml/.test(type)) return "📊";
+  if (/\.pptx?$/.test(name) || /ms-powerpoint|presentationml/.test(type)) return "📽️";
+  if (/\.(zip|rar|7z|tar|gz)$/.test(name) || /zip|compressed/.test(type)) return "🗜️";
+  return "📎";
+}
+
 export function FilesPage() {
   const { t } = useTranslation();
   const [sources, setSources] = useState<FileSource[]>([]);
@@ -327,7 +339,9 @@ export function FilesPage() {
               ? files.map((file) => (
                   <article key={`${file.source ?? source}-${file.id}`} className="list-card">
                     <div>
-                      <h2>{fileTitle(file)}</h2>
+                      <h2>
+                        <span aria-hidden="true">{fileTypeIcon(file)}</span> {fileTitle(file)}
+                      </h2>
                       <p className="muted">
                         {formatSize(file.size_bytes || 0)}
                         {file.uploaded_by_name ? ` · ${file.uploaded_by_name}` : ""}
