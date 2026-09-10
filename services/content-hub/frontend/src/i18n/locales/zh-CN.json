@@ -955,7 +955,8 @@
       "requested": "已申请",
       "sent": "已发送",
       "closed": "已关闭"
-    }
+    },
+    "deletionRequestedNoEmail": "删除申请已保存，但内部通知邮件发送失败——请手动告知团队此申请。"
   },
   "m365": {
     "eyebrow": "Microsoft 365",

@@ -31,6 +31,7 @@ export function ReputationPage() {
   const [crawling, setCrawling] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [noticeIsWarning, setNoticeIsWarning] = useState(false);
   const [activeId, setActiveId] = useState("");
   const [reason, setReason] = useState("inaccurate");
   const [notes, setNotes] = useState("");
@@ -89,6 +90,7 @@ export function ReputationPage() {
             return;
           }
           if (status === "ok") {
+            setNoticeIsWarning(false);
             setNotice(
               t("reputation.crawlDone", {
                 found: nextSummary.last_run?.found ?? 0,
@@ -113,6 +115,7 @@ export function ReputationPage() {
     setCrawling(true);
     setError("");
     setNotice("");
+    setNoticeIsWarning(false);
     try {
       const run = await runReputationCrawl();
       setSummary((current) =>
@@ -137,6 +140,7 @@ export function ReputationPage() {
     setBusyId(item.id);
     setError("");
     setNotice("");
+    setNoticeIsWarning(false);
     try {
       const result = await requestReputationDeletion(item.id, {
         reason,
@@ -144,7 +148,8 @@ export function ReputationPage() {
         publisher_email: publisherEmail,
       });
       setLetter(result.request.letter);
-      setNotice(t("reputation.deletionRequested"));
+      setNoticeIsWarning(!result.email_sent);
+      setNotice(result.email_sent ? t("reputation.deletionRequested") : t("reputation.deletionRequestedNoEmail"));
       setActiveId("");
       setNotes("");
       await load({ silent: true });
@@ -159,6 +164,7 @@ export function ReputationPage() {
     setBusyId(requestId);
     try {
       await closeReputationDeletion(requestId);
+      setNoticeIsWarning(false);
       setNotice(t("reputation.deletionClosed"));
       await load({ silent: true });
     } catch (err) {
@@ -259,7 +265,7 @@ export function ReputationPage() {
       {loading && items.length === 0 ? <LoadingState /> : null}
       {loading && items.length > 0 ? <p className="muted">{t("common.loading")}</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
-      {notice ? <p className="success-text">{notice}</p> : null}
+      {notice ? <p className={noticeIsWarning ? "warning-text" : "success-text"}>{notice}</p> : null}
       {letter ? (
         <pre className="reputation-letter">
           {letter}

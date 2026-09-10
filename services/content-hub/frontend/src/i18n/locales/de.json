@@ -955,7 +955,8 @@
       "requested": "Beantragt",
       "sent": "Gesendet",
       "closed": "Geschlossen"
-    }
+    },
+    "deletionRequestedNoEmail": "Löschantrag wurde gespeichert, aber die interne Benachrichtigungs-Mail konnte nicht gesendet werden — bitte informiere dein Team manuell über diesen Antrag."
   },
   "m365": {
     "eyebrow": "Microsoft 365",

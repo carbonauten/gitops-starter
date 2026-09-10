@@ -72,7 +72,7 @@ def create_deletion_request(
     mention = db.get(ReputationMention, mention_id)
     if not mention:
         raise HTTPException(status_code=404, detail="not_found")
-    row = request_deletion(
+    row, email_sent = request_deletion(
         db,
         mention,
         reason=payload.reason,
@@ -80,7 +80,11 @@ def create_deletion_request(
         publisher_email=payload.publisher_email,
         actor=user,
     )
-    return {"request": deletion_to_dict(row), "mention": mention_to_dict(mention, deletion_to_dict(row))}
+    return {
+        "request": deletion_to_dict(row),
+        "mention": mention_to_dict(mention, deletion_to_dict(row)),
+        "email_sent": email_sent,
+    }
 
 
 @router.patch("/deletion-requests/{request_id}/close")

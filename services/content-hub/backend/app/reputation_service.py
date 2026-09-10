@@ -289,7 +289,13 @@ def request_deletion(
     notes: str = "",
     publisher_email: str = "",
     actor: dict[str, Any] | None = None,
-) -> ReputationDeletionRequest:
+) -> tuple[ReputationDeletionRequest, bool]:
+    """Create a deletion request and notify the internal inbox.
+
+    Returns (row, email_sent) — email_sent is False when Resend/SMTP isn't
+    configured or the send failed, so callers can warn the user instead of
+    reporting success while the internal notification silently never went out.
+    """
     cleaned_reason = (reason or "other").strip().lower()
     if cleaned_reason not in DELETION_REASONS:
         cleaned_reason = "other"
@@ -335,21 +341,33 @@ def request_deletion(
         f"Empfänger-Vorschlag: {row.publisher_email or '—'}\n\n"
         f"{letter}\n"
     )
-    send_plain_email(
+    email_sent = send_plain_email(
         to_email=inbox,
         subject=f"Löschantrag Web-Reputation: {mention.source_host or mention.url}",
         body=body,
         settings=settings,
     )
+    if not email_sent:
+        logger.warning(
+            "Internal deletion-request notification not sent (request %s, inbox %s) — "
+            "email not configured or delivery failed",
+            row.id,
+            inbox,
+        )
     log_audit(
         db,
         entity_type="reputation_deletion",
         entity_id=row.id,
         action="request",
         actor=actor,
-        details={"mention_id": mention.id, "url": mention.url, "reason": cleaned_reason},
+        details={
+            "mention_id": mention.id,
+            "url": mention.url,
+            "reason": cleaned_reason,
+            "internal_notification_sent": email_sent,
+        },
     )
-    return row
+    return row, email_sent
 
 
 def close_deletion(db: Session, row: ReputationDeletionRequest, *, actor: dict[str, Any] | None = None) -> ReputationDeletionRequest:

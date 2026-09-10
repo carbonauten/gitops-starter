@@ -169,6 +169,7 @@ def test_reputation_crawl_and_deletion_request(auth_client, monkeypatch):
         letter = created.json()["request"]["letter"]
         assert "carbonauten GmbH" in letter
         assert target["url"] in letter
+        assert created.json()["email_sent"] is True
         assert send_email.call_count >= 1
 
         duplicate = auth_client.post(
@@ -186,6 +187,35 @@ def test_reputation_crawl_and_deletion_request(auth_client, monkeypatch):
         )
         assert closed.status_code == 200
         assert closed.json()["request"]["status"] == "closed"
+
+
+def test_deletion_request_reports_failed_internal_email(auth_client, monkeypatch):
+    """The deletion request must still be created and the DB row/audit trail must
+    still reflect it, but the response has to say the internal notification failed
+    instead of claiming success when send_plain_email() returns False."""
+    monkeypatch.setattr(
+        "app.reputation_crawler.default_queries",
+        lambda settings=None: ["carbonauten GmbH"],
+    )
+    with patch("app.reputation_crawler.default_fetch", side_effect=_fake_fetch), patch(
+        "app.reputation_crawler.time.sleep", return_value=None
+    ):
+        crawl = auth_client.post("/api/reputation/crawl")
+        assert crawl.status_code == 200
+        run = _wait_for_crawl(auth_client)
+        assert run["status"] == "ok"
+
+    mentions = auth_client.get("/api/reputation/mentions")
+    target = mentions.json()["mentions"][0]
+
+    with patch("app.reputation_service.send_plain_email", return_value=False):
+        created = auth_client.post(
+            f"/api/reputation/mentions/{target['id']}/deletion-requests",
+            json={"reason": "other"},
+        )
+    assert created.status_code == 201
+    assert created.json()["email_sent"] is False
+    assert created.json()["request"]["status"] == "requested"
 
 
 def test_reputation_forbidden_for_viewer(viewer_auth_client):
