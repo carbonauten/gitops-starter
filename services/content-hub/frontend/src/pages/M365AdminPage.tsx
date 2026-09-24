@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -17,6 +17,96 @@ import {
 import { EmptyState } from "../components/EmptyState";
 import { LoadingState } from "../components/LoadingState";
 
+function LicenseControls({
+  user,
+  licenses,
+  busy,
+  pick,
+  onPick,
+  onAssign,
+  onRemove,
+  t,
+}: {
+  user: M365DirectoryUser;
+  licenses: M365License[];
+  busy: boolean;
+  pick: string;
+  onPick: (skuId: string) => void;
+  onAssign: () => void;
+  onRemove: (skuId: string) => void;
+  t: (key: string) => string;
+}) {
+  return (
+    <div className="m365-license-block">
+      {user.license_skus.length ? (
+        <ul className="license-chip-list">
+          {user.license_skus.map((entry) => (
+            <li key={entry.sku_id} className="license-chip">
+              {entry.name}
+              <button
+                type="button"
+                className="license-chip-remove"
+                disabled={busy}
+                title={t("m365.removeLicense")}
+                onClick={() => onRemove(entry.sku_id)}
+              >
+                ×
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <span className="muted">{t("m365.noLicense")}</span>
+      )}
+      <div className="license-assign-row">
+        <select
+          className="admin-select"
+          value={pick}
+          disabled={busy}
+          onChange={(event) => onPick(event.target.value)}
+        >
+          <option value="">{t("m365.assignLicensePlaceholder")}</option>
+          {licenses
+            .filter((license) => !user.licenses.includes(license.name))
+            .map((license) => (
+              <option key={license.sku_id} value={license.sku_id}>
+                {license.name} ({license.available}/{license.total})
+              </option>
+            ))}
+        </select>
+        <button type="button" className="ghost-button" disabled={busy || !pick} onClick={onAssign}>
+          {busy ? t("common.loading") : t("m365.assignLicense")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function UserActionButtons({
+  user,
+  busy,
+  onToggleEnabled,
+  onReset,
+  t,
+}: {
+  user: M365DirectoryUser;
+  busy: boolean;
+  onToggleEnabled: () => void;
+  onReset: () => void;
+  t: (key: string, opts?: Record<string, string>) => string;
+}) {
+  return (
+    <div className="list-card-actions">
+      <button type="button" className="ghost-button" disabled={busy} onClick={onToggleEnabled}>
+        {busy ? t("common.loading") : user.account_enabled ? t("m365.block") : t("m365.unblock")}
+      </button>
+      <button type="button" className="ghost-button" disabled={busy} onClick={onReset}>
+        {busy ? t("common.loading") : t("m365.resetPassword")}
+      </button>
+    </div>
+  );
+}
+
 export function M365AdminPage() {
   const { t, i18n } = useTranslation();
   const [users, setUsers] = useState<M365DirectoryUser[]>([]);
@@ -32,6 +122,7 @@ export function M365AdminPage() {
   const [newUpn, setNewUpn] = useState("");
   const [newTitle, setNewTitle] = useState("");
   const [newDepartment, setNewDepartment] = useState("");
+  const [newUsageLocation, setNewUsageLocation] = useState("DE");
   const [askInput, setAskInput] = useState("");
   const [askAnswer, setAskAnswer] = useState("");
   const [askLoading, setAskLoading] = useState(false);
@@ -109,11 +200,13 @@ export function M365AdminPage() {
         user_principal_name: newUpn.trim(),
         job_title: newTitle.trim(),
         department: newDepartment.trim(),
+        usage_location: (newUsageLocation.trim() || "DE").toUpperCase().slice(0, 2),
       });
       setNewName("");
       setNewUpn("");
       setNewTitle("");
       setNewDepartment("");
+      setNewUsageLocation("DE");
       setNotice(
         t("m365.createdNotice", {
           name: created.user.display_name,
@@ -168,7 +261,7 @@ export function M365AdminPage() {
     try {
       const result = await askM365Directory(question, i18n.language);
       setAskAnswer(result.answer);
-      if (result.action !== "list") {
+      if (result.action !== "list" && result.action !== "list_licenses" && result.action !== "chat") {
         await load();
       }
     } catch (err) {
@@ -179,6 +272,51 @@ export function M365AdminPage() {
   }
 
   const enabledCount = users.filter((item) => item.account_enabled).length;
+  const licenseSummary = useMemo(
+    () =>
+      [...licenses]
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .slice(0, 6)
+        .map((license) => `${license.name}: ${license.available}/${license.total}`),
+    [licenses],
+  );
+
+  function statusBadge(user: M365DirectoryUser) {
+    return (
+      <span
+        className={
+          user.account_enabled ? "workflow-badge workflow-badge-published" : "workflow-badge workflow-badge-rejected"
+        }
+      >
+        {user.account_enabled ? t("m365.enabled") : t("m365.disabled")}
+      </span>
+    );
+  }
+
+  function renderUserBody(user: M365DirectoryUser) {
+    const busy = busyId === user.id;
+    return (
+      <>
+        <LicenseControls
+          user={user}
+          licenses={licenses}
+          busy={busy}
+          pick={licensePick[user.id] ?? ""}
+          onPick={(skuId) => setLicensePick((prev) => ({ ...prev, [user.id]: skuId }))}
+          onAssign={() => void handleAssignLicense(user)}
+          onRemove={(skuId) => void handleRemoveLicense(user, skuId)}
+          t={t}
+        />
+        <UserActionButtons
+          user={user}
+          busy={busy}
+          onToggleEnabled={() => void handleEnabled(user, !user.account_enabled)}
+          onReset={() => void handleReset(user)}
+          t={t}
+        />
+      </>
+    );
+  }
 
   return (
     <section className="page">
@@ -190,7 +328,7 @@ export function M365AdminPage() {
 
       {mock ? <p className="muted">{t("m365.mockHint")}</p> : null}
       {error ? <p className="error-text">{error}</p> : null}
-      {notice ? <p>{notice}</p> : null}
+      {notice ? <p className="success-text m365-notice">{notice}</p> : null}
 
       <div className="role-legend">
         <div className="role-legend-item">
@@ -207,6 +345,13 @@ export function M365AdminPage() {
         </div>
       </div>
 
+      {licenseSummary.length > 0 ? (
+        <div className="m365-license-summary" aria-label={t("m365.licensePool")}>
+          <strong>{t("m365.licensePool")}</strong>
+          <span className="muted">{licenseSummary.join(" · ")}</span>
+        </div>
+      ) : null}
+
       <form className="employee-create-form" onSubmit={(event) => void handleAsk(event)}>
         <h2>{t("m365.askTitle")}</h2>
         <p className="muted">{t("m365.askHint")}</p>
@@ -222,7 +367,12 @@ export function M365AdminPage() {
             {askLoading ? t("common.loading") : t("m365.askSubmit")}
           </button>
         </div>
-        {askAnswer ? <pre className="muted" style={{ whiteSpace: "pre-wrap" }}>{askAnswer}</pre> : null}
+        {askAnswer ? (
+          <div className="m365-ask-answer">
+            <strong>{t("m365.askAnswerTitle")}</strong>
+            <pre>{askAnswer}</pre>
+          </div>
+        ) : null}
       </form>
 
       <form className="employee-create-form" onSubmit={(event) => void handleCreate(event)}>
@@ -254,8 +404,19 @@ export function M365AdminPage() {
             placeholder={t("m365.createDepartment")}
             onChange={(event) => setNewDepartment(event.target.value)}
           />
+          <label className="m365-usage-field">
+            <span>{t("m365.createUsageLocation")}</span>
+            <input
+              type="text"
+              maxLength={2}
+              value={newUsageLocation}
+              placeholder="DE"
+              onChange={(event) => setNewUsageLocation(event.target.value.toUpperCase())}
+              required
+            />
+          </label>
           <button type="submit" className="primary-button" disabled={busyId === "create"}>
-            {t("m365.createSubmit")}
+            {busyId === "create" ? t("common.loading") : t("m365.createSubmit")}
           </button>
         </div>
       </form>
@@ -273,26 +434,26 @@ export function M365AdminPage() {
       </form>
 
       {loading ? <LoadingState /> : null}
-      {!loading && users.length === 0 ? <EmptyState title={t("m365.empty")} /> : null}
+      {!loading && users.length === 0 ? <EmptyState message={t("m365.empty")} /> : null}
 
       {!loading && users.length > 0 ? (
-        <div className="admin-table-wrap">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>{t("m365.columns.name")}</th>
-                <th>{t("m365.columns.upn")}</th>
-                <th>{t("m365.columns.job")}</th>
-                <th>{t("m365.columns.department")}</th>
-                <th>{t("m365.columns.licenses")}</th>
-                <th>{t("m365.columns.status")}</th>
-                <th>{t("m365.columns.actions")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => {
-                const busy = busyId === user.id;
-                return (
+        <>
+          <div className="admin-table-wrap m365-table-desktop">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>{t("m365.columns.name")}</th>
+                  <th>{t("m365.columns.upn")}</th>
+                  <th>{t("m365.columns.job")}</th>
+                  <th>{t("m365.columns.department")}</th>
+                  <th>{t("m365.columns.usageLocation")}</th>
+                  <th>{t("m365.columns.licenses")}</th>
+                  <th>{t("m365.columns.status")}</th>
+                  <th>{t("m365.columns.actions")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((user) => (
                   <tr key={user.id}>
                     <td>
                       <strong>{user.display_name}</strong>
@@ -302,91 +463,55 @@ export function M365AdminPage() {
                     <td>{user.job_title || "—"}</td>
                     <td>{user.department || "—"}</td>
                     <td>
-                      {user.license_skus.length ? (
-                        <ul className="license-chip-list">
-                          {user.license_skus.map((entry) => (
-                            <li key={entry.sku_id} className="license-chip">
-                              {entry.name}
-                              <button
-                                type="button"
-                                className="license-chip-remove"
-                                disabled={busy}
-                                title={t("m365.removeLicense")}
-                                onClick={() => void handleRemoveLicense(user, entry.sku_id)}
-                              >
-                                ×
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="muted">{t("m365.noLicense")}</span>
-                      )}
-                      <div className="license-assign-row">
-                        <select
-                          className="admin-select"
-                          value={licensePick[user.id] ?? ""}
-                          disabled={busy}
-                          onChange={(event) =>
-                            setLicensePick((prev) => ({ ...prev, [user.id]: event.target.value }))
-                          }
-                        >
-                          <option value="">{t("m365.assignLicensePlaceholder")}</option>
-                          {licenses
-                            .filter((license) => !user.licenses.includes(license.name))
-                            .map((license) => (
-                              <option key={license.sku_id} value={license.sku_id}>
-                                {license.name} ({license.available}/{license.total})
-                              </option>
-                            ))}
-                        </select>
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          disabled={busy || !licensePick[user.id]}
-                          onClick={() => void handleAssignLicense(user)}
-                        >
-                          {t("m365.assignLicense")}
-                        </button>
-                      </div>
+                      <span className="m365-usage-pill">{user.usage_location || "—"}</span>
                     </td>
                     <td>
-                      <span
-                        className={
-                          user.account_enabled
-                            ? "workflow-badge workflow-badge-published"
-                            : "workflow-badge workflow-badge-rejected"
-                        }
-                      >
-                        {user.account_enabled ? t("m365.enabled") : t("m365.disabled")}
-                      </span>
+                      <LicenseControls
+                        user={user}
+                        licenses={licenses}
+                        busy={busyId === user.id}
+                        pick={licensePick[user.id] ?? ""}
+                        onPick={(skuId) => setLicensePick((prev) => ({ ...prev, [user.id]: skuId }))}
+                        onAssign={() => void handleAssignLicense(user)}
+                        onRemove={(skuId) => void handleRemoveLicense(user, skuId)}
+                        t={t}
+                      />
                     </td>
+                    <td>{statusBadge(user)}</td>
                     <td>
-                      <div className="list-card-actions">
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          disabled={busy}
-                          onClick={() => void handleEnabled(user, !user.account_enabled)}
-                        >
-                          {user.account_enabled ? t("m365.block") : t("m365.unblock")}
-                        </button>
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          disabled={busy}
-                          onClick={() => void handleReset(user)}
-                        >
-                          {t("m365.resetPassword")}
-                        </button>
-                      </div>
+                      <UserActionButtons
+                        user={user}
+                        busy={busyId === user.id}
+                        onToggleEnabled={() => void handleEnabled(user, !user.account_enabled)}
+                        onReset={() => void handleReset(user)}
+                        t={t}
+                      />
                     </td>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="m365-card-list">
+            {users.map((user) => (
+              <article key={user.id} className="m365-user-card list-card">
+                <div className="list-card-title-row">
+                  <div>
+                    <h2>{user.display_name}</h2>
+                    <p className="muted">{user.user_principal_name}</p>
+                  </div>
+                  {statusBadge(user)}
+                </div>
+                <p className="muted">
+                  {(user.job_title || "—") + " · " + (user.department || "—") + " · "}
+                  {t("m365.columns.usageLocation")}: {user.usage_location || "—"}
+                </p>
+                {renderUserBody(user)}
+              </article>
+            ))}
+          </div>
+        </>
       ) : null}
     </section>
   );
