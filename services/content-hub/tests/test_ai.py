@@ -2,6 +2,56 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
+from app.ai_service import extract_json_array, extract_json_object
+
+
+def test_extract_json_object_handles_nested_braces_and_preamble():
+    raw = (
+        'Sure, here is the result:\n'
+        '{"title": "Hello {world}", "content": "<p>A}B</p>"}\n'
+        'Hope that helps!'
+    )
+    parsed = extract_json_object(raw)
+    assert parsed is not None
+    assert parsed["title"] == "Hello {world}"
+    assert parsed["content"] == "<p>A}B</p>"
+
+
+def test_extract_json_object_from_fenced_block():
+    raw = '```json\n{"title": "T", "content": "<p>x {y}</p>"}\n```'
+    parsed = extract_json_object(raw)
+    assert parsed == {"title": "T", "content": "<p>x {y}</p>"}
+
+
+def test_extract_json_array_ignores_trailing_noise():
+    raw = 'Suggestions: ["one", "two", "three"] thanks'
+    parsed = extract_json_array(raw)
+    assert parsed == ["one", "two", "three"]
+
+
+def test_translate_parses_nested_json_from_model(auth_client, monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    model_raw = (
+        'Here you go:\n'
+        '{"title": "Note {1}", "content": "<p>Use } carefully</p>"}\n'
+        'done'
+    )
+    with patch("app.ai_service._chat_completion", return_value=model_raw):
+        from app.ai_service import translate_article
+
+        result = translate_article(
+            title="Notiz",
+            content="<p>alt</p>",
+            target_language="en",
+        )
+    assert result is not None
+    assert result["title"] == "Note {1}"
+    assert "carefully" in result["content"]
+    get_settings.cache_clear()
+
 
 def test_ai_status_without_keys(auth_client):
     response = auth_client.get("/api/ai/status")

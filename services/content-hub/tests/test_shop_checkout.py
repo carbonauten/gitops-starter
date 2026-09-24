@@ -184,3 +184,169 @@ def test_stripe_webhook_accepts_valid_signature(client, monkeypatch):
     assert response.status_code == 200
     assert response.json()["received"] is True
     get_settings.cache_clear()
+
+
+def test_stripe_checkout_reserves_stock_immediately(auth_client, monkeypatch):
+    from unittest.mock import patch
+
+    monkeypatch.setenv("SHOP_STRIPE_SECRET_KEY", "sk_test_dummy")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    product = _create_published_product(auth_client, stock=5, track=True)
+
+    with patch(
+        "app.shop_order_service.create_stripe_checkout_session",
+        return_value="https://checkout.stripe.test/session",
+    ):
+        checkout = auth_client.post(
+            "/api/shop/checkout",
+            json={
+                "payment_method": "stripe",
+                "items": [{"product_id": product["id"], "quantity": 2}],
+                "customer": {
+                    "email": "buyer@example.com",
+                    "name": "Buyer",
+                    "address_line1": "Street 1",
+                    "postal_code": "10115",
+                    "city": "Berlin",
+                    "country": "DE",
+                },
+            },
+        )
+    assert checkout.status_code == 200
+    order = checkout.json()["order"]
+    assert order["status"] == "pending"
+    assert order["payment_method"] == "stripe"
+    assert checkout.json()["checkout_url"] == "https://checkout.stripe.test/session"
+    refreshed = auth_client.get(f"/api/products/{product['id']}").json()["product"]
+    assert refreshed["stock_qty"] == 3
+    get_settings.cache_clear()
+
+
+def test_stripe_checkout_failure_cancels_and_restores_stock(auth_client, monkeypatch):
+    from fastapi import HTTPException
+    from unittest.mock import patch
+
+    monkeypatch.setenv("SHOP_STRIPE_SECRET_KEY", "sk_test_dummy")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    product = _create_published_product(auth_client, name="Stripe Fail Pack", stock=4, track=True)
+
+    with patch(
+        "app.shop_order_service.create_stripe_checkout_session",
+        side_effect=HTTPException(status_code=502, detail="stripe_failed"),
+    ):
+        checkout = auth_client.post(
+            "/api/shop/checkout",
+            json={
+                "payment_method": "stripe",
+                "items": [{"product_id": product["id"], "quantity": 2}],
+                "customer": {
+                    "email": "buyer@example.com",
+                    "name": "Buyer",
+                    "address_line1": "Street 1",
+                    "postal_code": "10115",
+                    "city": "Berlin",
+                    "country": "DE",
+                },
+            },
+        )
+    assert checkout.status_code == 502
+    refreshed = auth_client.get(f"/api/products/{product['id']}").json()["product"]
+    assert refreshed["stock_qty"] == 4
+
+    admin = auth_client.get("/api/orders")
+    assert admin.status_code == 200
+    orders = admin.json()["orders"]
+    assert len(orders) == 1
+    assert orders[0]["status"] == "cancelled"
+    get_settings.cache_clear()
+
+
+def test_cancel_pending_stripe_order_restores_stock(auth_client, monkeypatch):
+    from unittest.mock import patch
+
+    monkeypatch.setenv("SHOP_STRIPE_SECRET_KEY", "sk_test_dummy")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    product = _create_published_product(auth_client, name="Pending Cancel", stock=6, track=True)
+
+    with patch(
+        "app.shop_order_service.create_stripe_checkout_session",
+        return_value="https://checkout.stripe.test/session",
+    ):
+        checkout = auth_client.post(
+            "/api/shop/checkout",
+            json={
+                "payment_method": "stripe",
+                "items": [{"product_id": product["id"], "quantity": 3}],
+                "customer": {
+                    "email": "buyer@example.com",
+                    "name": "Buyer",
+                    "address_line1": "Street 1",
+                    "postal_code": "10115",
+                    "city": "Berlin",
+                    "country": "DE",
+                },
+            },
+        )
+    order = checkout.json()["order"]
+    assert auth_client.get(f"/api/products/{product['id']}").json()["product"]["stock_qty"] == 3
+
+    cancelled = auth_client.patch(f"/api/orders/{order['id']}", json={"status": "cancelled"})
+    assert cancelled.status_code == 200
+    assert cancelled.json()["order"]["status"] == "cancelled"
+    assert auth_client.get(f"/api/products/{product['id']}").json()["product"]["stock_qty"] == 6
+    get_settings.cache_clear()
+
+
+def test_mark_order_paid_does_not_double_reserve_stripe(auth_client, monkeypatch):
+    from unittest.mock import patch
+
+    monkeypatch.setenv("SHOP_STRIPE_SECRET_KEY", "sk_test_dummy")
+    from app.config import get_settings
+    from app.database import ShopOrder, _SessionLocal
+    from app.shop_order_service import mark_order_paid
+    from sqlalchemy import select
+
+    get_settings.cache_clear()
+    product = _create_published_product(auth_client, name="Paid Once", stock=5, track=True)
+
+    with patch(
+        "app.shop_order_service.create_stripe_checkout_session",
+        return_value="https://checkout.stripe.test/session",
+    ):
+        checkout = auth_client.post(
+            "/api/shop/checkout",
+            json={
+                "payment_method": "stripe",
+                "items": [{"product_id": product["id"], "quantity": 2}],
+                "customer": {
+                    "email": "buyer@example.com",
+                    "name": "Buyer",
+                    "address_line1": "Street 1",
+                    "postal_code": "10115",
+                    "city": "Berlin",
+                    "country": "DE",
+                },
+            },
+        )
+    order_id = checkout.json()["order"]["id"]
+    assert auth_client.get(f"/api/products/{product['id']}").json()["product"]["stock_qty"] == 3
+
+    db = _SessionLocal()
+    try:
+        order = db.scalar(select(ShopOrder).where(ShopOrder.id == order_id))
+        assert order is not None
+        with patch("app.shop_order_service.send_order_emails"), patch(
+            "app.shop_order_service.award_co2_credits_for_order"
+        ):
+            mark_order_paid(db, order, payment_intent="pi_test")
+    finally:
+        db.close()
+
+    assert auth_client.get(f"/api/products/{product['id']}").json()["product"]["stock_qty"] == 3
+    get_settings.cache_clear()

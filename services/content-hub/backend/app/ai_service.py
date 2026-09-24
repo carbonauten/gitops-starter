@@ -13,6 +13,73 @@ from .schemas import SearchResult
 logger = logging.getLogger(__name__)
 
 
+def extract_json_object(raw: str) -> dict[str, Any] | None:
+    """Parse a JSON object from model output without greedy brace matching."""
+    text = (raw or "").strip()
+    if not text:
+        return None
+
+    candidates: list[str] = []
+    fence = re.search(r"```(?:json)?\s*([\s\S]*?)```", text, re.IGNORECASE)
+    if fence:
+        candidates.append(fence.group(1).strip())
+    candidates.append(text)
+
+    decoder = json.JSONDecoder()
+    for candidate in candidates:
+        if not candidate:
+            continue
+        try:
+            parsed = json.loads(candidate)
+            if isinstance(parsed, dict):
+                return parsed
+        except json.JSONDecodeError:
+            pass
+        start = candidate.find("{")
+        if start < 0:
+            continue
+        try:
+            parsed, _end = decoder.raw_decode(candidate[start:])
+            if isinstance(parsed, dict):
+                return parsed
+        except json.JSONDecodeError:
+            continue
+    return None
+
+
+def extract_json_array(raw: str) -> list[Any] | None:
+    text = (raw or "").strip()
+    if not text:
+        return None
+
+    candidates: list[str] = []
+    fence = re.search(r"```(?:json)?\s*([\s\S]*?)```", text, re.IGNORECASE)
+    if fence:
+        candidates.append(fence.group(1).strip())
+    candidates.append(text)
+
+    decoder = json.JSONDecoder()
+    for candidate in candidates:
+        if not candidate:
+            continue
+        try:
+            parsed = json.loads(candidate)
+            if isinstance(parsed, list):
+                return parsed
+        except json.JSONDecodeError:
+            pass
+        start = candidate.find("[")
+        if start < 0:
+            continue
+        try:
+            parsed, _end = decoder.raw_decode(candidate[start:])
+            if isinstance(parsed, list):
+                return parsed
+        except json.JSONDecodeError:
+            continue
+    return None
+
+
 def ai_configured(settings: Settings | None = None) -> bool:
     settings = settings or get_settings()
     if settings.azure_openai_endpoint.strip() and settings.azure_openai_api_key.strip():
@@ -194,12 +261,8 @@ def translate_article(
     )
     if not raw:
         return None
-    match = re.search(r"\{.*\}", raw, re.DOTALL)
-    if not match:
-        return None
-    try:
-        parsed = json.loads(match.group(0))
-    except json.JSONDecodeError:
+    parsed = extract_json_object(raw)
+    if not parsed:
         return None
     translated_title = str(parsed.get("title", "")).strip()
     translated_content = str(parsed.get("content", "")).strip()
@@ -276,12 +339,8 @@ def rewrite_article(
     )
     if not raw:
         return None
-    match = re.search(r"\{.*\}", raw, re.DOTALL)
-    if not match:
-        return None
-    try:
-        parsed = json.loads(match.group(0))
-    except json.JSONDecodeError:
+    parsed = extract_json_object(raw)
+    if not parsed:
         return None
     next_title = str(parsed.get("title", "")).strip()
     next_content = str(parsed.get("content", "")).strip()
@@ -326,12 +385,8 @@ def draft_article_from_notes(
     )
     if not raw:
         return None
-    match = re.search(r"\{.*\}", raw, re.DOTALL)
-    if not match:
-        return None
-    try:
-        parsed = json.loads(match.group(0))
-    except json.JSONDecodeError:
+    parsed = extract_json_object(raw)
+    if not parsed:
         return None
     next_title = str(parsed.get("title", "")).strip()
     next_content = str(parsed.get("content", "")).strip()
@@ -366,13 +421,7 @@ def suggest_follow_up_queries(question: str, results: list[SearchResult], langua
     )
     if not raw:
         return []
-    match = re.search(r"\[.*\]", raw, re.DOTALL)
-    if not match:
+    parsed = extract_json_array(raw)
+    if not isinstance(parsed, list):
         return []
-    try:
-        parsed = json.loads(match.group(0))
-        if isinstance(parsed, list):
-            return [str(item).strip() for item in parsed if str(item).strip()][:3]
-    except json.JSONDecodeError:
-        return []
-    return []
+    return [str(item).strip() for item in parsed if str(item).strip()][:3]
