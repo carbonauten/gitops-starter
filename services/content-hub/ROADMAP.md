@@ -414,6 +414,27 @@ flowchart LR
 
 ---
 
+## UI Sprint 6 — M365-Verwaltung mobil & klarer (September 2026) ✅
+
+**Ziel:** Die M365-Admin-Seite ist auf dem Handy nutzbar und zeigt Lizenzkontingent sowie Nutzungsstandort (Länderfreigabe) ohne horizontales Scrollen der großen Tabelle.
+
+### Deliverables
+
+- [x] Mobile Kartenansicht für Benutzer (wie Audit-Log), Desktop behält die Tabelle
+- [x] Spalte/Anzeige **Nutzungsstandort** (`usage_location`) + Feld beim Anlegen (Default `DE`)
+- [x] Lizenzkontingent-Zusammenfassung über der Liste (frei/gesamt)
+- [x] Ask-Antwort in eigener Box; Erfolgs-Hinweise als grüner Banner
+- [x] Busy-Buttons zeigen „Laden…“ (Sperren, Passwort, Lizenz zuweisen, Anlegen)
+- [x] DE / EN / 中文
+
+### Akzeptanzkriterien
+
+- [x] Auf schmalen Viewports kein erzwungenes Horizontal-Scroll der Benutzerliste
+- [x] IT-Master sieht Nutzungsstandort und freies Lizenzkontingent auf einen Blick
+- [x] Doppelklick auf Sperren/Passwort löst die Aktion nur einmal aus und zeigt Ladezustand
+
+---
+
 ## Search + AI Sprint — Zentrale Suche ✅ (MVP)
 
 **Ziel:** Suche als wichtigstes Feature — inkl. KI-gestützter Fragen.
