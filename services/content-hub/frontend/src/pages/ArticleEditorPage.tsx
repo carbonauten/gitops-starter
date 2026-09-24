@@ -202,7 +202,7 @@ export function ArticleEditorPage() {
           title={title}
           content={content}
           disabled={!canEditContent}
-          onApplyTranslation={({ title: nextTitle, content: nextContent }) => {
+          onApplyContent={({ title: nextTitle, content: nextContent }) => {
             setTitle(nextTitle);
             setContent(nextContent);
           }}

@@ -953,12 +953,27 @@ export type AiStatus = {
   available: boolean;
   features: string[];
   assistant_name: string;
+  embeddings_available?: boolean;
 };
 
 export type AiTranslation = {
   title: string;
   content: string;
   target_language: string;
+};
+
+export type RewriteTone = "professional" | "concise" | "friendly" | "formal";
+
+export type AiRewrite = {
+  title: string;
+  content: string;
+  tone: RewriteTone;
+};
+
+export type AiDraft = {
+  title: string;
+  content: string;
+  language: string;
 };
 
 export async function fetchAiStatus(): Promise<AiStatus> {
@@ -996,6 +1011,39 @@ export async function summarizeArticleContent(payload: {
     45000,
   );
   return response.summary;
+}
+
+export async function rewriteArticleContent(payload: {
+  title: string;
+  content: string;
+  tone: RewriteTone;
+  language?: "de" | "en" | "zh-CN";
+}): Promise<AiRewrite> {
+  const response = await request<{ rewrite: AiRewrite }>(
+    "/api/ai/rewrite",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    60000,
+  );
+  return response.rewrite;
+}
+
+export async function draftArticleFromNotes(payload: {
+  notes: string;
+  language?: "de" | "en" | "zh-CN";
+  title_hint?: string;
+}): Promise<AiDraft> {
+  const response = await request<{ draft: AiDraft }>(
+    "/api/ai/draft-from-notes",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+    60000,
+  );
+  return response.draft;
 }
 
 export async function fetchCertificates(

@@ -497,14 +497,28 @@
   "ai": {
     "assistantName": "Ask Carbonauten",
     "panelTitle": "KI-Assistenz",
-    "panelSubtitle": "Übersetzen und zusammenfassen — nur für interne Carbonauten-Inhalte.",
+    "panelSubtitle": "Übersetzen, umschreiben und aus Stichpunkten entwerfen — nur für interne Carbonauten-Inhalte.",
     "available": "KI aktiv",
     "unavailable": "KI nicht konfiguriert",
-    "setupHint": "In Railway AZURE_OPENAI_* oder OPENAI_API_KEY setzen, dann Übersetzung und Zusammenfassung freischalten.",
+    "setupHint": "In Railway AZURE_OPENAI_* oder OPENAI_API_KEY setzen, dann KI-Schreibassistenz freischalten.",
     "targetLanguage": "Zielsprache",
     "translate": "Übersetzen",
     "summarize": "Zusammenfassen",
-    "summaryTitle": "Zusammenfassung"
+    "summaryTitle": "Zusammenfassung",
+    "sectionTranslate": "Übersetzen & Zusammenfassung",
+    "sectionRewrite": "Ton & Stil",
+    "sectionDraft": "Entwurf aus Stichpunkten",
+    "tone": "Ton",
+    "rewrite": "Umschreiben",
+    "notesLabel": "Stichpunkte / Notizen",
+    "notesPlaceholder": "z. B. China-Ofen online · ISO-Audit nächste Woche · FuckCo2 Shop Versand live",
+    "generateDraft": "Entwurf erzeugen",
+    "tones": {
+      "professional": "Professionell",
+      "concise": "Knapp",
+      "friendly": "Freundlich",
+      "formal": "Formell"
+    }
   },
   "editor": {
     "bold": "Fett",
