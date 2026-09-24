@@ -197,6 +197,117 @@ def summarize_article(
     )
 
 
+REWRITE_TONES = {
+    "professional": "clear, professional internal corporate tone",
+    "concise": "shorter and more concise; cut fluff while keeping facts",
+    "friendly": "friendly and approachable while remaining accurate",
+    "formal": "formal and precise compliance-friendly tone",
+}
+
+
+def rewrite_article(
+    *,
+    title: str,
+    content: str,
+    tone: str = "professional",
+    language: str | None = None,
+) -> dict[str, str] | None:
+    tone_key = (tone or "professional").strip().lower()
+    if tone_key not in REWRITE_TONES:
+        tone_key = "professional"
+    tone_hint = REWRITE_TONES[tone_key]
+    lang_hint = ""
+    if language:
+        lang_hint = f" Keep the output language as {LANG_NAMES.get(language, language)}."
+    system = (
+        "You rewrite internal Carbonauten company content. "
+        "Preserve HTML structure and tags. Improve clarity and tone only — "
+        "do not invent facts, numbers, names, or claims. "
+        "Return valid JSON with keys title and content only."
+    )
+    user = (
+        f"Rewrite the article with a {tone_hint}.{lang_hint}\n\n"
+        f"TITLE:\n{title}\n\nCONTENT_HTML:\n{content}"
+    )
+    raw = _chat_completion(
+        [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        max_tokens=2500,
+    )
+    if not raw:
+        return None
+    match = re.search(r"\{.*\}", raw, re.DOTALL)
+    if not match:
+        return None
+    try:
+        parsed = json.loads(match.group(0))
+    except json.JSONDecodeError:
+        return None
+    next_title = str(parsed.get("title", "")).strip()
+    next_content = str(parsed.get("content", "")).strip()
+    if not next_title and not next_content:
+        return None
+    return {
+        "title": next_title or title,
+        "content": next_content or content,
+        "tone": tone_key,
+    }
+
+
+def draft_article_from_notes(
+    *,
+    notes: str,
+    language: str = "de",
+    title_hint: str = "",
+) -> dict[str, str] | None:
+    lang_name = LANG_NAMES.get(language, language)
+    cleaned = " ".join((notes or "").split())
+    if not cleaned:
+        return None
+    system = (
+        "You draft internal Carbonauten articles from editor notes. "
+        "Write factual, neutral content suitable for employees. "
+        "Do not invent metrics, customers, or approvals that are not in the notes. "
+        "Return valid JSON with keys title and content. "
+        "content must be simple HTML using only <p>, <ul>, <ol>, <li>, <strong>, <em>, <h2>, <h3>."
+    )
+    hint = f"\nPreferred title hint: {title_hint.strip()}" if title_hint.strip() else ""
+    user = (
+        f"Language: {lang_name}.{hint}\n\n"
+        f"NOTES:\n{cleaned[:8000]}\n\n"
+        "Produce a short ready-to-edit article draft."
+    )
+    raw = _chat_completion(
+        [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        max_tokens=2000,
+    )
+    if not raw:
+        return None
+    match = re.search(r"\{.*\}", raw, re.DOTALL)
+    if not match:
+        return None
+    try:
+        parsed = json.loads(match.group(0))
+    except json.JSONDecodeError:
+        return None
+    next_title = str(parsed.get("title", "")).strip()
+    next_content = str(parsed.get("content", "")).strip()
+    if not next_title and not next_content:
+        return None
+    if next_content and not next_content.lstrip().startswith("<"):
+        next_content = f"<p>{next_content}</p>"
+    return {
+        "title": next_title or (title_hint.strip() or "Draft"),
+        "content": next_content or "<p></p>",
+        "language": language,
+    }
+
+
 def suggest_follow_up_queries(question: str, results: list[SearchResult], language: str = "de") -> list[str]:
     if not ai_configured():
         titles = [item.title for item in results[:3] if item.title]

@@ -397,14 +397,28 @@
   "ai": {
     "assistantName": "Ask Carbonauten",
     "panelTitle": "AI assist",
-    "panelSubtitle": "Translate and summarize — for internal Carbonauten content only.",
+    "panelSubtitle": "Translate, rewrite tone, and draft from notes — for internal Carbonauten content only.",
     "available": "AI ready",
     "unavailable": "AI not configured",
-    "setupHint": "Set AZURE_OPENAI_* or OPENAI_API_KEY in Railway to unlock translation and summaries.",
+    "setupHint": "Set AZURE_OPENAI_* or OPENAI_API_KEY in Railway to unlock AI writing assist.",
     "targetLanguage": "Target language",
     "translate": "Translate",
     "summarize": "Summarize",
-    "summaryTitle": "Summary"
+    "summaryTitle": "Summary",
+    "sectionTranslate": "Translate & summary",
+    "sectionRewrite": "Tone & style",
+    "sectionDraft": "Draft from notes",
+    "tone": "Tone",
+    "rewrite": "Rewrite",
+    "notesLabel": "Bullets / notes",
+    "notesPlaceholder": "e.g. China kiln online · ISO audit next week · FuckCo2 shop shipping live",
+    "generateDraft": "Generate draft",
+    "tones": {
+      "professional": "Professional",
+      "concise": "Concise",
+      "friendly": "Friendly",
+      "formal": "Formal"
+    }
   },
   "editor": {
     "bold": "Bold",

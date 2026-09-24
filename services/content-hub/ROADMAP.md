@@ -79,6 +79,7 @@ flowchart LR
 | N | 2–4 Tage | ✅ Abgeschlossen (MVP) | M365-Verwaltung + Ask Carbonauten |
 | O | 2–4 Tage | ✅ Abgeschlossen (MVP) | Entra-Gruppen-Mapping + Lizenz-Zuweisung |
 | P | 2–4 Tage | ✅ Abgeschlossen (MVP) | Semantische Suche (Embeddings) |
+| Q | 2–4 Tage | ✅ Abgeschlossen (MVP) | KI-Schreibassistenz im Artikel-Editor |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -620,6 +621,9 @@ flowchart LR
 | Shop Rechnung PDF | Rechnungs-/Beleg-PDF Download | ~~Mittel~~ ✅ Sprint L |
 | Web-Reputation | Crawler + negative Treffer + Löschantrag | ~~Mittel~~ ✅ Sprint M |
 | M365-Verwaltung | Entra-Benutzer als IT-Master inkl. KI | ~~Hoch~~ ✅ Sprint N |
+| Entra-Gruppen & Lizenzen | Gruppen→Rollen + Lizenzzuweisung | ~~Hoch~~ ✅ Sprint O |
+| Semantische Suche | Embeddings für Ask Carbonauten | ~~Hoch~~ ✅ Sprint P |
+| KI-Schreibassistenz | Ton/Stil umschreiben + Entwurf aus Stichpunkten | ~~Mittel~~ ✅ Sprint Q |
 
 ---
 
@@ -902,6 +906,28 @@ Nach dem ersten Setzen dieser Variablen: einmal auf **Suche → Suchindex aktual
 
 ## Nächster Schritt
 
-Semantische Suche ist live (Sprint P). Nächste Kandidaten aus dem Backlog: echtes LLM-Function-Calling für die M365-Verwaltung statt Regex-Intents, KI-Schreibassistenz im Editor (Ton/Stil, Entwurf aus Stichpunkten), Kafka MirrorMaker 2 für China-Sync, oder Load Balancer/Geo-Routing EU↔CN — nach PO-Priorität.
+KI-Schreibassistenz ist live (Sprint Q). Nächste Kandidaten: echtes LLM-Function-Calling für die M365-Verwaltung statt Regex-Intents, Kafka MirrorMaker 2 für China-Sync, oder Load Balancer/Geo-Routing EU↔CN — nach PO-Priorität.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
+
+---
+
+## Sprint Q — KI-Schreibassistenz ✅ (MVP)
+
+**Ziel:** Redakteure können Artikel im Editor nicht nur übersetzen/zusammenfassen, sondern Ton anpassen und aus Stichpunkten einen Entwurf erzeugen.
+
+### Deliverables
+
+- [x] API `POST /api/ai/rewrite` — Ton `professional|concise|friendly|formal`, HTML erhalten, keine erfundenen Fakten
+- [x] API `POST /api/ai/draft-from-notes` — Stichpunkte → Titel + einfaches HTML
+- [x] Features `rewrite` und `draft_from_notes` in `/api/ai/status`
+- [x] Artikel-Editor: Abschnitte **Ton & Stil** und **Entwurf aus Stichpunkten**
+- [x] DE / EN / 中文 + Tests
+
+### Akzeptanzkriterien
+
+- [x] Redakteur schreibt Stichpunkte und erhält einen editierbaren Entwurf im Editor
+- [x] Umschreiben ändert Ton, behält Inhalt und HTML-Struktur
+- [x] Ohne KI-Konfiguration bleiben die Buttons deaktiviert / API antwortet 503
+
+---
