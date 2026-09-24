@@ -243,6 +243,7 @@ export function M365AdminPage() {
     try {
       const result = await resetM365Password(user.id);
       setNotice(t("m365.resetNotice", { name: result.user.display_name, password: result.temporary_password }));
+      await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
     } finally {

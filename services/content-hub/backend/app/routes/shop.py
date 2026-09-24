@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
+import json
+import logging
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -26,7 +31,29 @@ from ..shop_order_service import (
 from ..storage import read_upload
 from .shop_auth import get_optional_shop_customer
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/shop", tags=["shop"])
+
+
+def _verify_stripe_signature(payload: bytes, header: str, secret: str, *, tolerance_seconds: int = 300) -> bool:
+    """Verify Stripe-Signature header (t=…,v1=…)."""
+    if not header or not secret:
+        return False
+    parts = {item.split("=", 1)[0]: item.split("=", 1)[1] for item in header.split(",") if "=" in item}
+    timestamp = parts.get("t", "")
+    signature = parts.get("v1", "")
+    if not timestamp.isdigit() or not signature:
+        return False
+    try:
+        age = abs(time.time() - int(timestamp))
+    except ValueError:
+        return False
+    if age > tolerance_seconds:
+        return False
+    signed = f"{timestamp}.{payload.decode('utf-8')}".encode("utf-8")
+    expected = hmac.new(secret.encode("utf-8"), signed, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
 
 
 @router.get("/config")
@@ -227,7 +254,22 @@ def shop_confirm_order(
 @router.post("/stripe/webhook")
 async def shop_stripe_webhook(request: Request, db: Session = Depends(get_db)) -> dict:
     settings = get_settings()
-    payload = await request.json()
+    raw_body = await request.body()
+    secret = settings.shop_stripe_webhook_secret.strip()
+    if not secret:
+        # Never mark orders paid from an unverifiable webhook.
+        logger.warning("Stripe webhook ignored: SHOP_STRIPE_WEBHOOK_SECRET is not configured")
+        return {"received": True, "ignored": "webhook_secret_not_configured"}
+
+    signature = request.headers.get("Stripe-Signature", "")
+    if not _verify_stripe_signature(raw_body, signature, secret):
+        raise HTTPException(status_code=400, detail="invalid_signature")
+
+    try:
+        payload = json.loads(raw_body.decode("utf-8") or "{}")
+    except json.JSONDecodeError as exc:
+        raise HTTPException(status_code=400, detail="invalid_json") from exc
+
     event_type = payload.get("type")
     data_object = (payload.get("data") or {}).get("object") or {}
     if event_type == "checkout.session.completed":
@@ -245,6 +287,4 @@ async def shop_stripe_webhook(request: Request, db: Session = Depends(get_db)) -
             if isinstance(payment_intent, dict):
                 payment_intent = payment_intent.get("id") or ""
             mark_order_paid(db, order, payment_intent=str(payment_intent or ""))
-    # Optional: verify signature when webhook secret is set (basic presence check)
-    _ = settings.shop_stripe_webhook_secret
     return {"received": True}

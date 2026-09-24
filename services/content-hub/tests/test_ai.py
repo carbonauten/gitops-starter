@@ -138,6 +138,22 @@ def test_rewrite_rejects_invalid_tone(auth_client, monkeypatch):
     get_settings.cache_clear()
 
 
+def test_viewer_cannot_call_ai_write_endpoints(viewer_auth_client, monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    for path, body in (
+        ("/api/ai/translate", {"title": "A", "content": "<p>B</p>", "target_language": "en"}),
+        ("/api/ai/summarize", {"title": "A", "content": "<p>B</p>", "language": "en"}),
+        ("/api/ai/rewrite", {"title": "A", "content": "<p>B</p>", "tone": "concise"}),
+        ("/api/ai/draft-from-notes", {"notes": "- one", "language": "en"}),
+    ):
+        response = viewer_auth_client.post(path, json=body)
+        assert response.status_code == 403, path
+    get_settings.cache_clear()
+
+
 def test_search_ask_includes_assistant_name(auth_client):
     auth_client.post("/api/articles", json={"title": "Biochar Update", "content": "New kiln online"})
     response = auth_client.post(

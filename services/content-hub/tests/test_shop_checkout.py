@@ -121,3 +121,66 @@ def test_shop_config_exposes_checkout_flags(client):
     assert "stripe_enabled" in payload
     assert payload["invoice_enabled"] is True
     assert "legal" in payload
+
+
+def test_stripe_webhook_rejects_unsigned_when_secret_set(client, monkeypatch):
+    monkeypatch.setenv("SHOP_STRIPE_WEBHOOK_SECRET", "whsec_test_secret")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    response = client.post(
+        "/api/shop/stripe/webhook",
+        json={
+            "type": "checkout.session.completed",
+            "data": {"object": {"metadata": {"order_number": "ORD-FAKE"}, "payment_intent": "pi_1"}},
+        },
+    )
+    assert response.status_code == 400
+    get_settings.cache_clear()
+
+
+def test_stripe_webhook_ignored_without_secret(client, monkeypatch):
+    monkeypatch.setenv("SHOP_STRIPE_WEBHOOK_SECRET", "")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    response = client.post(
+        "/api/shop/stripe/webhook",
+        json={
+            "type": "checkout.session.completed",
+            "data": {"object": {"metadata": {"order_number": "ORD-FAKE"}, "payment_intent": "pi_1"}},
+        },
+    )
+    assert response.status_code == 200
+    assert response.json().get("ignored") == "webhook_secret_not_configured"
+    get_settings.cache_clear()
+
+
+def test_stripe_webhook_accepts_valid_signature(client, monkeypatch):
+    import hashlib
+    import hmac
+    import json
+    import time
+
+    secret = "whsec_test_secret"
+    monkeypatch.setenv("SHOP_STRIPE_WEBHOOK_SECRET", secret)
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+    body = json.dumps(
+        {
+            "type": "checkout.session.completed",
+            "data": {"object": {"metadata": {"order_number": "ORD-MISSING"}, "payment_intent": "pi_ok"}},
+        }
+    ).encode("utf-8")
+    timestamp = str(int(time.time()))
+    signed = f"{timestamp}.{body.decode('utf-8')}".encode("utf-8")
+    signature = hmac.new(secret.encode("utf-8"), signed, hashlib.sha256).hexdigest()
+    response = client.post(
+        "/api/shop/stripe/webhook",
+        content=body,
+        headers={"Content-Type": "application/json", "Stripe-Signature": f"t={timestamp},v1={signature}"},
+    )
+    assert response.status_code == 200
+    assert response.json()["received"] is True
+    get_settings.cache_clear()
