@@ -156,7 +156,7 @@ def create_checkout_order(
     for raw in items:
         product_id = str(raw.get("product_id") or "")
         quantity = int(raw.get("quantity") or 0)
-        product = db.get(Product, product_id)
+        product = db.scalar(select(Product).where(Product.id == product_id).with_for_update())
         if not product:
             raise HTTPException(status_code=404, detail="not_found")
         assert_stock_available(product, quantity)
@@ -220,16 +220,25 @@ def create_checkout_order(
     for item in order_items:
         item.order_id = order.id
         db.add(item)
-    db.commit()
-    db.refresh(order)
+
+    # Reserve stock for every payment method at checkout create (row-locked)
+    # so concurrent carts cannot oversell before Stripe/webhook confirms.
+    mark_inventory_reserved(db, order_items)
 
     checkout_url: Optional[str] = None
     if payment_method == "stripe":
-        checkout_url = create_stripe_checkout_session(db, order, order_items, settings=settings)
-    else:
-        # Reserve stock for invoice orders immediately
-        mark_inventory_reserved(db, order_items)
+        try:
+            checkout_url = create_stripe_checkout_session(db, order, order_items, settings=settings)
+        except Exception:
+            order.status = "cancelled"
+            restore_inventory(db, order_items)
+            db.commit()
+            raise
         db.commit()
+        db.refresh(order)
+    else:
+        db.commit()
+        db.refresh(order)
         send_order_emails(db, order, order_items, settings=settings)
 
     return order, order_items, checkout_url
@@ -237,7 +246,7 @@ def create_checkout_order(
 
 def mark_inventory_reserved(db: Session, items: list[ShopOrderItem]) -> None:
     for item in items:
-        product = db.get(Product, item.product_id)
+        product = db.scalar(select(Product).where(Product.id == item.product_id).with_for_update())
         if not product or not product.track_inventory:
             continue
         if product.stock_qty < item.quantity:
@@ -248,7 +257,7 @@ def mark_inventory_reserved(db: Session, items: list[ShopOrderItem]) -> None:
 def restore_inventory(db: Session, items: list[ShopOrderItem]) -> None:
     """Return reserved stock for cancelled/returned orders."""
     for item in items:
-        product = db.get(Product, item.product_id)
+        product = db.scalar(select(Product).where(Product.id == item.product_id).with_for_update())
         if not product or not product.track_inventory:
             continue
         product.stock_qty = int(product.stock_qty or 0) + int(item.quantity or 0)
@@ -328,11 +337,11 @@ def create_stripe_checkout_session(
         logger.exception("Stripe checkout request error")
         raise HTTPException(status_code=502, detail="stripe_failed") from exc
 
-    order.stripe_session_id = payload.get("id") or ""
-    db.commit()
     url = payload.get("url")
-    if not url:
+    session_id = str(payload.get("id") or "")
+    if not url or not session_id:
         raise HTTPException(status_code=502, detail="stripe_failed")
+    order.stripe_session_id = session_id
     return url
 
 
@@ -353,7 +362,12 @@ def mark_order_paid(db: Session, order: ShopOrder, *, payment_intent: str = "", 
         award_co2_credits_for_order(db, order)
         return order
     items = get_order_items(db, order.id)
-    if not already_reserved and order.payment_method == "stripe":
+    # Inventory is reserved at checkout create for stripe and invoice.
+    # Only reserve here for legacy callers that pass already_reserved=False on
+    # non-pending orders that somehow skipped reservation.
+    if not already_reserved and order.payment_method == "stripe" and order.status not in {"pending", "awaiting_payment"}:
+        mark_inventory_reserved(db, items)
+    elif not already_reserved and order.payment_method not in {"stripe", "invoice"}:
         mark_inventory_reserved(db, items)
     order.status = "paid"
     order.paid_at = _utc_now()
@@ -571,9 +585,8 @@ def update_order_status(
                 tracking_url=(tracking_url if tracking_url is not None else order.tracking_url) or "",
             )
     if status == "cancelled" and previous in {"awaiting_payment", "paid", "fulfilled", "pending"}:
-        # Restore stock if it was reserved (invoice at create, stripe at paid)
-        if previous in {"awaiting_payment", "paid", "fulfilled"}:
-            restore_inventory(db, items)
+        # Stock is reserved at checkout create for stripe (pending) and invoice.
+        restore_inventory(db, items)
     db.commit()
     db.refresh(order)
     if status in {"paid", "fulfilled"}:
