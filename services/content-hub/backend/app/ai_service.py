@@ -21,6 +21,22 @@ def ai_configured(settings: Settings | None = None) -> bool:
 
 
 def _chat_completion(messages: list[dict[str, str]], *, max_tokens: int = 700) -> str | None:
+    result = chat_completion_raw(messages, max_tokens=max_tokens)
+    if not result:
+        return None
+    content = result.get("content")
+    return str(content).strip() if content else None
+
+
+def chat_completion_raw(
+    messages: list[dict[str, Any]],
+    *,
+    max_tokens: int = 700,
+    tools: list[dict[str, Any]] | None = None,
+    tool_choice: str | dict[str, Any] | None = None,
+    temperature: float = 0.2,
+) -> dict[str, Any] | None:
+    """Call chat completions; optionally with tools. Returns assistant message fields."""
     settings = get_settings()
     if not ai_configured(settings):
         return None
@@ -35,7 +51,7 @@ def _chat_completion(messages: list[dict[str, str]], *, max_tokens: int = 700) -
             headers = {"api-key": settings.azure_openai_api_key.strip(), "Content-Type": "application/json"}
             body: dict[str, Any] = {
                 "messages": messages,
-                "temperature": 0.2,
+                "temperature": temperature,
                 "max_tokens": max_tokens,
             }
         else:
@@ -47,19 +63,41 @@ def _chat_completion(messages: list[dict[str, str]], *, max_tokens: int = 700) -
             body = {
                 "model": settings.openai_model.strip() or "gpt-4o-mini",
                 "messages": messages,
-                "temperature": 0.2,
+                "temperature": temperature,
                 "max_tokens": max_tokens,
             }
 
-        with httpx.Client(timeout=35.0) as client:
+        if tools:
+            body["tools"] = tools
+            if tool_choice is not None:
+                body["tool_choice"] = tool_choice
+            else:
+                body["tool_choice"] = "auto"
+
+        with httpx.Client(timeout=45.0) as client:
             response = client.post(url, headers=headers, json=body)
             response.raise_for_status()
             payload = response.json()
         choices = payload.get("choices") or []
         if not choices:
             return None
-        content = choices[0].get("message", {}).get("content", "")
-        return str(content).strip() or None
+        message = choices[0].get("message") or {}
+        tool_calls = message.get("tool_calls") or []
+        normalized_calls: list[dict[str, Any]] = []
+        for call in tool_calls:
+            function = call.get("function") or {}
+            normalized_calls.append(
+                {
+                    "id": call.get("id") or "",
+                    "name": function.get("name") or "",
+                    "arguments": function.get("arguments") or "{}",
+                }
+            )
+        return {
+            "content": message.get("content"),
+            "tool_calls": normalized_calls,
+            "raw_message": message,
+        }
     except Exception:  # noqa: BLE001
         logger.exception("AI chat completion failed")
         return None

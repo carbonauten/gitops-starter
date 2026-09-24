@@ -80,6 +80,7 @@ flowchart LR
 | O | 2–4 Tage | ✅ Abgeschlossen (MVP) | Entra-Gruppen-Mapping + Lizenz-Zuweisung |
 | P | 2–4 Tage | ✅ Abgeschlossen (MVP) | Semantische Suche (Embeddings) |
 | Q | 2–4 Tage | ✅ Abgeschlossen (MVP) | KI-Schreibassistenz im Artikel-Editor |
+| R | 2–4 Tage | ✅ Abgeschlossen (MVP) | M365 Ask: LLM-Function-Calling |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -624,6 +625,7 @@ flowchart LR
 | Entra-Gruppen & Lizenzen | Gruppen→Rollen + Lizenzzuweisung | ~~Hoch~~ ✅ Sprint O |
 | Semantische Suche | Embeddings für Ask Carbonauten | ~~Hoch~~ ✅ Sprint P |
 | KI-Schreibassistenz | Ton/Stil umschreiben + Entwurf aus Stichpunkten | ~~Mittel~~ ✅ Sprint Q |
+| M365 Function Calling | Ask Carbonauten Tools statt Regex-Intents | ~~Hoch~~ ✅ Sprint R |
 
 ---
 
@@ -906,7 +908,7 @@ Nach dem ersten Setzen dieser Variablen: einmal auf **Suche → Suchindex aktual
 
 ## Nächster Schritt
 
-KI-Schreibassistenz ist live (Sprint Q). Nächste Kandidaten: echtes LLM-Function-Calling für die M365-Verwaltung statt Regex-Intents, Kafka MirrorMaker 2 für China-Sync, oder Load Balancer/Geo-Routing EU↔CN — nach PO-Priorität.
+M365 Function Calling ist live (Sprint R). Nächste Kandidaten: Kafka MirrorMaker 2 für China-Sync, oder Load Balancer/Geo-Routing EU↔CN — nach PO-Priorität.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 
@@ -929,5 +931,26 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] Redakteur schreibt Stichpunkte und erhält einen editierbaren Entwurf im Editor
 - [x] Umschreiben ändert Ton, behält Inhalt und HTML-Struktur
 - [x] Ohne KI-Konfiguration bleiben die Buttons deaktiviert / API antwortet 503
+
+---
+
+## Sprint R — M365 Function Calling ✅ (MVP)
+
+**Ziel:** Ask Carbonauten versteht natürliche M365-Admin-Fragen über LLM-Tools statt starrer Regex-Intents — inkl. Lizenz-Zuweisung per Name.
+
+### Deliverables
+
+- [x] `chat_completion_raw(..., tools=...)` in `ai_service.py`
+- [x] Tools: list/create/enable/disable/reset password + list/assign/remove licenses
+- [x] `handle_directory_question` nutzt Function Calling wenn KI konfiguriert ist; Regex-Fallback sonst
+- [x] Audit + Antworten für Lizenz-Aktionen; `mode` (`function_calling` / `regex`) in API
+- [x] Feature `m365_function_calling` in `/api/ai/status`
+- [x] Tests (Regex-Fallback + gemockte Tool-Calls)
+
+### Akzeptanzkriterien
+
+- [x] Natürliche Formulierung wie „Zeig mir Mike im M365 Verzeichnis“ triggert `list_m365_users` per Tool-Call
+- [x] „Weise … Business Premium zu“ löst SKU per Name auf und weist die Lizenz zu
+- [x] Ohne KI-Keys bleibt das bisherige Regex-Verhalten erhalten
 
 ---

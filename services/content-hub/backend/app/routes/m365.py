@@ -193,14 +193,25 @@ async def m365_ask(
     user: dict = Depends(require_it_master),
 ) -> dict:
     result = await handle_directory_question(payload.question, language=payload.language or user.get("language") or "de")
-    if result.get("action") in {"create", "disable", "enable", "reset_password"} and result.get("user"):
+    if result.get("action") in {
+        "create",
+        "disable",
+        "enable",
+        "reset_password",
+        "assign_license",
+        "remove_license",
+    } and result.get("user"):
         log_audit(
             db,
             entity_type="m365_user",
             entity_id=result["user"]["id"],
             action=f"ai_{result['action']}",
             actor=user,
-            details={"question": payload.question[:300], "upn": result["user"].get("user_principal_name")},
+            details={
+                "question": payload.question[:300],
+                "upn": result["user"].get("user_principal_name"),
+                "mode": result.get("mode"),
+            },
         )
     return {
         "question": payload.question,
@@ -211,4 +222,5 @@ async def m365_ask(
         "temporary_password": result.get("temporary_password") or "",
         "recognized": looks_like_m365_admin_question(payload.question),
         "assistant_name": "Ask Carbonauten",
+        "mode": result.get("mode") or "regex",
     }

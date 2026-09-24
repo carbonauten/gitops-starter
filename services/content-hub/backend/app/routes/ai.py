@@ -54,7 +54,15 @@ def _require_ai() -> None:
 
 @router.get("/status")
 def ai_status(_user: dict = Depends(get_current_user)) -> dict:
-    features = ["search_ask", "translate", "summarize", "rewrite", "draft_from_notes", "m365_directory"]
+    features = [
+        "search_ask",
+        "translate",
+        "summarize",
+        "rewrite",
+        "draft_from_notes",
+        "m365_directory",
+        "m365_function_calling",
+    ]
     if get_settings().embeddings_configured:
         features.append("semantic_search")
     return {

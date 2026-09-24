@@ -68,7 +68,9 @@ Auf **Veröffentlichen → Kanal-Konfiguration** (IT-Master) können Microsoft 3
 1. Application-Berechtigungen wie oben setzen und **Admin Consent** erteilen
 2. In der App: **Administration → M365-Verwaltung**
 3. Benutzer anlegen, Sign-in sperren, Passwort zurücksetzen
-4. Oder Ask Carbonauten: „Welche M365 Benutzer gibt es?“, „Sperre user@carbonauten.com“
+4. Oder Ask Carbonauten (mit KI-Function-Calling): „Welche M365 Benutzer gibt es?“, „Sperre user@carbonauten.com“, „Weise anna@… Business Premium zu“
+   - Ohne KI-Key: Regex-Fallback für die gängigen Befehle
+   - Mit `AZURE_OPENAI_*` / `OPENAI_API_KEY`: natürliche Formulierungen über Tools (Liste, Anlegen, Sperren, Passwort, Lizenzen)
 
 Optional: `M365_DIRECTORY_MOCK_MODE=true` zeigt ein Beispielverzeichnis statt Graph.
 
