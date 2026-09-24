@@ -1,5 +1,8 @@
 from app.graph_directory_service import reset_mock_directory
 from app.m365_ai_service import looks_like_m365_admin_question, parse_directory_intent
+from unittest.mock import patch
+import asyncio
+import json
 
 
 def setup_function() -> None:
@@ -111,7 +114,87 @@ def test_parse_directory_intent_examples():
     created = parse_directory_intent("Lege user anna@carbonauten.com an")
     assert created["action"] == "create"
     assert created["email"] == "anna@carbonauten.com"
+    assert parse_directory_intent("Welche M365 Lizenzen sind frei?")["action"] == "list_licenses"
+    assert looks_like_m365_admin_question("Weise Mike eine Business Premium Lizenz zu")
     assert not looks_like_m365_admin_question("biochar kiln status")
+
+
+def test_handle_directory_question_uses_function_calling(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+
+    def fake_chat(messages, **kwargs):
+        assert kwargs.get("tools")
+        return {
+            "content": None,
+            "tool_calls": [
+                {
+                    "id": "call_1",
+                    "name": "list_m365_users",
+                    "arguments": '{"query":"mike"}',
+                }
+            ],
+        }
+
+    with patch("app.m365_ai_service.chat_completion_raw", side_effect=fake_chat):
+        from app.m365_ai_service import handle_directory_question
+
+        result = asyncio.run(handle_directory_question("Zeig mir bitte Mike im M365 Verzeichnis", language="de"))
+
+    assert result["mode"] == "function_calling"
+    assert result["action"] == "list"
+    assert any("mike.mueller@carbonauten.com" in (u.get("user_principal_name") or "") for u in result["users"])
+    get_settings.cache_clear()
+
+
+def test_function_calling_can_assign_license_by_name(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+
+    def fake_chat(messages, **kwargs):
+        return {
+            "content": None,
+            "tool_calls": [
+                {
+                    "id": "call_2",
+                    "name": "assign_m365_license",
+                    "arguments": json.dumps(
+                        {
+                            "user": "chibi.guest@carbonauten.com",
+                            "sku": "Business Premium",
+                        }
+                    ),
+                }
+            ],
+        }
+
+    with patch("app.m365_ai_service.chat_completion_raw", side_effect=fake_chat):
+        from app.m365_ai_service import handle_directory_question
+
+        result = asyncio.run(
+            handle_directory_question(
+                "Bitte weise chibi.guest@carbonauten.com Business Premium zu",
+                language="de",
+            )
+        )
+
+    assert result["mode"] == "function_calling"
+    assert result["action"] == "assign_license"
+    assert "Microsoft 365 Business Premium" in (result["user"] or {}).get("licenses", [])
+    get_settings.cache_clear()
+
+
+def test_m365_ask_reports_regex_mode_without_ai(it_auth_client):
+    listed = it_auth_client.post(
+        "/api/m365/ask",
+        json={"question": "Welche M365 Benutzer gibt es?", "language": "de"},
+    )
+    assert listed.status_code == 200
+    assert listed.json()["mode"] == "regex"
 
 
 def test_duplicate_m365_user_conflict(it_auth_client):

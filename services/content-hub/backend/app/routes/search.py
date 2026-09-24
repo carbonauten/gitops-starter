@@ -61,14 +61,25 @@ async def ask_search(
     language = payload.language or user.get("language") or "de"
     if user.get("role") == ROLE_IT_MASTER and looks_like_m365_admin_question(payload.question):
         directory = await handle_directory_question(payload.question, language=language)
-        if directory.get("action") in {"create", "disable", "enable", "reset_password"} and directory.get("user"):
+        if directory.get("action") in {
+            "create",
+            "disable",
+            "enable",
+            "reset_password",
+            "assign_license",
+            "remove_license",
+        } and directory.get("user"):
             log_audit(
                 db,
                 entity_type="m365_user",
                 entity_id=directory["user"]["id"],
                 action=f"ai_{directory['action']}",
                 actor=user,
-                details={"question": payload.question[:300], "upn": directory["user"].get("user_principal_name")},
+                details={
+                    "question": payload.question[:300],
+                    "upn": directory["user"].get("user_principal_name"),
+                    "mode": directory.get("mode"),
+                },
             )
         return {
             "question": payload.question,
@@ -81,10 +92,12 @@ async def ask_search(
                 "Welche M365 Benutzer gibt es?",
                 "Sperre chibi.guest@carbonauten.com",
                 "Lege user anna@carbonauten.com an",
+                "Welche M365 Lizenzen sind frei?",
             ],
             "ai_available": ai_configured(),
             "assistant_name": "Ask Carbonauten",
             "m365_action": directory.get("action"),
+            "m365_mode": directory.get("mode"),
         }
 
     search_query = payload.question.strip()
