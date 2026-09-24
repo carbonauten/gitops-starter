@@ -13,7 +13,7 @@ from ..ai_service import (
     translate_article,
 )
 from ..config import get_settings
-from ..dependencies import get_current_user
+from ..dependencies import get_current_user, require_editor
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
 
@@ -76,7 +76,7 @@ def ai_status(_user: dict = Depends(get_current_user)) -> dict:
 @router.post("/translate")
 def translate_content(
     payload: TranslateRequest,
-    _user: dict = Depends(get_current_user),
+    _user: dict = Depends(require_editor),
 ) -> dict:
     _require_ai()
     if not payload.title.strip() and not payload.content.strip():
@@ -95,7 +95,7 @@ def translate_content(
 @router.post("/summarize")
 def summarize_content(
     payload: SummarizeRequest,
-    _user: dict = Depends(get_current_user),
+    _user: dict = Depends(require_editor),
 ) -> dict:
     _require_ai()
     if not payload.title.strip() and not payload.content.strip():
@@ -113,7 +113,7 @@ def summarize_content(
 @router.post("/rewrite")
 def rewrite_content(
     payload: RewriteRequest,
-    _user: dict = Depends(get_current_user),
+    _user: dict = Depends(require_editor),
 ) -> dict:
     _require_ai()
     if not payload.title.strip() and not payload.content.strip():
@@ -132,7 +132,7 @@ def rewrite_content(
 @router.post("/draft-from-notes")
 def draft_from_notes(
     payload: DraftFromNotesRequest,
-    _user: dict = Depends(get_current_user),
+    _user: dict = Depends(require_editor),
 ) -> dict:
     _require_ai()
     if not payload.notes.strip():

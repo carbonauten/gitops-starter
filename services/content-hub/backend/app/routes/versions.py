@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from ..database import Article, Certificate, get_db
 from ..dependencies import get_current_user, require_editor
 from ..audit_service import log_audit
+from ..embedding_service import queue_reembed
 from ..version_service import compare_versions, get_revision, list_revisions, restore_revision
 
 router = APIRouter(prefix="/api/versions", tags=["versions"])
@@ -65,6 +66,7 @@ def restore_entity_version(
     entity_type: str,
     entity_id: str,
     version_number: int,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     user: dict = Depends(require_editor),
 ) -> dict:
@@ -86,6 +88,7 @@ def restore_entity_version(
         actor=user,
         details={"restored_version": version_number},
     )
+    queue_reembed(background_tasks, entity_type=entity_type, entity_id=entity_id)
     return {"ok": True, **result}
 
 

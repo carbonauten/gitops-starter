@@ -115,8 +115,14 @@ def test_parse_directory_intent_examples():
     assert created["action"] == "create"
     assert created["email"] == "anna@carbonauten.com"
     assert parse_directory_intent("Welche M365 Lizenzen sind frei?")["action"] == "list_licenses"
+    assign = parse_directory_intent("Weise anna@carbonauten.com Business Premium Lizenz zu")
+    assert assign["action"] == "assign_license"
+    assert assign["email"] == "anna@carbonauten.com"
+    assert "premium" in assign["sku"].lower()
     assert looks_like_m365_admin_question("Weise Mike eine Business Premium Lizenz zu")
     assert not looks_like_m365_admin_question("biochar kiln status")
+    assert not looks_like_m365_admin_question("What licenses does our product have?")
+    assert not looks_like_m365_admin_question("remove john@example.com from mailing list")
 
 
 def test_handle_directory_question_uses_function_calling(monkeypatch):
@@ -195,6 +201,22 @@ def test_m365_ask_reports_regex_mode_without_ai(it_auth_client):
     )
     assert listed.status_code == 200
     assert listed.json()["mode"] == "regex"
+
+
+def test_regex_assign_license_extracts_sku(it_auth_client):
+    response = it_auth_client.post(
+        "/api/m365/ask",
+        json={
+            "question": "Weise chibi.guest@carbonauten.com Business Premium Lizenz zu",
+            "language": "de",
+        },
+    )
+    assert response.status_code == 200
+    assert response.json()["action"] == "assign_license"
+    assert response.json()["mode"] == "regex"
+    licenses = (response.json().get("user") or {}).get("licenses", [])
+    assert any("Business Premium" in name for name in licenses)
+    assert "zugewiesen" in response.json()["answer"].lower() or "assigned" in response.json()["answer"].lower()
 
 
 def test_duplicate_m365_user_conflict(it_auth_client):

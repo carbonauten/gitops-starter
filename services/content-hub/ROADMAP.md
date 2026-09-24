@@ -929,7 +929,7 @@ Nach dem ersten Setzen dieser Variablen: einmal auf **Suche → Suchindex aktual
 
 ## Nächster Schritt
 
-M365 Function Calling ist live (Sprint R). Nächste Kandidaten: Kafka MirrorMaker 2 für China-Sync, oder Load Balancer/Geo-Routing EU↔CN — nach PO-Priorität.
+M365 Function Calling ist live (Sprint R). Bug-Scan (Sep 2026) geschlossen kritische Shop-Webhook- und M365-Intent-Lücken. Nächste Kandidaten: Kafka MirrorMaker 2 für China-Sync, oder Load Balancer/Geo-Routing EU↔CN — nach PO-Priorität.
 
 Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 

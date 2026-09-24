@@ -63,7 +63,19 @@ CREATE_VERBS = (
     "创建用户",
 )
 RESET_VERBS = ("passwort", "password", "reset", "zurücksetzen", "reset password", "密码")
-LICENSE_VERBS = ("lizenz", "license", "zuweisen", "assign", "entfernen", "remove", "entzieh")
+LICENSE_VERBS = ("lizenz", "license", "zuweisen", "assign", "entfernen", "remove", "entzieh", "weise")
+DIRECTORY_CUES = (
+    "m365",
+    "microsoft 365",
+    "microsoft365",
+    "entra",
+    "azure ad",
+    "verzeichnis",
+    "directory",
+    "tenant",
+    "carbonauten.com",
+    "upn",
+)
 
 M365_TOOLS: list[dict[str, Any]] = [
     {
@@ -97,6 +109,10 @@ M365_TOOLS: list[dict[str, Any]] = [
                     },
                     "job_title": {"type": "string"},
                     "department": {"type": "string"},
+                    "usage_location": {
+                        "type": "string",
+                        "description": "ISO country code for usage location / license eligibility, e.g. DE",
+                    },
                 },
                 "required": ["display_name", "user_principal_name"],
             },
@@ -188,13 +204,40 @@ def looks_like_m365_admin_question(question: str) -> bool:
     text = (question or "").lower()
     if not text:
         return False
-    mentions_directory = any(hint in text for hint in LIST_HINTS)
-    mentions_action = any(
+    has_cue = any(cue in text for cue in DIRECTORY_CUES)
+    has_user_word = any(word in text for word in ("benutzer", "user", "konto", "account", "mitarbeiter", "账号"))
+    has_license = any(word in text for word in ("lizenz", "license", "sku", "许可证"))
+    has_action = any(
         verb in text for verb in (*DISABLE_VERBS, *ENABLE_VERBS, *CREATE_VERBS, *RESET_VERBS, *LICENSE_VERBS)
     )
-    return mentions_directory or (
-        mentions_action and ("@" in text or "user" in text or "benutzer" in text or "konto" in text or "lizenz" in text)
+    separable_assign = bool(re.search(r"\bweise\b", text) and re.search(r"\bzu\b", text))
+    if has_cue and (has_user_word or has_license or has_action or "@" in text or separable_assign):
+        return True
+    if "@" in text and has_action and (has_user_word or has_license or "passwort" in text or "password" in text):
+        return True
+    if has_cue and any(word in text for word in ("welche", "list", "zeig", "show", "overview", "übersicht")):
+        return True
+    if separable_assign and (has_license or "@" in text or has_cue):
+        return True
+    return False
+
+
+def _extract_sku_hint(text: str, email: str = "") -> str:
+    cleaned = text
+    if email:
+        cleaned = cleaned.replace(email, " ")
+    cleaned = re.sub(
+        r"(?i)\b("
+        r"weise|zuweisen|assign|entfernen|remove|entzieh|lizenz|license|sku|"
+        r"m365|microsoft\s*365|entra|azure\s*ad|verzeichnis|directory|benutzer|user|"
+        r"zu|to|für|for|eine|einen|einer|der|die|das|the|a|an|bitte|please"
+        r")\b",
+        " ",
+        cleaned,
     )
+    cleaned = re.sub(r"[?!.,:;]", " ", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip(" -_")
+    return cleaned[:120]
 
 
 def parse_directory_intent(question: str) -> dict[str, str]:
@@ -218,12 +261,34 @@ def parse_directory_intent(question: str) -> dict[str, str]:
         return {"action": "disable", "email": email, "name": "", "query": email, "sku": ""}
     if any(verb in lower for verb in ENABLE_VERBS):
         return {"action": "enable", "email": email, "name": "", "query": email, "sku": ""}
-    license_mutate = any(verb in lower for verb in ("zuweisen", "assign", "entfernen", "remove", "entzieh"))
-    if license_mutate and any(token in lower for token in ("lizenz", "license", "sku")):
+
+    separable_assign = bool(re.search(r"\bweise\b", lower) and re.search(r"\bzu\b", lower))
+    license_mutate = separable_assign or any(
+        verb in lower for verb in ("zuweisen", "assign", "entfernen", "remove", "entzieh")
+    )
+    if license_mutate and (
+        any(token in lower for token in ("lizenz", "license", "sku", "premium", "standard", "business"))
+        or separable_assign
+    ):
         action = "remove_license" if any(v in lower for v in ("entfernen", "remove", "entzieh")) else "assign_license"
-        return {"action": action, "email": email, "name": "", "query": email, "sku": ""}
-    if any(token in lower for token in ("lizenz", "license", "sku")):
+        sku = _extract_sku_hint(text, email=email)
+        query = email
+        if not query:
+            name_hint = re.sub(
+                r"(?i)\b(weise|zu|zuweisen|assign|lizenz|license|sku|business|premium|standard|eine|einen)\b",
+                " ",
+                lower,
+            )
+            name_hint = re.sub(r"[?!.,]", " ", name_hint)
+            name_hint = re.sub(r"\s+", " ", name_hint).strip()
+            query = name_hint
+        return {"action": action, "email": email, "name": "", "query": query, "sku": sku}
+
+    if any(token in lower for token in ("lizenz", "license", "sku")) and any(
+        cue in lower for cue in ("m365", "microsoft", "entra", "verzeichnis", "directory", "welche", "list", "frei")
+    ):
         return {"action": "list_licenses", "email": email, "name": "", "query": "", "sku": ""}
+
     query = email
     if not query:
         leftover = re.sub(
@@ -391,6 +456,7 @@ async def _execute_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
             user_principal_name=upn,
             job_title=str(arguments.get("job_title") or ""),
             department=str(arguments.get("department") or ""),
+            usage_location=(str(arguments.get("usage_location") or "DE").strip() or "DE")[:2].upper(),
         )
         return {
             "action": "create",
@@ -486,18 +552,8 @@ async def _handle_with_function_calling(question: str, *, language: str) -> dict
 
     tool_calls = first.get("tool_calls") or []
     if not tool_calls:
-        content = str(first.get("content") or "").strip()
-        if not content:
-            return None
-        return {
-            "action": "chat",
-            "answer": content,
-            "users": [],
-            "temporary_password": "",
-            "user": None,
-            "licenses": [],
-            "mode": "function_calling",
-        }
+        # Never treat free-text "I assigned a license" as a successful admin action.
+        return None
 
     # Execute the first actionable tool call (directory mutations are single-step for safety).
     call = tool_calls[0]

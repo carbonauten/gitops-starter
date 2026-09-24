@@ -186,7 +186,7 @@ export function AiAssistPanel({ title, content, disabled, onApplyContent }: AiAs
             void runAction(async () => {
               const draft = await draftArticleFromNotes({
                 notes,
-                language: targetLanguage,
+                language: uiLanguage,
                 title_hint: title,
               });
               onApplyContent({ title: draft.title, content: draft.content });
