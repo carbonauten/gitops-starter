@@ -61,7 +61,7 @@ Auf **Veröffentlichen → Kanal-Konfiguration** (IT-Master) können Microsoft 3
 1. Unter **Kalender** oder **Dateien → OneDrive** → verbinden
 2. Mit dem eigenen Microsoft-Konto anmelden
 3. Outlook-Termine, Postfach und OneDrive werden nutzerbezogen freigeschaltet
-4. Unter **Kalender → Mein Outlook-Postfach** können alle verbundenen Accounts E-Mails lesen und als Artikel-Entwurf + HTML-Datei speichern (keine Editor-Rolle nötig)
+4. Unter **Postfach** (`/mail`) können alle verbundenen Accounts E-Mails lesen und als Artikel-Entwurf + HTML-Datei speichern (keine Editor-Rolle nötig)
 5. Word/Excel/PowerPoint: unter **Dateien** → **Öffnen** für Office Online Vorschau/Bearbeiten
 6. Unabhängig von der IT-Publish-Integration
 
@@ -69,6 +69,8 @@ API (authentifizierter User mit verbundenem Outlook):
 - `GET /api/integrations/outlook/mail`
 - `GET /api/integrations/outlook/mail/message?id=…`
 - `POST /api/integrations/outlook/mail/save` `{ "message_id", "destination": "article"|"file"|"both" }`
+
+OAuth-Callback leitet nach `/mail?outlook=success|error`.
 
 **M365-Verwaltung (IT-Master):**
 1. Application-Berechtigungen wie oben setzen und **Admin Consent** erteilen

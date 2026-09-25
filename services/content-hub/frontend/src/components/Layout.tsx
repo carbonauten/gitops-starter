@@ -110,6 +110,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
   const content: NavItem[] = [
     { to: "/articles", label: t("nav.articles"), icon: "✎" },
     { to: "/files", label: t("nav.files"), icon: "▣" },
+    { to: "/mail", label: t("nav.mail"), icon: "✉" },
     { to: "/certificates", label: t("nav.certificates"), icon: "◎", badge: expiringSoon, badgeUrgent: true },
   ];
   if (canEdit) {

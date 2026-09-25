@@ -79,7 +79,7 @@ export function OutlookMailPanel({ connected }: Props) {
       if (saved.article?.id) {
         setSavedArticleId(saved.article.id);
       }
-      setNotice(t("calendar.mailSaved"));
+      setNotice(t("mail.saved"));
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
@@ -88,15 +88,19 @@ export function OutlookMailPanel({ connected }: Props) {
   }
 
   if (!connected) {
-    return null;
+    return (
+      <section className="outlook-mail-panel">
+        <p className="muted">{t("mail.connectFirst")}</p>
+      </section>
+    );
   }
 
   return (
     <section className="outlook-mail-panel">
       <header className="outlook-mail-header">
         <div>
-          <h2>{t("calendar.mailTitle")}</h2>
-          <p className="muted">{t("calendar.mailSubtitle")}</p>
+          <h2>{t("mail.inboxTitle")}</h2>
+          <p className="muted">{t("mail.inboxSubtitle")}</p>
         </div>
         <form
           className="outlook-mail-search"
@@ -109,11 +113,11 @@ export function OutlookMailPanel({ connected }: Props) {
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder={t("calendar.mailSearchPlaceholder")}
-            aria-label={t("calendar.mailSearchPlaceholder")}
+            placeholder={t("mail.searchPlaceholder")}
+            aria-label={t("mail.searchPlaceholder")}
           />
           <button type="submit" className="ghost-button" disabled={loading}>
-            {t("calendar.mailSearch")}
+            {t("mail.search")}
           </button>
         </form>
       </header>
@@ -125,7 +129,7 @@ export function OutlookMailPanel({ connected }: Props) {
           {savedArticleId ? (
             <>
               {" "}
-              <Link to={`/articles/${savedArticleId}/edit`}>{t("calendar.mailOpenArticle")}</Link>
+              <Link to={`/articles/${savedArticleId}/edit`}>{t("mail.openArticle")}</Link>
             </>
           ) : null}
         </p>
@@ -135,7 +139,7 @@ export function OutlookMailPanel({ connected }: Props) {
         <div className="outlook-mail-list-pane">
           {loading ? <p className="muted">{t("common.loading")}</p> : null}
           {!loading && messages.length === 0 ? (
-            <p className="muted">{t("calendar.mailEmpty")}</p>
+            <p className="muted">{t("mail.empty")}</p>
           ) : null}
           <ul className="outlook-mail-list">
             {messages.map((message) => (
@@ -160,7 +164,7 @@ export function OutlookMailPanel({ connected }: Props) {
 
         <div className="outlook-mail-detail-pane">
           {!detail ? (
-            <p className="muted">{t("calendar.mailSelectHint")}</p>
+            <p className="muted">{t("mail.selectHint")}</p>
           ) : (
             <>
               <div className="outlook-mail-detail-actions">
@@ -170,7 +174,7 @@ export function OutlookMailPanel({ connected }: Props) {
                   disabled={saving}
                   onClick={() => void handleSave()}
                 >
-                  {saving ? t("common.loading") : t("calendar.mailSave")}
+                  {saving ? t("common.loading") : t("mail.save")}
                 </button>
                 {detail.web_link ? (
                   <a
@@ -179,17 +183,17 @@ export function OutlookMailPanel({ connected }: Props) {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    {t("calendar.mailOpenOutlook")}
+                    {t("mail.openOutlook")}
                   </a>
                 ) : null}
               </div>
               <h3>{detail.subject}</h3>
               <p className="muted">
-                {t("calendar.mailFrom")}: {detail.from.name || detail.from.email || "—"}
+                {t("mail.from")}: {detail.from.name || detail.from.email || "—"}
                 {detail.from.name && detail.from.email ? ` <${detail.from.email}>` : ""}
               </p>
               <p className="muted">
-                {t("calendar.mailReceived")}: {detail.received_at || "—"}
+                {t("mail.received")}: {detail.received_at || "—"}
               </p>
               <div
                 className="outlook-mail-body"
