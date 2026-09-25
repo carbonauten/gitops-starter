@@ -527,7 +527,7 @@
     "entraSetupNeeded": "尚未启用 Microsoft 登录。作为 IT-Master，您可在此填入 Entra 应用信息 — 之后所有人即可一键连接。",
     "entraStepApp": "Entra Admin Center → App registrations → 创建应用（单租户）。",
     "entraStepRedirect": "添加下方列出的 Web 重定向 URI。",
-    "entraStepPerms": "委派只读权限（用户无需管理员批准）：User.Read、Mail.Read、Calendars.Read、Files.Read — 然后为应用一次性授予管理员同意。",
+    "entraStepPerms": "委派权限：User.Read、Mail.ReadWrite、Calendars.ReadWrite、Files.Read — 为应用一次性授予管理员同意后，用户无需再批准即可连接。",
     "entraStepPaste": "在此粘贴租户 ID、客户端 ID 和客户端密码。",
     "entraTenant": "Directory (Tenant) ID",
     "entraClientId": "Application (Client) ID",
@@ -538,7 +538,7 @@
     "entraSaved": "Microsoft 应用已保存。现在可以一键连接 Outlook。",
     "entraCleared": "已移除保存的 Microsoft 应用。",
     "entraAskAdmin": "需由 IT-Master 先启用 Microsoft 应用（在邮箱页填写租户/客户端 ID）。",
-    "adminConsentHint": "为避免用户看到“Need admin approval”：请一次性授予管理员同意。之后每位用户只需一键连接。",
+    "adminConsentHint": "为避免用户看到“Need admin approval”：请一次性授予管理员同意（含 ReadWrite）。之后每位用户只需一键连接。",
     "adminConsentButton": "一次性授予管理员同意"
   },
   "ai": {

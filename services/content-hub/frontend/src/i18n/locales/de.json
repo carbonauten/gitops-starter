@@ -527,7 +527,7 @@
     "entraSetupNeeded": "Microsoft-Anmeldung ist noch nicht aktiv. Als IT-Master kannst du die Entra-App hier hinterlegen — danach erscheint der 1-Klick-Button für alle.",
     "entraStepApp": "Entra Admin Center → App registrations → App anlegen (Single tenant).",
     "entraStepRedirect": "Redirect URIs (Web) wie unten eintragen.",
-    "entraStepPerms": "Delegated (nur Lesen, ohne Admin-Approval für User): User.Read, Mail.Read, Calendars.Read, Files.Read — danach einmalig Admin Consent für die App.",
+    "entraStepPerms": "Delegated: User.Read, Mail.ReadWrite, Calendars.ReadWrite, Files.Read — einmalig Admin Consent für die App, danach verbinden User ohne Approval.",
     "entraStepPaste": "Tenant ID, Client ID und Client Secret hier speichern.",
     "entraTenant": "Directory (Tenant) ID",
     "entraClientId": "Application (Client) ID",
@@ -538,7 +538,7 @@
     "entraSaved": "Microsoft-App gespeichert. Jetzt mit einem Klick Outlook verbinden.",
     "entraCleared": "Gespeicherte Microsoft-App entfernt.",
     "entraAskAdmin": "Ein IT-Master muss zuerst die Microsoft-App freischalten (Tenant/Client ID in Postfach).",
-    "adminConsentHint": "Damit Nutzer ohne „Need admin approval“ verbinden: einmalig als Admin zustimmen. Danach reicht für jeden User ein Klick.",
+    "adminConsentHint": "Damit Nutzer ohne „Need admin approval“ verbinden: einmalig als Admin zustimmen (auch mit ReadWrite). Danach reicht für jeden User ein Klick.",
     "adminConsentButton": "Einmalig Admin-Zustimmung erteilen"
   },
   "ai": {

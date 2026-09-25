@@ -94,8 +94,8 @@ def entra_status(db: Session) -> dict[str, Any]:
         "admin_consent_url": admin_consent_url,
         "delegated_scopes": [
             "User.Read",
-            "Mail.Read",
-            "Calendars.Read",
+            "Mail.ReadWrite",
+            "Calendars.ReadWrite",
             "Files.Read",
             "offline_access",
         ],

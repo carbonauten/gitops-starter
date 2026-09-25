@@ -57,9 +57,8 @@ def test_outlook_connect_redirects_when_entra_configured(auth_client, monkeypatc
     assert response.status_code == 302
     location = response.headers["location"]
     assert "login.microsoftonline.com" in location
-    assert "Calendars.Read" in location
-    assert "Mail.Read" in location
-    assert "Mail.ReadWrite" not in location
+    assert "Calendars.ReadWrite" in location
+    assert "Mail.ReadWrite" in location
     assert "Files.Read" in location
     assert "prompt=select_account" in location
     assert "prompt=consent" not in location
@@ -102,8 +101,7 @@ def test_entra_config_save_enables_outlook_oauth(it_auth_client):
     location = connect.headers["location"]
     assert "login.microsoftonline.com/tenant-aaa" in location
     assert "client-bbb" in location
-    assert "Mail.Read" in location
-    assert "Mail.ReadWrite" not in location
+    assert "Mail.ReadWrite" in location
     assert "prompt=select_account" in location
 
 
