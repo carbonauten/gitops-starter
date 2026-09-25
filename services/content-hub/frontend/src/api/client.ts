@@ -726,6 +726,35 @@ export type OutlookStatus = {
   oauth_available: boolean;
 };
 
+export type OutlookMailPerson = {
+  name: string;
+  email: string;
+};
+
+export type OutlookMailSummary = {
+  id: string;
+  subject: string;
+  from: OutlookMailPerson;
+  received_at?: string | null;
+  preview: string;
+  is_read: boolean;
+  has_attachments: boolean;
+  web_link: string;
+};
+
+export type OutlookMailMessage = OutlookMailSummary & {
+  to: OutlookMailPerson[];
+  cc: OutlookMailPerson[];
+  body: string;
+  body_type: "html" | "text";
+};
+
+export type OutlookMailSaveResult = {
+  message: OutlookMailMessage;
+  article: { id: string; title: string; status: string } | null;
+  file: { id: string; original_name: string; folder: string } | null;
+};
+
 export async function fetchDashboardStats(): Promise<DashboardStats> {
   const payload = await request<{ stats: DashboardStats }>("/api/dashboard/stats");
   return payload.stats;
@@ -763,6 +792,39 @@ export async function disconnectOutlook(): Promise<void> {
 
 export function outlookConnectUrl(): string {
   return "/api/integrations/outlook/connect";
+}
+
+export async function fetchOutlookMail(options?: {
+  q?: string;
+  top?: number;
+}): Promise<OutlookMailSummary[]> {
+  const params = new URLSearchParams();
+  if (options?.q?.trim()) params.set("q", options.q.trim());
+  if (options?.top) params.set("top", String(options.top));
+  const query = params.toString();
+  const payload = await request<{ messages: OutlookMailSummary[] }>(
+    `/api/integrations/outlook/mail${query ? `?${query}` : ""}`,
+  );
+  return payload.messages;
+}
+
+export async function fetchOutlookMailMessage(messageId: string): Promise<OutlookMailMessage> {
+  const params = new URLSearchParams({ id: messageId });
+  const payload = await request<{ message: OutlookMailMessage }>(
+    `/api/integrations/outlook/mail/message?${params}`,
+  );
+  return payload.message;
+}
+
+export async function saveOutlookMail(
+  messageId: string,
+  destination: "article" | "file" | "both" = "both",
+): Promise<OutlookMailSaveResult> {
+  const payload = await request<{ saved: OutlookMailSaveResult }>("/api/integrations/outlook/mail/save", {
+    method: "POST",
+    body: JSON.stringify({ message_id: messageId, destination }),
+  });
+  return payload.saved;
 }
 
 export async function fetchPlatformInfo(): Promise<PlatformInfo> {

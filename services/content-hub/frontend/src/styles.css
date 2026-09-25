@@ -682,6 +682,131 @@ a {
   font-size: 0.92rem;
 }
 
+.outlook-mail-panel {
+  margin-bottom: 1.75rem;
+  padding: 1.1rem 1.25rem 1.25rem;
+  border: 1px solid var(--border, #e4e7ec);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 48%);
+}
+
+.outlook-mail-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem 1.25rem;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 0.85rem;
+}
+
+.outlook-mail-header h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.15rem;
+}
+
+.outlook-mail-search {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.outlook-mail-search input {
+  min-width: min(18rem, 70vw);
+}
+
+.outlook-mail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.25fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.outlook-mail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+  max-height: 28rem;
+  overflow: auto;
+}
+
+.outlook-mail-item {
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.7rem 0.8rem;
+  display: grid;
+  gap: 0.15rem;
+  cursor: pointer;
+}
+
+.outlook-mail-item:hover {
+  border-color: #c7d7ef;
+  background: #f5f9ff;
+}
+
+.outlook-mail-item.is-selected {
+  border-color: #0078d4;
+  background: #eef6ff;
+}
+
+.outlook-mail-item.is-unread .outlook-mail-item-subject {
+  font-weight: 700;
+}
+
+.outlook-mail-item-subject {
+  font-size: 0.95rem;
+}
+
+.outlook-mail-item-from,
+.outlook-mail-item-preview {
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outlook-mail-detail-pane {
+  min-height: 12rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border, #e4e7ec);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.outlook-mail-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.outlook-mail-body {
+  margin-top: 0.85rem;
+  max-height: 22rem;
+  overflow: auto;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.outlook-mail-body img {
+  max-width: 100%;
+  height: auto;
+}
+
+@media (max-width: 860px) {
+  .outlook-mail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .outlook-mail-list {
+    max-height: 14rem;
+  }
+}
+
 .success-text {
   color: #027a48;
   margin: 0;

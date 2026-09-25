@@ -1,15 +1,22 @@
 from __future__ import annotations
 
+import html
 import logging
+import re
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
-from urllib.parse import urlencode
+from urllib.parse import quote, urlencode
 
 import httpx
 from fastapi import HTTPException
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from .audit_service import log_audit
 from .config import Settings, get_settings
+from .database import Article, FileAsset, FileFolder
+from .file_folder_service import resolve_upload_folder
+from .storage import save_upload
 from .user_integration_store import (
     delete_user_integration,
     get_user_integration,
@@ -18,6 +25,7 @@ from .user_integration_store import (
     save_user_integration,
     user_integration_status,
 )
+from .version_service import article_snapshot, record_revision
 
 logger = logging.getLogger(__name__)
 
@@ -286,3 +294,325 @@ async def fetch_outlook_calendar_events(
             }
         )
     return events
+
+
+def _require_outlook_mail(db: Session, *, user_id: str):
+    row = get_user_integration(db, user_id=user_id, provider="outlook")
+    if not row or not row.mail_enabled:
+        raise HTTPException(status_code=400, detail="outlook_mail_not_connected")
+    return row
+
+
+def _graph_recipient(entry: dict[str, Any] | None) -> dict[str, str]:
+    if not isinstance(entry, dict):
+        return {"name": "", "email": ""}
+    addr = entry.get("emailAddress") or {}
+    if not isinstance(addr, dict):
+        return {"name": "", "email": ""}
+    return {
+        "name": str(addr.get("name") or "").strip(),
+        "email": str(addr.get("address") or "").strip(),
+    }
+
+
+def _format_recipients(entries: list[Any] | None) -> str:
+    parts: list[str] = []
+    for entry in entries or []:
+        if not isinstance(entry, dict):
+            continue
+        person = _graph_recipient(entry)
+        if person["name"] and person["email"]:
+            parts.append(f'{person["name"]} <{person["email"]}>')
+        elif person["email"]:
+            parts.append(person["email"])
+        elif person["name"]:
+            parts.append(person["name"])
+    return ", ".join(parts)
+
+
+def _message_summary(item: dict[str, Any]) -> dict[str, Any]:
+    sender = _graph_recipient(item.get("from"))
+    return {
+        "id": str(item.get("id") or ""),
+        "subject": str(item.get("subject") or "").strip() or "(ohne Betreff)",
+        "from": sender,
+        "received_at": item.get("receivedDateTime") or None,
+        "preview": str(item.get("bodyPreview") or "").strip(),
+        "is_read": bool(item.get("isRead")),
+        "has_attachments": bool(item.get("hasAttachments")),
+        "web_link": str(item.get("webLink") or ""),
+    }
+
+
+def _message_detail(item: dict[str, Any]) -> dict[str, Any]:
+    summary = _message_summary(item)
+    body = item.get("body") or {}
+    body_content = ""
+    body_type = "text"
+    if isinstance(body, dict):
+        body_content = str(body.get("content") or "")
+        body_type = str(body.get("contentType") or "text").lower()
+    summary.update(
+        {
+            "to": [_graph_recipient(entry) for entry in (item.get("toRecipients") or []) if isinstance(entry, dict)],
+            "cc": [_graph_recipient(entry) for entry in (item.get("ccRecipients") or []) if isinstance(entry, dict)],
+            "body": body_content,
+            "body_type": body_type if body_type in {"html", "text"} else "text",
+        }
+    )
+    return summary
+
+
+def _safe_filename(subject: str) -> str:
+    cleaned = re.sub(r"[^\w\s\-äöüÄÖÜß.]+", "", subject, flags=re.UNICODE).strip()
+    cleaned = re.sub(r"\s+", "-", cleaned)[:80] or "outlook-email"
+    return f"{cleaned}.html"
+
+
+def _email_html_document(detail: dict[str, Any]) -> str:
+    subject = html.escape(str(detail.get("subject") or ""))
+    sender = detail.get("from") or {}
+    from_line = html.escape(
+        f'{sender.get("name") or ""} <{sender.get("email") or ""}>'.strip()
+        if sender.get("email") or sender.get("name")
+        else ""
+    )
+    to_line = html.escape(
+        ", ".join(
+            f'{p.get("name") or ""} <{p.get("email") or ""}>'.strip()
+            for p in (detail.get("to") or [])
+            if p.get("email") or p.get("name")
+        )
+    )
+    received = html.escape(str(detail.get("received_at") or ""))
+    body = detail.get("body") or ""
+    if (detail.get("body_type") or "text") == "html":
+        body_html = body
+    else:
+        body_html = f"<pre style=\"white-space:pre-wrap;font-family:inherit\">{html.escape(body)}</pre>"
+    return (
+        "<!DOCTYPE html><html><head><meta charset=\"utf-8\">"
+        f"<title>{subject}</title></head><body>"
+        f"<h1>{subject}</h1>"
+        f"<p><strong>Von:</strong> {from_line}</p>"
+        f"<p><strong>An:</strong> {to_line}</p>"
+        f"<p><strong>Datum:</strong> {received}</p>"
+        "<hr/>"
+        f"{body_html}"
+        "</body></html>"
+    )
+
+
+def _email_article_content(detail: dict[str, Any]) -> str:
+    sender = detail.get("from") or {}
+    from_line = html.escape(
+        f'{sender.get("name") or ""} <{sender.get("email") or ""}>'.strip()
+        if sender.get("email") or sender.get("name")
+        else "—"
+    )
+    to_line = html.escape(
+        ", ".join(
+            f'{p.get("name") or ""} <{p.get("email") or ""}>'.strip()
+            for p in (detail.get("to") or [])
+            if p.get("email") or p.get("name")
+        )
+        or "—"
+    )
+    received = html.escape(str(detail.get("received_at") or "—"))
+    subject = html.escape(str(detail.get("subject") or ""))
+    body = detail.get("body") or ""
+    if (detail.get("body_type") or "text") == "html":
+        body_html = body
+    else:
+        body_html = f"<pre style=\"white-space:pre-wrap;font-family:inherit\">{html.escape(body)}</pre>"
+    web_link = str(detail.get("web_link") or "").strip()
+    link_html = (
+        f'<p><a href="{html.escape(web_link)}" target="_blank" rel="noopener">In Outlook öffnen</a></p>'
+        if web_link
+        else ""
+    )
+    return (
+        f"<p><strong>Von:</strong> {from_line}</p>"
+        f"<p><strong>An:</strong> {to_line}</p>"
+        f"<p><strong>Datum:</strong> {received}</p>"
+        f"<p><strong>Betreff:</strong> {subject}</p>"
+        f"{link_html}"
+        "<hr/>"
+        f"{body_html}"
+    )
+
+
+def ensure_emails_folder(db: Session) -> FileFolder:
+    existing = db.scalar(select(FileFolder).where(FileFolder.slug == "emails", FileFolder.parent_id.is_(None)))
+    if existing:
+        return existing
+    folder = FileFolder(name="E-Mails", slug="emails", parent_id=None, sort_order=50)
+    db.add(folder)
+    db.commit()
+    db.refresh(folder)
+    return folder
+
+
+async def fetch_outlook_messages(
+    db: Session,
+    *,
+    user_id: str,
+    top: int = 25,
+    search: str = "",
+) -> list[dict[str, Any]]:
+    _require_outlook_mail(db, user_id=user_id)
+    token = await get_outlook_access_token(db, user_id=user_id)
+    if not token:
+        raise HTTPException(status_code=400, detail="outlook_not_connected")
+
+    limit = max(1, min(int(top or 25), 50))
+    params: dict[str, str] = {
+        "$top": str(limit),
+        "$select": "id,subject,from,receivedDateTime,bodyPreview,isRead,hasAttachments,webLink",
+        "$orderby": "receivedDateTime desc",
+    }
+    query = (search or "").strip()
+    if query:
+        # $search cannot be combined with $orderby on Graph mail; drop orderby.
+        params.pop("$orderby", None)
+        params["$search"] = f'"{query}"'
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(
+            "https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "ConsistencyLevel": "eventual",
+            },
+            params=params,
+        )
+        if response.status_code != 200:
+            logger.warning("Outlook mail list failed: %s", response.text)
+            raise HTTPException(status_code=502, detail="outlook_mail_failed")
+        payload = response.json()
+
+    return [_message_summary(item) for item in payload.get("value", []) if isinstance(item, dict)]
+
+
+async def get_outlook_message(db: Session, *, user_id: str, message_id: str) -> dict[str, Any]:
+    _require_outlook_mail(db, user_id=user_id)
+    token = await get_outlook_access_token(db, user_id=user_id)
+    if not token:
+        raise HTTPException(status_code=400, detail="outlook_not_connected")
+
+    mid = (message_id or "").strip()
+    if not mid:
+        raise HTTPException(status_code=400, detail="validation")
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.get(
+            f"https://graph.microsoft.com/v1.0/me/messages/{quote(mid, safe='')}",
+            headers={"Authorization": f"Bearer {token}"},
+            params={
+                "$select": (
+                    "id,subject,from,toRecipients,ccRecipients,receivedDateTime,"
+                    "body,bodyPreview,webLink,hasAttachments,isRead"
+                ),
+            },
+        )
+        if response.status_code == 404:
+            raise HTTPException(status_code=404, detail="not_found")
+        if response.status_code != 200:
+            logger.warning("Outlook mail get failed: %s", response.text)
+            raise HTTPException(status_code=502, detail="outlook_mail_failed")
+        payload = response.json()
+
+    return _message_detail(payload)
+
+
+async def save_outlook_message(
+    db: Session,
+    *,
+    user_id: str,
+    user: dict[str, Any],
+    message_id: str,
+    destination: str = "both",
+) -> dict[str, Any]:
+    """Persist a mailbox message as draft article and/or HTML file for any connected user."""
+    dest = (destination or "both").strip().lower()
+    if dest not in {"article", "file", "both"}:
+        raise HTTPException(status_code=400, detail="validation")
+
+    detail = await get_outlook_message(db, user_id=user_id, message_id=message_id)
+    actor_id = str(user.get("id") or user.get("db_id") or user_id)
+    actor_name = str(user.get("name") or "User")
+    actor_email = str(user.get("email") or "")
+
+    result: dict[str, Any] = {"message": detail, "article": None, "file": None}
+
+    if dest in {"article", "both"}:
+        article = Article(
+            title=str(detail.get("subject") or "(ohne Betreff)")[:500],
+            content=_email_article_content(detail),
+            status="draft",
+            template=None,
+            review_comment="Gespeichert aus Outlook",
+            author_id=actor_id,
+            author_name=actor_name,
+            author_email=actor_email,
+        )
+        db.add(article)
+        db.commit()
+        db.refresh(article)
+        record_revision(
+            db,
+            entity_type="article",
+            entity_id=article.id,
+            snapshot=article_snapshot(article),
+            actor=user,
+        )
+        db.commit()
+        log_audit(
+            db,
+            entity_type="article",
+            entity_id=article.id,
+            action="create_from_outlook",
+            actor=user,
+            details={"outlook_message_id": detail.get("id"), "subject": article.title},
+        )
+        result["article"] = {
+            "id": article.id,
+            "title": article.title,
+            "status": article.status,
+        }
+
+    if dest in {"file", "both"}:
+        folder = ensure_emails_folder(db)
+        target = resolve_upload_folder(db, folder_id=folder.id, folder_slug=None)
+        content = _email_html_document(detail).encode("utf-8")
+        original_name = _safe_filename(str(detail.get("subject") or "outlook-email"))
+        stored_name, storage_path, _ = save_upload(content, original_name)
+        file_asset = FileAsset(
+            original_name=original_name,
+            stored_name=stored_name,
+            content_type="text/html; charset=utf-8",
+            size_bytes=len(content),
+            folder=target.slug,
+            folder_id=target.id,
+            storage_path=storage_path,
+            uploaded_by_id=actor_id,
+            uploaded_by_name=actor_name,
+        )
+        db.add(file_asset)
+        db.commit()
+        db.refresh(file_asset)
+        log_audit(
+            db,
+            entity_type="file",
+            entity_id=file_asset.id,
+            action="create_from_outlook",
+            actor=user,
+            details={"outlook_message_id": detail.get("id"), "name": original_name},
+        )
+        result["file"] = {
+            "id": file_asset.id,
+            "original_name": file_asset.original_name,
+            "folder": file_asset.folder,
+        }
+
+    return result

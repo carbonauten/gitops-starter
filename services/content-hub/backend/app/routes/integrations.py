@@ -23,10 +23,14 @@ from ..integrations_service import (
 from ..outlook_service import (
     complete_outlook_connection,
     disconnect_outlook,
+    fetch_outlook_messages,
+    get_outlook_message,
     outlook_authorize_url,
     outlook_status,
+    save_outlook_message,
 )
 from ..publish_service import update_publish_settings
+from ..schemas import OutlookMailSaveRequest
 
 router = APIRouter(prefix="/api/integrations", tags=["integrations"])
 
@@ -249,3 +253,45 @@ def outlook_disconnect(
 ) -> dict:
     disconnect_outlook(db, user_id=user.get("db_id", ""))
     return {"ok": True}
+
+
+@router.get("/outlook/mail")
+async def outlook_mail_list(
+    q: Optional[str] = None,
+    top: int = 25,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+) -> dict:
+    messages = await fetch_outlook_messages(
+        db,
+        user_id=user.get("db_id", ""),
+        top=top,
+        search=q or "",
+    )
+    return {"messages": messages}
+
+
+@router.get("/outlook/mail/message")
+async def outlook_mail_get(
+    id: str,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+) -> dict:
+    message = await get_outlook_message(db, user_id=user.get("db_id", ""), message_id=id)
+    return {"message": message}
+
+
+@router.post("/outlook/mail/save")
+async def outlook_mail_save(
+    payload: OutlookMailSaveRequest,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+) -> dict:
+    saved = await save_outlook_message(
+        db,
+        user_id=user.get("db_id", ""),
+        user=user,
+        message_id=payload.message_id,
+        destination=payload.destination,
+    )
+    return {"saved": saved}

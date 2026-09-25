@@ -8,6 +8,7 @@ import {
   outlookConnectUrl,
   type OutlookStatus,
 } from "../api/client";
+import { OutlookMailPanel } from "../components/OutlookMailPanel";
 import { PublishCalendarPanel } from "../components/PublishCalendarPanel";
 
 export function PublishCalendarPage() {
@@ -109,6 +110,8 @@ export function PublishCalendarPage() {
         {notice ? <p className="success-text">{notice}</p> : null}
         {error ? <p className="error-text">{error}</p> : null}
       </div>
+
+      <OutlookMailPanel connected={Boolean(outlook?.connected && outlook?.mail_enabled !== false)} />
 
       <PublishCalendarPanel key={reloadKey} />
     </section>
