@@ -13,6 +13,11 @@ class ArticleCreate(BaseModel):
     template: Optional[str] = None
 
 
+class OutlookMailSaveRequest(BaseModel):
+    message_id: str = Field(min_length=1, max_length=512)
+    destination: Literal["article", "file", "both"] = "both"
+
+
 class ArticleUpdate(BaseModel):
     title: Optional[str] = Field(default=None, max_length=500)
     content: Optional[str] = None
