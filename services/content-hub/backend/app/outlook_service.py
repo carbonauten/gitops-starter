@@ -30,11 +30,10 @@ from .version_service import article_snapshot, record_revision
 
 logger = logging.getLogger(__name__)
 
-# Personal Microsoft 365 for the signed-in user.
-# Read-only delegated scopes so users can consent without admin approval
-# (tenant may still require a one-time admin consent for the app).
+# Personal Microsoft 365 for the signed-in user (calendar, mailbox, OneDrive).
+# ReadWrite stays; users avoid "Need admin approval" after one org-wide admin consent.
 OUTLOOK_USER_SCOPES = (
-    "offline_access User.Read Calendars.Read Mail.Read Files.Read"
+    "offline_access User.Read Calendars.ReadWrite Mail.ReadWrite Files.Read"
 )
 
 
@@ -218,8 +217,8 @@ def outlook_status(db: Session, *, user_id: str) -> dict[str, Any]:
         "admin_consent_url": platform.get("admin_consent_url") or "",
         "delegated_scopes": platform.get("delegated_scopes") or [
             "User.Read",
-            "Mail.Read",
-            "Calendars.Read",
+            "Mail.ReadWrite",
+            "Calendars.ReadWrite",
             "Files.Read",
             "offline_access",
         ],
