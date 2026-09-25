@@ -98,6 +98,7 @@ def test_cancel_order_sends_status_email(auth_client, monkeypatch):
             },
         },
     )
+    assert checkout.status_code == 200
     order = checkout.json()["order"]
     assert auth_client.get(f"/api/products/{product['id']}").json()["product"]["stock_qty"] == 4
 
