@@ -523,7 +523,21 @@
     "openArticle": "Artikel öffnen",
     "openOutlook": "In Outlook öffnen",
     "from": "Von",
-    "received": "Empfangen"
+    "received": "Empfangen",
+    "entraSetupNeeded": "Microsoft-Anmeldung ist noch nicht aktiv. Als IT-Master kannst du die Entra-App hier hinterlegen — danach erscheint der 1-Klick-Button für alle.",
+    "entraStepApp": "Entra Admin Center → App registrations → App anlegen (Single tenant).",
+    "entraStepRedirect": "Redirect URIs (Web) wie unten eintragen.",
+    "entraStepPerms": "Delegated: User.Read, Mail.ReadWrite, Calendars.ReadWrite, Files.Read — Admin Consent erteilen.",
+    "entraStepPaste": "Tenant ID, Client ID und Client Secret hier speichern.",
+    "entraTenant": "Directory (Tenant) ID",
+    "entraClientId": "Application (Client) ID",
+    "entraClientSecret": "Client Secret",
+    "entraSecretKeep": "Leer lassen, um bestehendes Secret zu behalten",
+    "entraSave": "Speichern & 1-Klick freischalten",
+    "entraClear": "Gespeicherte App entfernen",
+    "entraSaved": "Microsoft-App gespeichert. Jetzt mit einem Klick Outlook verbinden.",
+    "entraCleared": "Gespeicherte Microsoft-App entfernt.",
+    "entraAskAdmin": "Ein IT-Master muss zuerst die Microsoft-App freischalten (Tenant/Client ID in Postfach)."
   },
   "ai": {
     "assistantName": "Ask Carbonauten",

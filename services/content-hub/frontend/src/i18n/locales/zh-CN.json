@@ -523,7 +523,21 @@
     "openArticle": "打开文章",
     "openOutlook": "在 Outlook 中打开",
     "from": "发件人",
-    "received": "接收时间"
+    "received": "接收时间",
+    "entraSetupNeeded": "尚未启用 Microsoft 登录。作为 IT-Master，您可在此填入 Entra 应用信息 — 之后所有人即可一键连接。",
+    "entraStepApp": "Entra Admin Center → App registrations → 创建应用（单租户）。",
+    "entraStepRedirect": "添加下方列出的 Web 重定向 URI。",
+    "entraStepPerms": "委派权限：User.Read、Mail.ReadWrite、Calendars.ReadWrite、Files.Read — 并授予管理员同意。",
+    "entraStepPaste": "在此粘贴租户 ID、客户端 ID 和客户端密码。",
+    "entraTenant": "Directory (Tenant) ID",
+    "entraClientId": "Application (Client) ID",
+    "entraClientSecret": "Client Secret",
+    "entraSecretKeep": "留空以保留现有密码",
+    "entraSave": "保存并启用一键连接",
+    "entraClear": "移除已存应用",
+    "entraSaved": "Microsoft 应用已保存。现在可以一键连接 Outlook。",
+    "entraCleared": "已移除保存的 Microsoft 应用。",
+    "entraAskAdmin": "需由 IT-Master 先启用 Microsoft 应用（在邮箱页填写租户/客户端 ID）。"
   },
   "ai": {
     "assistantName": "Ask Carbonauten",

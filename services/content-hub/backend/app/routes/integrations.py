@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from ..auth import get_session, new_oauth_state, set_session
 from ..database import get_db
 from ..dependencies import get_current_user, require_it_master
+from ..entra_config_service import clear_stored_entra_credentials, entra_status, save_entra_credentials
 from ..integrations_service import (
     complete_microsoft_connection,
     complete_notion_connection,
@@ -30,7 +31,7 @@ from ..outlook_service import (
     save_outlook_message,
 )
 from ..publish_service import update_publish_settings
-from ..schemas import OutlookMailSaveRequest
+from ..schemas import EntraConfigSaveRequest, OutlookMailSaveRequest
 
 router = APIRouter(prefix="/api/integrations", tags=["integrations"])
 
@@ -206,16 +207,52 @@ def outlook_status_route(
 
 
 @router.get("/outlook/connect")
-async def outlook_connect(request: Request) -> RedirectResponse:
+async def outlook_connect(
+    request: Request,
+    db: Session = Depends(get_db),
+) -> RedirectResponse:
     state = new_oauth_state()
     session = get_session(request) or {}
     if "user" not in session:
         raise HTTPException(status_code=401, detail="unauthorized")
     session["integration_oauth_state"] = state
     session["integration_provider"] = "outlook"
-    response = RedirectResponse(url=outlook_authorize_url(state), status_code=302)
+    response = RedirectResponse(url=outlook_authorize_url(state, db=db), status_code=302)
     set_session(response, session)
     return response
+
+
+@router.get("/entra/status")
+def entra_config_status(
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_it_master),
+) -> dict:
+    return entra_status(db)
+
+
+@router.put("/entra/config")
+def entra_config_save(
+    payload: EntraConfigSaveRequest,
+    db: Session = Depends(get_db),
+    user: dict = Depends(require_it_master),
+) -> dict:
+    return {
+        "entra": save_entra_credentials(
+            db,
+            tenant_id=payload.tenant_id,
+            client_id=payload.client_id,
+            client_secret=payload.client_secret,
+            actor=user,
+        )
+    }
+
+
+@router.delete("/entra/config")
+def entra_config_clear(
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_it_master),
+) -> dict:
+    return {"entra": clear_stored_entra_credentials(db)}
 
 
 @router.get("/outlook/callback")
