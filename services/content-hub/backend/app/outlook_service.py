@@ -30,9 +30,11 @@ from .version_service import article_snapshot, record_revision
 
 logger = logging.getLogger(__name__)
 
-# Personal Microsoft 365: calendar, mailbox, and OneDrive for the signed-in user.
+# Personal Microsoft 365 for the signed-in user.
+# Read-only delegated scopes so users can consent without admin approval
+# (tenant may still require a one-time admin consent for the app).
 OUTLOOK_USER_SCOPES = (
-    "offline_access User.Read Calendars.ReadWrite Mail.ReadWrite Files.Read"
+    "offline_access User.Read Calendars.Read Mail.Read Files.Read"
 )
 
 
@@ -54,7 +56,9 @@ def outlook_authorize_url(state: str, db: Session | None = None, settings: Setti
         "response_mode": "query",
         "scope": OUTLOOK_USER_SCOPES,
         "state": state,
-        "prompt": "consent",
+        # Do not force prompt=consent — that often surfaces "Need admin approval".
+        # select_account lets each user pick their mailbox without re-consent drama.
+        "prompt": "select_account",
     }
     return (
         f"https://login.microsoftonline.com/{creds.tenant_id}/oauth2/v2.0/authorize?"
@@ -203,11 +207,22 @@ def disconnect_outlook(db: Session, *, user_id: str) -> None:
 
 
 def outlook_status(db: Session, *, user_id: str) -> dict[str, Any]:
+    from .entra_config_service import entra_status as platform_entra_status
+
     creds = resolve_entra_credentials(db)
+    platform = platform_entra_status(db) if creds.configured else {}
     return {
         **user_integration_status(db, user_id=user_id, provider="outlook"),
         "oauth_available": creds.configured,
         "oauth_source": creds.source if creds.configured else "none",
+        "admin_consent_url": platform.get("admin_consent_url") or "",
+        "delegated_scopes": platform.get("delegated_scopes") or [
+            "User.Read",
+            "Mail.Read",
+            "Calendars.Read",
+            "Files.Read",
+            "offline_access",
+        ],
     }
 
 

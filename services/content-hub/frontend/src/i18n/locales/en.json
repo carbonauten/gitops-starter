@@ -427,7 +427,7 @@
     "entraSetupNeeded": "Microsoft sign-in is not active yet. As IT Master you can paste the Entra app details here — then everyone gets a 1-click Connect button.",
     "entraStepApp": "Entra Admin Center → App registrations → create app (single tenant).",
     "entraStepRedirect": "Add the Web redirect URIs listed below.",
-    "entraStepPerms": "Delegated: User.Read, Mail.ReadWrite, Calendars.ReadWrite, Files.Read — grant admin consent.",
+    "entraStepPerms": "Delegated (read-only, no per-user admin approval): User.Read, Mail.Read, Calendars.Read, Files.Read — then grant admin consent once for the app.",
     "entraStepPaste": "Paste Tenant ID, Client ID and Client Secret here.",
     "entraTenant": "Directory (Tenant) ID",
     "entraClientId": "Application (Client) ID",
@@ -437,7 +437,9 @@
     "entraClear": "Remove stored app",
     "entraSaved": "Microsoft app saved. You can connect Outlook with one click now.",
     "entraCleared": "Stored Microsoft app removed.",
-    "entraAskAdmin": "An IT Master must enable the Microsoft app first (tenant/client ID on Mailbox)."
+    "entraAskAdmin": "An IT Master must enable the Microsoft app first (tenant/client ID on Mailbox).",
+    "adminConsentHint": "So users can connect without “Need admin approval”: grant admin consent once. After that, every user only needs one click.",
+    "adminConsentButton": "Grant admin consent once"
   },
   "ai": {
     "assistantName": "Ask Carbonauten",

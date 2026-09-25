@@ -266,9 +266,10 @@ Kanäle werden simuliert — gut zum Testen der UI und Historie.
 | Permission | Zweck |
 |------------|-------|
 | `ChannelMessage.Send` | Teams-Kanal-Nachrichten |
-| `Mail.ReadWrite` | Outlook-Entwürfe / persönliches Postfach |
+| `Mail.ReadWrite` | Outlook-Entwürfe (Org-Publish) |
+| `Mail.Read` | Persönliches Postfach lesen/speichern |
 | `Files.Read` | Persönliches OneDrive (Dateien-Tab) |
-| `Calendars.ReadWrite` | Persönlicher Outlook-Kalender (Kalender-Tab) |
+| `Calendars.Read` | Persönlicher Outlook-Kalender (Kalender-Tab) |
 
 | Variable | Wert |
 |----------|------|
