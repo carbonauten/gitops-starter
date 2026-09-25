@@ -22,9 +22,12 @@ def test_env(monkeypatch, tmp_path):
     monkeypatch.setenv("REPUTATION_CRAWL_ENABLED", "false")
 
     from app.config import get_settings
+    from app.shop_bot_protection import reset_rate_limits_for_tests
 
     get_settings.cache_clear()
+    reset_rate_limits_for_tests()
     yield
+    reset_rate_limits_for_tests()
     get_settings.cache_clear()
 
 
