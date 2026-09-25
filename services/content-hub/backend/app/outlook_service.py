@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from .audit_service import log_audit
 from .config import Settings, get_settings
 from .database import Article, FileAsset, FileFolder
+from .entra_config_service import resolve_entra_credentials
 from .file_folder_service import resolve_upload_folder
 from .storage import save_upload
 from .user_integration_store import (
@@ -41,12 +42,13 @@ def outlook_redirect_uri(settings: Settings | None = None) -> str:
     return f"{origin.rstrip('/')}/api/integrations/outlook/callback"
 
 
-def outlook_authorize_url(state: str, settings: Settings | None = None) -> str:
+def outlook_authorize_url(state: str, db: Session | None = None, settings: Settings | None = None) -> str:
     settings = settings or get_settings()
-    if not settings.entra_configured:
+    creds = resolve_entra_credentials(db)
+    if not creds.configured:
         raise HTTPException(status_code=400, detail="microsoft_auth_unavailable")
     params = {
-        "client_id": settings.azure_client_id,
+        "client_id": creds.client_id,
         "response_type": "code",
         "redirect_uri": outlook_redirect_uri(settings),
         "response_mode": "query",
@@ -55,7 +57,7 @@ def outlook_authorize_url(state: str, settings: Settings | None = None) -> str:
         "prompt": "consent",
     }
     return (
-        f"https://login.microsoftonline.com/{settings.azure_tenant_id}/oauth2/v2.0/authorize?"
+        f"https://login.microsoftonline.com/{creds.tenant_id}/oauth2/v2.0/authorize?"
         f"{urlencode(params)}"
     )
 
@@ -70,11 +72,14 @@ def _expires_at_from_payload(payload: dict[str, Any]) -> datetime | None:
         return None
 
 
-async def _exchange_outlook_code(code: str, settings: Settings) -> dict[str, Any]:
-    token_url = f"https://login.microsoftonline.com/{settings.azure_tenant_id}/oauth2/v2.0/token"
+async def _exchange_outlook_code(code: str, settings: Settings, db: Session) -> dict[str, Any]:
+    creds = resolve_entra_credentials(db)
+    if not creds.configured:
+        raise HTTPException(status_code=400, detail="microsoft_auth_unavailable")
+    token_url = f"https://login.microsoftonline.com/{creds.tenant_id}/oauth2/v2.0/token"
     data = {
-        "client_id": settings.azure_client_id,
-        "client_secret": settings.azure_client_secret,
+        "client_id": creds.client_id,
+        "client_secret": creds.client_secret,
         "grant_type": "authorization_code",
         "code": code,
         "redirect_uri": outlook_redirect_uri(settings),
@@ -99,7 +104,7 @@ async def complete_outlook_connection(
     if not user_id:
         raise HTTPException(status_code=401, detail="unauthorized")
 
-    payload = await _exchange_outlook_code(code, settings)
+    payload = await _exchange_outlook_code(code, settings, db)
     access_token = payload.get("access_token", "")
     if not access_token:
         raise HTTPException(status_code=502, detail="integration_token_failed")
@@ -150,10 +155,13 @@ async def refresh_outlook_access_token(db: Session, *, user_id: str) -> str:
         return access_token
 
     settings = get_settings()
-    token_url = f"https://login.microsoftonline.com/{settings.azure_tenant_id}/oauth2/v2.0/token"
+    creds = resolve_entra_credentials(db)
+    if not creds.configured:
+        raise HTTPException(status_code=400, detail="microsoft_auth_unavailable")
+    token_url = f"https://login.microsoftonline.com/{creds.tenant_id}/oauth2/v2.0/token"
     data = {
-        "client_id": settings.azure_client_id,
-        "client_secret": settings.azure_client_secret,
+        "client_id": creds.client_id,
+        "client_secret": creds.client_secret,
         "grant_type": "refresh_token",
         "refresh_token": refresh_token,
         "scope": OUTLOOK_USER_SCOPES,
@@ -195,10 +203,11 @@ def disconnect_outlook(db: Session, *, user_id: str) -> None:
 
 
 def outlook_status(db: Session, *, user_id: str) -> dict[str, Any]:
-    settings = get_settings()
+    creds = resolve_entra_credentials(db)
     return {
         **user_integration_status(db, user_id=user_id, provider="outlook"),
-        "oauth_available": settings.entra_configured,
+        "oauth_available": creds.configured,
+        "oauth_source": creds.source if creds.configured else "none",
     }
 
 

@@ -157,6 +157,24 @@ class PublishSettings(Base):
     )
 
 
+class PlatformEntraSettings(Base):
+    """Optional IT-Master Entra app registration when AZURE_* env vars are unset."""
+
+    __tablename__ = "platform_entra_settings"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: "default")
+    tenant_id: Mapped[str] = mapped_column(String(100), default="")
+    client_id: Mapped[str] = mapped_column(String(100), default="")
+    client_secret_enc: Mapped[str] = mapped_column(Text, default="")
+    updated_by_id: Mapped[str] = mapped_column(String(100), default="")
+    updated_by_name: Mapped[str] = mapped_column(String(200), default="")
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
 class IntegrationConnection(Base):
     __tablename__ = "integration_connections"
 

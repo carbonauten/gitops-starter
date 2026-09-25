@@ -18,6 +18,12 @@ class OutlookMailSaveRequest(BaseModel):
     destination: Literal["article", "file", "both"] = "both"
 
 
+class EntraConfigSaveRequest(BaseModel):
+    tenant_id: str = Field(min_length=1, max_length=100)
+    client_id: str = Field(min_length=1, max_length=100)
+    client_secret: str = Field(default="", max_length=500)
+
+
 class ArticleUpdate(BaseModel):
     title: Optional[str] = Field(default=None, max_length=500)
     content: Optional[str] = None

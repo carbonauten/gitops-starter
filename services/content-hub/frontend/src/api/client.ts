@@ -724,6 +724,20 @@ export type OutlookStatus = {
   calendar_enabled?: boolean;
   mail_enabled?: boolean;
   oauth_available: boolean;
+  oauth_source?: "env" | "stored" | "none" | string;
+};
+
+export type EntraConfigStatus = {
+  oauth_available: boolean;
+  source: "env" | "stored" | "none" | string;
+  tenant_id: string;
+  client_id: string;
+  has_client_secret: boolean;
+  stored_configured: boolean;
+  env_configured: boolean;
+  updated_at?: string | null;
+  updated_by_name?: string;
+  redirect_uris: string[];
 };
 
 export type OutlookMailPerson = {
@@ -792,6 +806,29 @@ export async function disconnectOutlook(): Promise<void> {
 
 export function outlookConnectUrl(): string {
   return "/api/integrations/outlook/connect";
+}
+
+export async function fetchEntraConfigStatus(): Promise<EntraConfigStatus> {
+  return request<EntraConfigStatus>("/api/integrations/entra/status");
+}
+
+export async function saveEntraConfig(payload: {
+  tenant_id: string;
+  client_id: string;
+  client_secret: string;
+}): Promise<EntraConfigStatus> {
+  const response = await request<{ entra: EntraConfigStatus }>("/api/integrations/entra/config", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+  return response.entra;
+}
+
+export async function clearEntraConfig(): Promise<EntraConfigStatus> {
+  const response = await request<{ entra: EntraConfigStatus }>("/api/integrations/entra/config", {
+    method: "DELETE",
+  });
+  return response.entra;
 }
 
 export async function fetchOutlookMail(options?: {

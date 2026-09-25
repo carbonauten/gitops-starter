@@ -68,6 +68,48 @@ def test_outlook_disconnect_when_not_connected(auth_client):
     assert response.json()["ok"] is True
 
 
+def test_entra_config_save_enables_outlook_oauth(it_auth_client):
+    forbidden = it_auth_client  # it_master via IT_ADMIN_EMAILS
+    status_before = forbidden.get("/api/integrations/outlook/status")
+    assert status_before.status_code == 200
+    assert status_before.json()["oauth_available"] is False
+
+    save = forbidden.put(
+        "/api/integrations/entra/config",
+        json={
+            "tenant_id": "tenant-aaa",
+            "client_id": "client-bbb",
+            "client_secret": "secret-ccc",
+        },
+    )
+    assert save.status_code == 200
+    payload = save.json()["entra"]
+    assert payload["oauth_available"] is True
+    assert payload["source"] == "stored"
+    assert payload["tenant_id"] == "tenant-aaa"
+    assert payload["client_id"] == "client-bbb"
+    assert payload["has_client_secret"] is True
+
+    outlook = forbidden.get("/api/integrations/outlook/status")
+    assert outlook.json()["oauth_available"] is True
+    assert outlook.json()["oauth_source"] == "stored"
+
+    connect = forbidden.get("/api/integrations/outlook/connect", follow_redirects=False)
+    assert connect.status_code == 302
+    location = connect.headers["location"]
+    assert "login.microsoftonline.com/tenant-aaa" in location
+    assert "client-bbb" in location
+    assert "Mail.ReadWrite" in location
+
+
+def test_entra_config_forbidden_for_editor(auth_client):
+    response = auth_client.put(
+        "/api/integrations/entra/config",
+        json={"tenant_id": "t", "client_id": "c", "client_secret": "s"},
+    )
+    assert response.status_code == 403
+
+
 def _connect_outlook_for_logged_in_user(*, mail_enabled: bool = True) -> str:
     from app.database import UserAccount, _SessionLocal
     from app.user_integration_store import save_user_integration
