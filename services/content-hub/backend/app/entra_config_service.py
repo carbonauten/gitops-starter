@@ -66,6 +66,20 @@ def resolve_entra_credentials(db: Session | None = None) -> EntraCredentials:
 def entra_status(db: Session) -> dict[str, Any]:
     creds = resolve_entra_credentials(db)
     row = _stored_row(db)
+    origin = get_settings().effective_public_origin or "https://app.carbonauten.com"
+    redirect_uris = [
+        f"{origin}/api/auth/callback",
+        f"{origin}/api/integrations/microsoft/callback",
+        f"{origin}/api/integrations/outlook/callback",
+    ]
+    admin_consent_url = ""
+    if creds.configured:
+        from urllib.parse import urlencode
+
+        admin_consent_url = (
+            f"https://login.microsoftonline.com/{creds.tenant_id}/v2.0/adminconsent?"
+            f"{urlencode({'client_id': creds.client_id, 'redirect_uri': f'{origin}/mail', 'state': 'admin_consent'})}"
+        )
     return {
         "oauth_available": creds.configured,
         "source": creds.source if creds.configured else "none",
@@ -76,10 +90,14 @@ def entra_status(db: Session) -> dict[str, Any]:
         "env_configured": _env_credentials().configured,
         "updated_at": row.updated_at.isoformat() if row and row.updated_at else None,
         "updated_by_name": (row.updated_by_name if row else "") or "",
-        "redirect_uris": [
-            f"{get_settings().effective_public_origin or 'https://app.carbonauten.com'}/api/auth/callback",
-            f"{get_settings().effective_public_origin or 'https://app.carbonauten.com'}/api/integrations/microsoft/callback",
-            f"{get_settings().effective_public_origin or 'https://app.carbonauten.com'}/api/integrations/outlook/callback",
+        "redirect_uris": redirect_uris,
+        "admin_consent_url": admin_consent_url,
+        "delegated_scopes": [
+            "User.Read",
+            "Mail.Read",
+            "Calendars.Read",
+            "Files.Read",
+            "offline_access",
         ],
     }
 

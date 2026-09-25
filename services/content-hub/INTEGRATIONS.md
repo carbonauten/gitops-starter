@@ -27,9 +27,8 @@ Auf **Veröffentlichen → Kanal-Konfiguration** (IT-Master) können Microsoft 3
    - `Team.ReadBasic.All`
    - `Channel.ReadBasic.All`
    - `ChannelMessage.Send`
-   - `Mail.ReadWrite`
-   - `Calendars.ReadWrite` (persönlicher Kalender im Kalender-Tab)
-   - `Files.Read` (persönliches OneDrive unter Dateien)
+   - `Mail.ReadWrite` (nur Org-Publish / Entwürfe)
+   - `Mail.Read` / `Calendars.Read` / `Files.Read` (persönliches Postfach, Kalender, OneDrive — User-Consent ohne Admin-Approval)
    - `GroupMember.Read.All` (eigene Gruppenmitgliedschaft beim Login, für Entra-Gruppen-Rollen-Mapping)
 4. **API permissions** → Microsoft Graph → **Application** (für **M365-Verwaltung**, IT-Master):
    - `User.Read.All`
@@ -37,7 +36,7 @@ Auf **Veröffentlichen → Kanal-Konfiguration** (IT-Master) können Microsoft 3
    - `Directory.Read.All`
    - `Organization.Read.All`
    - `Group.Read.All` (Gruppenliste für den Mapping-Picker)
-5. **Grant admin consent** für die Organisation
+5. **Grant admin consent** für die Organisation **einmalig** — danach verbinden User ihr Outlook-Postfach ohne „Need admin approval“
 
 > Ohne `GroupMember.Read.All`-Consent scheitert nur die Gruppenabfrage beim Login (loggt eine Warnung) — der Login selbst funktioniert trotzdem, nur ohne automatischen Rollen-Sync aus Entra-Gruppen. Siehe [ROADMAP.md](./ROADMAP.md#sprint-o--entra-gruppen-mapping--lizenz-zuweisung--mvp).
 
@@ -57,13 +56,15 @@ Auf **Veröffentlichen → Kanal-Konfiguration** (IT-Master) können Microsoft 3
 3. **Team** und **Kanal** wählen → **Kanäle speichern**
 4. Optional: `PUBLISH_MOCK_MODE=false` setzen für Live-Versand
 
-**Kalender-Tab / Dateien-Tab (jeder User):**
-1. Unter **Kalender** oder **Dateien → OneDrive** → verbinden
-2. Mit dem eigenen Microsoft-Konto anmelden
+**Kalender-Tab / Dateien-Tab / Postfach (jeder User):**
+1. Unter **Postfach**, **Kalender** oder **Dateien → OneDrive** → verbinden
+2. Mit dem eigenen Microsoft-Konto anmelden (kein Admin-Approval nötig, wenn IT einmal Admin Consent erteilt hat)
 3. Outlook-Termine, Postfach und OneDrive werden nutzerbezogen freigeschaltet
-4. Unter **Postfach** (`/mail`) können alle verbundenen Accounts E-Mails lesen und als Artikel-Entwurf + HTML-Datei speichern (keine Editor-Rolle nötig)
+4. Unter **Postfach** (`/mail`) können alle verbundenen Accounts E-Mails lesen und speichern
 5. Word/Excel/PowerPoint: unter **Dateien** → **Öffnen** für Office Online Vorschau/Bearbeiten
 6. Unabhängig von der IT-Publish-Integration
+
+IT-Master: nach dem Speichern der App-Credentials auf Postfach den Link **Einmalig Admin-Zustimmung erteilen** klicken.
 
 API (authentifizierter User mit verbundenem Outlook):
 - `GET /api/integrations/outlook/mail`

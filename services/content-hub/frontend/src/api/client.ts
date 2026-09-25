@@ -725,6 +725,8 @@ export type OutlookStatus = {
   mail_enabled?: boolean;
   oauth_available: boolean;
   oauth_source?: "env" | "stored" | "none" | string;
+  admin_consent_url?: string;
+  delegated_scopes?: string[];
 };
 
 export type EntraConfigStatus = {
@@ -738,6 +740,8 @@ export type EntraConfigStatus = {
   updated_at?: string | null;
   updated_by_name?: string;
   redirect_uris: string[];
+  admin_consent_url?: string;
+  delegated_scopes?: string[];
 };
 
 export type OutlookMailPerson = {

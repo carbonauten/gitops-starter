@@ -151,20 +151,35 @@ export function OutlookMailPage() {
         <p className="muted">{t("mail.outlookHint")}</p>
 
         {oauthReady ? (
-          outlook?.connected ? (
-            <button
-              type="button"
-              className="ghost-button"
-              disabled={busy}
-              onClick={() => void handleDisconnect()}
-            >
-              {t("mail.outlookDisconnect")}
-            </button>
-          ) : (
-            <a className="primary-button integration-connect-button" href={outlookConnectUrl()}>
-              {t("mail.outlookConnect")}
-            </a>
-          )
+          <div className="outlook-connect-actions">
+            {outlook?.connected ? (
+              <button
+                type="button"
+                className="ghost-button"
+                disabled={busy}
+                onClick={() => void handleDisconnect()}
+              >
+                {t("mail.outlookDisconnect")}
+              </button>
+            ) : (
+              <a className="primary-button integration-connect-button" href={outlookConnectUrl()}>
+                {t("mail.outlookConnect")}
+              </a>
+            )}
+            {isItMaster && (outlook?.admin_consent_url || entra?.admin_consent_url) ? (
+              <div className="entra-admin-consent">
+                <p className="muted">{t("mail.adminConsentHint")}</p>
+                <a
+                  className="ghost-button link-button"
+                  href={outlook?.admin_consent_url || entra?.admin_consent_url}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  {t("mail.adminConsentButton")}
+                </a>
+              </div>
+            ) : null}
+          </div>
         ) : isItMaster ? (
           <div className="entra-setup-panel">
             <p className="warning-text">{t("mail.entraSetupNeeded")}</p>
