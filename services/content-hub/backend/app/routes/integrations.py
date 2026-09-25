@@ -39,8 +39,8 @@ def _publish_redirect(status: str, provider: str) -> RedirectResponse:
     return RedirectResponse(url=f"/publish?integration={provider}&status={status}", status_code=302)
 
 
-def _calendar_redirect(status: str) -> RedirectResponse:
-    return RedirectResponse(url=f"/calendar?outlook={status}", status_code=302)
+def _mail_redirect(status: str) -> RedirectResponse:
+    return RedirectResponse(url=f"/mail?outlook={status}", status_code=302)
 
 
 @router.get("/status")
@@ -228,7 +228,7 @@ async def outlook_callback(
     session = get_session(request) or {}
     expected_state = session.get("integration_oauth_state")
     if not code or not state or state != expected_state:
-        return _calendar_redirect("error")
+        return _mail_redirect("error")
 
     user = session.get("user")
     if not user:
@@ -237,9 +237,9 @@ async def outlook_callback(
     try:
         await complete_outlook_connection(db, code=code, user=user)
     except HTTPException:
-        return _calendar_redirect("error")
+        return _mail_redirect("error")
 
-    response = _calendar_redirect("success")
+    response = _mail_redirect("success")
     session.pop("integration_oauth_state", None)
     session.pop("integration_provider", None)
     set_session(response, session)

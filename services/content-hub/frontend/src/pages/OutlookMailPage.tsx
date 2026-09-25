@@ -8,9 +8,9 @@ import {
   outlookConnectUrl,
   type OutlookStatus,
 } from "../api/client";
-import { PublishCalendarPanel } from "../components/PublishCalendarPanel";
+import { OutlookMailPanel } from "../components/OutlookMailPanel";
 
-export function PublishCalendarPage() {
+export function OutlookMailPage() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [outlook, setOutlook] = useState<OutlookStatus | null>(null);
@@ -33,10 +33,10 @@ export function PublishCalendarPage() {
     const status = searchParams.get("outlook");
     if (!status) return;
     if (status === "success") {
-      setNotice(t("calendar.outlookConnected"));
+      setNotice(t("mail.outlookConnected"));
       setReloadKey((value) => value + 1);
     } else if (status === "error") {
-      setError(t("calendar.outlookFailed"));
+      setError(t("mail.outlookFailed"));
     }
     const next = new URLSearchParams(searchParams);
     next.delete("outlook");
@@ -50,7 +50,7 @@ export function PublishCalendarPage() {
     try {
       await disconnectOutlook();
       setOutlook(await fetchOutlookStatus());
-      setNotice(t("calendar.outlookDisconnected"));
+      setNotice(t("mail.outlookDisconnected"));
       setReloadKey((value) => value + 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
@@ -59,43 +59,33 @@ export function PublishCalendarPage() {
     }
   }
 
+  const connected = Boolean(outlook?.connected && outlook?.mail_enabled !== false);
+
   return (
     <section className="page">
       <header className="page-header row-header">
         <div>
-          <p className="eyebrow">{t("calendar.eyebrow")}</p>
-          <h1>{t("calendar.pageTitle")}</h1>
-          <p className="muted">{t("calendar.pageSubtitle")}</p>
+          <p className="eyebrow">{t("mail.eyebrow")}</p>
+          <h1>{t("mail.pageTitle")}</h1>
+          <p className="muted">{t("mail.pageSubtitle")}</p>
         </div>
-        <div className="row-actions">
-          <Link to="/mail" className="ghost-button link-button">
-            {t("calendar.openMail")}
-          </Link>
-          <Link to="/publish" className="ghost-button link-button">
-            {t("calendar.openPublish")}
-          </Link>
-        </div>
+        <Link to="/files" className="ghost-button link-button">
+          {t("mail.openFiles")}
+        </Link>
       </header>
 
       <div className="integration-connect-block outlook-connect-card">
         <div className="integration-connect-header">
-          <strong>{t("calendar.outlookTitle")}</strong>
+          <strong>{t("mail.outlookTitle")}</strong>
           {outlook?.connected ? (
             <span className="integration-badge integration-badge-connected">
-              {outlook.account || t("calendar.connected")}
+              {outlook.account || t("mail.connected")}
             </span>
           ) : (
-            <span className="integration-badge">{t("calendar.notConnected")}</span>
+            <span className="integration-badge">{t("mail.notConnected")}</span>
           )}
         </div>
-        <p className="muted">{t("calendar.outlookHint")}</p>
-        <ul className="outlook-feature-list">
-          <li>{t("calendar.outlookFeatureCalendar")}</li>
-          <li>
-            {t("calendar.outlookFeatureMail")}{" "}
-            <Link to="/mail">{t("calendar.openMail")}</Link>
-          </li>
-        </ul>
+        <p className="muted">{t("mail.outlookHint")}</p>
         {outlook?.oauth_available ? (
           outlook.connected ? (
             <button
@@ -104,21 +94,21 @@ export function PublishCalendarPage() {
               disabled={busy}
               onClick={() => void handleDisconnect()}
             >
-              {t("calendar.outlookDisconnect")}
+              {t("mail.outlookDisconnect")}
             </button>
           ) : (
             <a className="primary-button integration-connect-button" href={outlookConnectUrl()}>
-              {t("calendar.outlookConnect")}
+              {t("mail.outlookConnect")}
             </a>
           )
         ) : (
-          <p className="muted">{t("calendar.outlookEnvMissing")}</p>
+          <p className="muted">{t("mail.outlookEnvMissing")}</p>
         )}
         {notice ? <p className="success-text">{notice}</p> : null}
         {error ? <p className="error-text">{error}</p> : null}
       </div>
 
-      <PublishCalendarPanel key={reloadKey} />
+      <OutlookMailPanel key={reloadKey} connected={connected} />
     </section>
   );
 }
