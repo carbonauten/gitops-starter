@@ -20,7 +20,8 @@ import logging
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 from typing import Any, Callable
 from urllib.parse import parse_qs, unquote, urlparse
 from uuid import uuid4
@@ -168,6 +169,36 @@ _http_client: contextvars.ContextVar[httpx.Client | None] = contextvars.ContextV
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def parse_rss_pubdate(value: str) -> str:
+    """RFC-822 <pubDate> (e.g. Google News RSS) to an ISO string, "" if missing/unparseable."""
+    raw = (value or "").strip()
+    if not raw:
+        return ""
+    try:
+        parsed = parsedate_to_datetime(raw)
+    except (TypeError, ValueError):
+        return ""
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc).isoformat()
+
+
+def within_lookback(published_at: str, *, days: int, now: datetime | None = None) -> bool:
+    """True when published_at is within the lookback window, or when it can't be
+    determined at all — an unknown publish date (DuckDuckGo results never carry
+    one) must never be treated as "too old" and silently dropped."""
+    if days <= 0 or not published_at:
+        return True
+    try:
+        published = datetime.fromisoformat(published_at)
+    except ValueError:
+        return True
+    if published.tzinfo is None:
+        published = published.replace(tzinfo=timezone.utc)
+    cutoff = (now or _utc_now()) - timedelta(days=days)
+    return published >= cutoff
 
 
 def _csv_terms(value: str) -> list[str]:
@@ -540,6 +571,9 @@ def parse_news_rss(markup: str, *, limit: int = 12) -> list[dict[str, str]]:
         }
         if original_url and original_url != url:
             row["google_news_url"] = original_url
+        published_at = parse_rss_pubdate(item.findtext("pubDate") or "")
+        if published_at:
+            row["published_at"] = published_at
         results.append(row)
     return results[:limit]
 
@@ -798,9 +832,20 @@ def mention_to_dict(row: ReputationMention, deletion: dict[str, Any] | None = No
         "sentiment_reasons": row.sentiment_reasons or "",
         "first_seen_at": row.first_seen_at.isoformat() if row.first_seen_at else None,
         "last_seen_at": row.last_seen_at.isoformat() if row.last_seen_at else None,
+        "published_at": row.published_at.isoformat() if row.published_at else None,
         "deletion": deletion,
     }
     return payload
+
+
+def _parse_iso(value: str) -> datetime | None:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
 
 
 def _upsert_mention(db: Session, payload: dict[str, str], *, excerpt: str = "") -> tuple[ReputationMention, bool]:
@@ -816,6 +861,7 @@ def _upsert_mention(db: Session, payload: dict[str, str], *, excerpt: str = "") 
     now = _utc_now()
     channel = payload.get("channel") or "web"
     host = "linkedin.com" if channel == "linkedin" else source_host(url)
+    published_at = _parse_iso(payload.get("published_at") or "")
     if existing:
         existing.title = payload.get("title") or existing.title
         existing.snippet = payload.get("snippet") or existing.snippet
@@ -825,6 +871,8 @@ def _upsert_mention(db: Session, payload: dict[str, str], *, excerpt: str = "") 
         existing.channel = channel or existing.channel
         if host:
             existing.source_host = host
+        if published_at:
+            existing.published_at = published_at
         existing.sentiment = sentiment
         existing.sentiment_score = score
         existing.sentiment_reasons = reasons
@@ -845,6 +893,7 @@ def _upsert_mention(db: Session, payload: dict[str, str], *, excerpt: str = "") 
         sentiment=sentiment,
         sentiment_score=score,
         sentiment_reasons=reasons,
+        published_at=published_at,
         first_seen_at=now,
         last_seen_at=now,
     )
@@ -852,7 +901,13 @@ def _upsert_mention(db: Session, payload: dict[str, str], *, excerpt: str = "") 
     return row, True
 
 
-def _search_query(query: str, *, include_news: bool, fetch: FetchFn) -> list[dict[str, str]]:
+def _search_query(
+    query: str,
+    *,
+    include_news: bool,
+    fetch: FetchFn,
+    lookback_days: int = 0,
+) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     linkedin_query = "linkedin" in query.lower()
     try:
@@ -871,6 +926,9 @@ def _search_query(query: str, *, include_news: bool, fetch: FetchFn) -> list[dic
             )
         except Exception:  # noqa: BLE001
             logger.info("News search failed for query %s", query)
+    # Only Google News RSS rows carry a published_at at all (DuckDuckGo gives no
+    # date), so this only ever trims dated news/LinkedIn hits, never DDG results.
+    rows = [row for row in rows if within_lookback(row.get("published_at") or "", days=lookback_days)]
     kept: list[dict[str, str]] = []
     for row in rows:
         # Do not include the search query in brand text — every query contains brand terms.
@@ -983,6 +1041,7 @@ def run_reputation_crawl(
         db.commit()
 
     queries = default_queries(settings)
+    lookback_days = int(getattr(settings, "reputation_lookback_days", 90) or 0)
     seen_urls: set[str] = set()
     created = updated = negative = 0
     stats: dict[str, int] = {
@@ -1018,7 +1077,9 @@ def run_reputation_crawl(
         jobs = [(query, include_news) for query in queries]
         pool = ThreadPoolExecutor(max_workers=min(SEARCH_WORKERS, max(1, len(jobs) + 2)))
         futures = {
-            pool.submit(ctx.run, _search_query, query, include_news=news, fetch=active_fetch): ("query", query)
+            pool.submit(
+                ctx.run, _search_query, query, include_news=news, fetch=active_fetch, lookback_days=lookback_days
+            ): ("query", query)
             for query, news in jobs
         }
         futures[pool.submit(ctx.run, search_company_china, fetch=active_fetch)] = ("company_china", "company-china")

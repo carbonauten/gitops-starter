@@ -25,6 +25,8 @@ from app.reputation_crawler import (
     search_company_china,
     search_news,
     unwrap_google_news_url,
+    parse_rss_pubdate,
+    within_lookback,
     _http_client,
     _resolve_pending_google_news,
     _search_query,
@@ -332,6 +334,106 @@ def test_parse_news_rss_linkedin_source():
     assert "Torsten Becker" in rows[0]["title"]
     assert is_on_brand(rows[0]["title"])
     assert not is_on_brand(rows[1]["title"] + " " + rows[1]["snippet"])
+
+
+def test_parse_news_rss_extracts_published_at():
+    xml = """
+    <rss><channel>
+    <item>
+      <title>carbonauten Kritik</title>
+      <link>https://news.example.org/story</link>
+      <description>Ein Bericht</description>
+      <pubDate>Tue, 01 Sep 2026 08:00:00 GMT</pubDate>
+    </item>
+    </channel></rss>
+    """
+    rows = parse_news_rss(xml)
+    assert rows[0]["published_at"] == "2026-09-01T08:00:00+00:00"
+
+
+def test_parse_news_rss_missing_pubdate_omits_published_at():
+    xml = """
+    <rss><channel>
+    <item>
+      <title>carbonauten Kritik</title>
+      <link>https://news.example.org/story</link>
+      <description>Ein Bericht</description>
+    </item>
+    </channel></rss>
+    """
+    rows = parse_news_rss(xml)
+    assert "published_at" not in rows[0]
+
+
+def test_parse_rss_pubdate_handles_garbage():
+    assert parse_rss_pubdate("") == ""
+    assert parse_rss_pubdate("not a date") == ""
+    assert parse_rss_pubdate("Tue, 01 Sep 2026 08:00:00 GMT") == "2026-09-01T08:00:00+00:00"
+
+
+def test_within_lookback():
+    now = datetime(2026, 9, 29, tzinfo=timezone.utc)
+    recent = (now - timedelta(days=10)).isoformat()
+    old = (now - timedelta(days=200)).isoformat()
+    assert within_lookback(recent, days=90, now=now) is True
+    assert within_lookback(old, days=90, now=now) is False
+    # No date at all (DuckDuckGo results) must never be treated as "too old".
+    assert within_lookback("", days=90, now=now) is True
+    # days<=0 disables the cutoff entirely, even for something ancient.
+    assert within_lookback(old, days=0, now=now) is True
+
+
+def test_search_query_drops_news_older_than_lookback():
+    old_pub_date = (datetime.now(timezone.utc) - timedelta(days=200)).strftime("%a, %d %b %Y %H:%M:%S GMT")
+    recent_pub_date = (datetime.now(timezone.utc) - timedelta(days=5)).strftime("%a, %d %b %Y %H:%M:%S GMT")
+    xml = f"""
+    <rss><channel>
+    <item>
+      <title>carbonauten Kritik alt</title>
+      <link>https://news.example.org/old-story</link>
+      <description>Alte Meldung</description>
+      <pubDate>{old_pub_date}</pubDate>
+    </item>
+    <item>
+      <title>carbonauten Kritik neu</title>
+      <link>https://news.example.org/recent-story</link>
+      <description>Neue Meldung</description>
+      <pubDate>{recent_pub_date}</pubDate>
+    </item>
+    </channel></rss>
+    """
+
+    def fetch(url, params=None, headers=None):
+        if "duckduckgo" in url:
+            return "<html></html>"
+        return xml
+
+    rows = _search_query("carbonauten GmbH", include_news=True, fetch=fetch, lookback_days=90)
+    urls = {row["url"] for row in rows}
+    assert "https://news.example.org/recent-story" in urls
+    assert "https://news.example.org/old-story" not in urls
+
+
+def test_search_query_lookback_zero_keeps_everything():
+    old_pub_date = (datetime.now(timezone.utc) - timedelta(days=900)).strftime("%a, %d %b %Y %H:%M:%S GMT")
+    xml = f"""
+    <rss><channel>
+    <item>
+      <title>carbonauten Kritik uralt</title>
+      <link>https://news.example.org/ancient-story</link>
+      <description>Uralte Meldung</description>
+      <pubDate>{old_pub_date}</pubDate>
+    </item>
+    </channel></rss>
+    """
+
+    def fetch(url, params=None, headers=None):
+        if "duckduckgo" in url:
+            return "<html></html>"
+        return xml
+
+    rows = _search_query("carbonauten GmbH", include_news=True, fetch=fetch, lookback_days=0)
+    assert any(row["url"] == "https://news.example.org/ancient-story" for row in rows)
 
 
 def test_detect_channel_linkedin():

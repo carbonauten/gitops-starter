@@ -142,6 +142,10 @@ class Settings(BaseSettings):
     reputation_crawl_interval_hours: int = 6
     reputation_brand_terms: str = "carbonauten GmbH,carbonauten,FuckCo2,fuckco2,碳基科技"
     reputation_people: str = "Torsten Becker"
+    # Skip dated hits older than this by default; 0 (or less) disables the cutoff.
+    # Only sources with a real publish date (Google News RSS, incl. the WordPress
+    # feed fallback) can be checked — DuckDuckGo HTML results carry no date at all.
+    reputation_lookback_days: int = 90
     m365_directory_mock_mode: bool = False
 
     supported_languages: tuple[str, ...] = ("de", "en", "zh-CN")

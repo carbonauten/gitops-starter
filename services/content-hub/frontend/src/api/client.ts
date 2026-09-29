@@ -1403,6 +1403,7 @@ export type ReputationMention = {
   sentiment_reasons: string;
   first_seen_at?: string | null;
   last_seen_at?: string | null;
+  published_at?: string | null;
   deletion?: ReputationDeletion | null;
 };
 
