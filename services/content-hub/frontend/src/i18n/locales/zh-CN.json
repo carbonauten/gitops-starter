@@ -968,7 +968,6 @@
     "crawlRunning": "正在抓取…",
     "crawlFailed": "抓取失败，请稍后重试。",
     "crawlTimeout": "抓取时间过长。已有结果仍会显示。",
-    "crawlDone": "{{found}} 条结果，其中 {{negative}} 条负面。",
     "statTotal": "提及",
     "statNegative": "负面",
     "statOpenRequests": "未结删除申请",
