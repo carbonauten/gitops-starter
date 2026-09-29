@@ -765,6 +765,13 @@ a {
   align-items: start;
 }
 
+.outlook-mail-list-pane {
+  padding: 0.85rem;
+  border: 1px solid var(--border, #e4e7ec);
+  border-radius: 10px;
+  background: #fff;
+}
+
 .outlook-mail-list {
   list-style: none;
   margin: 0;

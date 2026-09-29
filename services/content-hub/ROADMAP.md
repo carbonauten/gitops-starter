@@ -865,6 +865,12 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 - [x] Gleichzeitig eine echte XSS-Lücke: Event-Handler-Attribute (`<img onerror=...>` u.ä.) in einer per `innerHTML` eingefügten Mail werden ausgeführt, obwohl `<script>`-Tags selbst nicht laufen
 - [x] Fix: E-Mail-Body (HTML wie Text) wird jetzt in einem sandboxed `<iframe srcDoc>` gerendert (`sandbox="allow-same-origin allow-popups"`, **kein** `allow-scripts`) — Styles/Skripte der Mail bleiben im iframe-Dokument isoliert, können weder das App-Layout noch die Seite selbst beeinflussen; Höhe wird per `onLoad` automatisch an den Inhalt angepasst
 
+### Bugfix/Politur: Mailbox-Detailansicht nach dem iframe-Fix (September 2026)
+
+- [x] Nachdem der E-Mail-Body in ein `<iframe srcDoc>` verschoben wurde (siehe oben), erbte der Inhalt keine App-Styles mehr — ein eigenes Dokument bekommt keine CSS-Regeln der Elternseite. Unstrukturierte Mails (oder reiner Text) fielen dadurch auf die riesigen Browser-Standardgrößen zurück (z. B. `<h1>` ohne eigenes Styling) und lange Wörter liefen über den Rand hinaus, statt umzubrechen
+- [x] Fix: eigenes Basis-Stylesheet wird jetzt in jedes iframe-Dokument injiziert (App-Schriftart/-größe, `overflow-wrap: anywhere`, `max-width: 100%` für Bilder/Tabellen) — E-Mails sehen wieder normal groß aus und lange Wörter/URLs brechen sauber um, statt die Detailspalte zu sprengen
+- [x] `.outlook-mail-list-pane` (Nachrichtenliste links) hatte gar keine eigene CSS-Regel — im Gegensatz zur Detailspalte rechts fehlten Rahmen/Hintergrund komplett, wirkte optisch inkonsistent. Jetzt mit demselben Karten-Look wie die Detailspalte
+
 ---
 
 ## Sprint N — M365-Verwaltung ✅ (MVP)
