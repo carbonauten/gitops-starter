@@ -213,6 +213,20 @@ export function ReputationPage() {
             defaultValue: summary.last_run.status,
           })}{" "}
           · {summary.last_run.found} {t("reputation.hits")}
+          {summary.last_run.stats
+            ? ` · ${[
+                summary.last_run.stats.web ? `web ${summary.last_run.stats.web}` : "",
+                summary.last_run.stats.news ? `news ${summary.last_run.stats.news}` : "",
+                summary.last_run.stats.linkedin ? `linkedin ${summary.last_run.stats.linkedin}` : "",
+                summary.last_run.stats.company_china
+                  ? `china ${summary.last_run.stats.company_china + (summary.last_run.stats.china_press || 0)}`
+                  : summary.last_run.stats.china_press
+                    ? `china ${summary.last_run.stats.china_press}`
+                    : "",
+              ]
+                .filter(Boolean)
+                .join(" · ")}`
+            : ""}
           {summary.last_run.finished_at
             ? ` · ${new Date(summary.last_run.finished_at).toLocaleString(i18n.language)}`
             : crawling

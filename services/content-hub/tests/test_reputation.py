@@ -1,11 +1,13 @@
 from datetime import date, datetime, timedelta, timezone
 from unittest.mock import patch
+import base64
 import time
 
 from sqlalchemy import select
 
 from app.reputation_crawler import (
     classify_sentiment,
+    default_people,
     default_queries,
     detect_channel,
     extract_article_text,
@@ -19,6 +21,8 @@ from app.reputation_crawler import (
     search_china_press,
     search_company_china,
     search_news,
+    unwrap_google_news_url,
+    _search_query,
 )
 
 
@@ -280,7 +284,78 @@ def test_default_queries_include_linkedin():
     assert any("linkedin.com/posts" in item for item in queries)
     assert any("赤壁" in item or "Chibi" in item or "中国" in item for item in queries)
     assert any("碳基科技" in item for item in queries)
-    assert len(queries) <= 12
+    assert len(queries) <= 20
+
+
+def test_default_people_uses_config(monkeypatch):
+    from app.config import Settings
+
+    settings = Settings(reputation_people="Alice Example, Bob Example")
+    assert default_people(settings) == ["Alice Example", "Bob Example"]
+    queries = default_queries(settings)
+    assert any("Alice Example" in item for item in queries)
+    assert any("Bob Example" in item for item in queries)
+
+
+def test_is_on_brand_uses_configured_brand_terms(monkeypatch):
+    from app.config import Settings
+
+    settings = Settings(reputation_brand_terms="Acme Biochar,CustomBrand")
+    assert is_on_brand("Acme Biochar opens plant", settings=settings)
+    assert is_on_brand("CustomBrand launch", settings=settings)
+    assert is_on_brand("德国碳基科技在赤壁投资", settings=settings)
+    assert not is_on_brand("Unrelated Torsten Becker – lawyer", settings=settings)
+
+
+def test_search_query_brand_filter_ignores_query_string():
+    """Results without brand in title/snippet must be dropped even if the query has brand terms."""
+    html = """
+    <html><body>
+    <a class="result__a" href="https://news.example.com/on-brand">carbonauten GmbH update</a>
+    <a class="result__snippet">Factory news about carbonauten.</a>
+    <a class="result__a" href="https://news.example.com/off-brand">Unrelated Torsten Becker – lawyer</a>
+    <a class="result__snippet">Anwaltskanzlei without the company.</a>
+    </body></html>
+    """
+
+    def fetch(url, params=None, headers=None):
+        if "duckduckgo" in url:
+            return html
+        return "<rss><channel></channel></rss>"
+
+    rows = _search_query("carbonauten Kritik OR Betrug OR Skandal", include_news=False, fetch=fetch)
+    urls = {row["url"] for row in rows}
+    assert "https://news.example.com/on-brand" in urls
+    assert "https://news.example.com/off-brand" not in urls
+
+
+def test_unwrap_google_news_url_from_article_id():
+    encoded = base64.urlsafe_b64encode(b'\x08\x13"Vhttps://publisher.example.com/story/carbonauten').decode().rstrip("=")
+    google = f"https://news.google.com/rss/articles/{encoded}"
+    assert unwrap_google_news_url(google) == "https://publisher.example.com/story/carbonauten"
+
+
+def test_unwrap_google_news_url_from_description_href():
+    google = "https://news.google.com/rss/articles/CBMiOpaqueModernIdWithoutUrl"
+    desc = '<a href="https://handelsblatt.example/carbonauten-chibi">lesen</a>'
+    assert unwrap_google_news_url(google, description_html=desc) == "https://handelsblatt.example/carbonauten-chibi"
+
+
+def test_parse_news_rss_unwraps_google_article_link():
+    encoded = base64.urlsafe_b64encode(b'\x08\x13"Rhttps://blog.example.org/skandal-carbonauten').decode().rstrip("=")
+    xml = f"""
+    <rss><channel>
+    <item>
+      <title>Warnung: carbonauten Skandal</title>
+      <link>https://news.google.com/rss/articles/{encoded}</link>
+      <description>Kritik und Beschwerde</description>
+    </item>
+    </channel></rss>
+    """
+    rows = parse_news_rss(xml)
+    assert rows[0]["url"] == "https://blog.example.org/skandal-carbonauten"
+    assert rows[0]["google_news_url"].startswith("https://news.google.com/")
+    assert rows[0]["channel"] == "news"
 
 
 def test_news_editions_cover_china():
