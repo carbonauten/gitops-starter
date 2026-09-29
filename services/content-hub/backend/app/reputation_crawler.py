@@ -99,11 +99,15 @@ DEFAULT_QUERIES = (
     "carbonauten Kritik OR Betrug OR Skandal",
     "FuckCo2 carbonauten",
 )
+# Posts first: Google News indexes LinkedIn posts better than DuckDuckGo from datacenter IPs.
 LINKEDIN_QUERIES = (
+    'site:linkedin.com/posts "carbonauten"',
+    'site:linkedin.com/posts "carbonauten GmbH"',
+    'site:linkedin.com/posts "FuckCo2"',
     'site:linkedin.com "carbonauten GmbH"',
     'site:linkedin.com "carbonauten"',
-    'site:linkedin.com/posts "carbonauten"',
     'site:linkedin.com/company/carbonauten',
+    'site:linkedin.com/pulse "carbonauten"',
 )
 CHINA_QUERIES = (
     "carbonauten China OR 中国 OR Chibi OR 赤壁",
@@ -139,6 +143,7 @@ CHINA_COVERAGE_TOKENS = (
 
 MAX_QUERIES = 20
 MAX_PAGE_FETCHES = 24
+MAX_GOOGLE_NEWS_RESOLVES = 24
 FETCH_TIMEOUT_SEC = 5.0
 CRAWL_BUDGET_SEC = 70.0
 SEARCH_WORKERS = 6
@@ -194,8 +199,10 @@ def default_queries(settings: Settings | None = None) -> list[str]:
     settings = settings or get_settings()
     seen: set[str] = set()
     queries: list[str] = []
-    people_queries = [f'site:linkedin.com "{person}" carbonauten' for person in default_people(settings)]
-    for item in list(DEFAULT_QUERIES) + list(LINKEDIN_QUERIES) + list(CHINA_QUERIES) + people_queries:
+    people_queries = [f'site:linkedin.com/posts "{person}" carbonauten' for person in default_people(settings)]
+    people_queries += [f'site:linkedin.com "{person}" carbonauten' for person in default_people(settings)]
+    # LinkedIn first so the short crawl budget prefers posts over generic web noise.
+    for item in list(LINKEDIN_QUERIES) + people_queries + list(DEFAULT_QUERIES) + list(CHINA_QUERIES):
         key = item.lower()
         if key in seen:
             continue
@@ -210,15 +217,17 @@ def is_company_host(url: str) -> bool:
 
 
 def is_on_brand(text: str, url: str = "", *, settings: Settings | None = None) -> bool:
-    """True when title/snippet/body (not the search query) mentions a brand term or company host."""
+    """True when title/snippet/body/URL (not the search query) mentions a brand term or company host."""
     if is_company_host(url):
         return True
+    url_blob = (url or "").lower()
     blob = text or ""
     lower = blob.lower()
     for term in brand_terms(settings):
         if not term:
             continue
-        if term.lower() in lower or term in blob:
+        term_l = term.lower()
+        if term_l in lower or term in blob or term_l in url_blob:
             return True
     return False
 
@@ -328,6 +337,102 @@ def unwrap_google_news_url(url: str, *, description_html: str = "") -> str:
         unwrapped = normalize_url(decoded)
         if unwrapped and not is_google_news_url(unwrapped):
             return unwrapped
+    return normalized
+
+
+def _google_news_article_id(url: str) -> str:
+    path = urlparse(url or "").path or ""
+    match = re.search(r"/articles/([^/?#]+)", path)
+    return unquote(match.group(1)) if match else ""
+
+
+def resolve_google_news_url(url: str, *, fetch: FetchFn | None = None) -> str:
+    """Resolve modern (post-2024) Google News article URLs via the public batchexecute RPC.
+
+    Offline base64 unwrap is tried first. Opaque ids need one GET (signature) + one POST.
+    """
+    offline = unwrap_google_news_url(url)
+    if offline and not is_google_news_url(offline):
+        return offline
+    normalized = normalize_url(url)
+    if not is_google_news_url(normalized):
+        return normalized
+    article_id = _google_news_article_id(normalized)
+    if not article_id:
+        return normalized
+    fetch = fetch or default_fetch
+    try:
+        page = fetch(normalized, None, {"User-Agent": USER_AGENT, "Accept-Language": "de,en;q=0.8"})
+    except Exception:  # noqa: BLE001
+        logger.info("Google News article page fetch failed for %s", normalized)
+        return normalized
+    sg = re.search(r'data-n-a-sg="([^"]+)"', page or "")
+    ts = re.search(r'data-n-a-ts="([^"]+)"', page or "")
+    if not sg or not ts:
+        return normalized
+    try:
+        timestamp = int(ts.group(1))
+    except ValueError:
+        return normalized
+    rpc_inner = json.dumps(
+        [
+            "garturlreq",
+            [
+                ["X", "X", ["X", "X"], None, None, 1, 1, "DE:de", None, 1, None, None, None, None, None, 0, 1],
+                "X",
+                "X",
+                1,
+                [1, 1, 1],
+                1,
+                1,
+                None,
+                0,
+                0,
+                None,
+                0,
+            ],
+            article_id,
+            timestamp,
+            sg.group(1),
+        ],
+        separators=(",", ":"),
+    )
+    f_req = json.dumps([[["Fbv4je", rpc_inner, None, "generic"]]], separators=(",", ":"))
+    try:
+        shared = _http_client.get()
+        headers = {
+            "User-Agent": USER_AGENT,
+            "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+        }
+        if shared is not None:
+            response = shared.post(
+                "https://news.google.com/_/DotsSplashUi/data/batchexecute",
+                data={"f.req": f_req},
+                headers=headers,
+            )
+            response.raise_for_status()
+            body = response.text
+        else:
+            with httpx.Client(timeout=FETCH_TIMEOUT_SEC, follow_redirects=True, headers=headers) as client:
+                response = client.post(
+                    "https://news.google.com/_/DotsSplashUi/data/batchexecute",
+                    data={"f.req": f_req},
+                )
+                response.raise_for_status()
+                body = response.text
+    except Exception:  # noqa: BLE001
+        logger.info("Google News batchexecute resolve failed for %s", normalized)
+        return normalized
+    # Response nests JSON as an escaped string: ["garturlres","https://...",1]
+    unescaped = (body or "").replace('\\"', '"')
+    match = re.search(r'"garturlres"\s*,\s*"(https?://[^"]+)"', unescaped)
+    if not match:
+        match = re.search(r'garturlres","(https?://[^"\\]+)', body or "")
+    if not match:
+        return normalized
+    resolved = normalize_url(html_lib.unescape(match.group(1)))
+    if resolved and not is_google_news_url(resolved):
+        return resolved
     return normalized
 
 
@@ -762,13 +867,81 @@ def _search_query(query: str, *, include_news: bool, fetch: FetchFn) -> list[dic
     for row in rows:
         # Do not include the search query in brand text — every query contains brand terms.
         brand_text = " ".join(part for part in (row.get("title"), row.get("snippet"), row.get("excerpt")) if part)
-        if is_on_brand(brand_text, row.get("url") or ""):
+        url = row.get("url") or ""
+        if is_on_brand(brand_text, url):
             kept.append(row)
+            continue
+        # LinkedIn Google News titles often omit the company name; resolve the opaque
+        # news.google.com URL first, then re-check brand against the real LinkedIn path.
+        if linkedin_query and (row.get("channel") == "linkedin" or is_google_news_url(url)):
+            deferred = dict(row)
+            deferred["pending_brand_check"] = "1"
+            if is_google_news_url(url) and not deferred.get("google_news_url"):
+                deferred["google_news_url"] = url
+            kept.append(deferred)
     return kept
 
 
 def _bump_stat(stats: dict[str, int], key: str, amount: int = 1) -> None:
     stats[key] = int(stats.get(key) or 0) + amount
+
+
+def _resolve_pending_google_news(
+    pending: list[dict[str, str]],
+    *,
+    fetch: FetchFn,
+    deadline: float,
+    stats: dict[str, int],
+) -> list[dict[str, str]]:
+    """Turn opaque news.google.com links into publisher/LinkedIn URLs, then drop off-brand deferred hits."""
+    to_resolve = [
+        item
+        for item in pending
+        if is_google_news_url(item.get("url") or "")
+    ][:MAX_GOOGLE_NEWS_RESOLVES]
+    if to_resolve and time.monotonic() < deadline:
+        remaining = max(0.1, deadline - time.monotonic())
+        with ThreadPoolExecutor(max_workers=min(PAGE_FETCH_WORKERS, max(1, len(to_resolve)))) as pool:
+            futures = {
+                pool.submit(resolve_google_news_url, item["url"], fetch=fetch): item for item in to_resolve
+            }
+            try:
+                for future in as_completed(futures, timeout=remaining):
+                    item = futures[future]
+                    original = item.get("url") or ""
+                    try:
+                        resolved = future.result() or original
+                    except Exception:  # noqa: BLE001
+                        resolved = original
+                    if resolved and resolved != original and not is_google_news_url(resolved):
+                        if not item.get("google_news_url"):
+                            item["google_news_url"] = original
+                        item["url"] = resolved
+                        item["channel"] = detect_channel(resolved, fallback=item.get("channel") or "news")
+                        _bump_stat(stats, "unwrapped_news")
+                    if time.monotonic() >= deadline:
+                        break
+            except TimeoutError:
+                logger.info("Google News resolve budget exhausted")
+
+    filtered: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for item in pending:
+        url = item.get("url") or ""
+        if not url or url in seen:
+            continue
+        brand_text = " ".join(part for part in (item.get("title"), item.get("snippet"), item.get("excerpt")) if part)
+        if item.pop("pending_brand_check", None):
+            if not is_on_brand(brand_text, url):
+                _bump_stat(stats, "linkedin_dropped")
+                continue
+        if is_google_news_url(url) and item.get("channel") == "linkedin":
+            # Still opaque — keep only if title/snippet already proved on-brand.
+            if not is_on_brand(brand_text, url):
+                continue
+        seen.add(url)
+        filtered.append(item)
+    return filtered
 
 
 def run_reputation_crawl(
@@ -869,6 +1042,34 @@ def run_reputation_crawl(
                     break
         except TimeoutError:
             logger.info("Reputation crawl reached %ss search budget with %s hits", CRAWL_BUDGET_SEC, len(seen_urls))
+
+        pending = _resolve_pending_google_news(
+            pending,
+            fetch=active_fetch,
+            deadline=deadline,
+            stats=stats,
+        )
+        seen_urls = {item.get("url") or "" for item in pending if item.get("url")}
+        # Recount channels after Google News → LinkedIn/publisher unwrap.
+        for key in ("web", "news", "linkedin", "company_china", "china_press"):
+            stats[key] = 0
+        for item in pending:
+            channel = item.get("channel") or detect_channel(item.get("url") or "")
+            query = (item.get("query") or "").lower()
+            if "company-china" in query or query.startswith("site:carbonauten.com"):
+                _bump_stat(stats, "company_china")
+            elif "china press" in query:
+                _bump_stat(stats, "china_press")
+            elif channel == "linkedin":
+                _bump_stat(stats, "linkedin")
+            elif channel == "news":
+                _bump_stat(stats, "news")
+            else:
+                _bump_stat(stats, "web")
+        run.found = len(seen_urls)
+        run.stats = json.dumps(stats, ensure_ascii=False)
+        db.add(run)
+        db.commit()
 
         to_fetch = [
             item

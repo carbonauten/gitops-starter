@@ -18,10 +18,12 @@ from app.reputation_crawler import (
     parse_duckduckgo_html,
     parse_news_rss,
     parse_wordpress_json,
+    resolve_google_news_url,
     search_china_press,
     search_company_china,
     search_news,
     unwrap_google_news_url,
+    _resolve_pending_google_news,
     _search_query,
 )
 
@@ -284,7 +286,129 @@ def test_default_queries_include_linkedin():
     assert any("linkedin.com/posts" in item for item in queries)
     assert any("赤壁" in item or "Chibi" in item or "中国" in item for item in queries)
     assert any("碳基科技" in item for item in queries)
+    assert queries[0].startswith("site:linkedin.com/posts")
     assert len(queries) <= 20
+
+
+def test_is_on_brand_matches_brand_in_linkedin_url():
+    assert is_on_brand(
+        "A shared update",
+        "https://www.linkedin.com/posts/someone_carbonauten-activity-123",
+    )
+    assert not is_on_brand(
+        "A shared update",
+        "https://www.linkedin.com/posts/someone_unrelated-activity-123",
+    )
+
+
+def test_resolve_google_news_url_via_batchexecute():
+    google = "https://news.google.com/rss/articles/CBMiOpaqueModernIdWithoutEmbeddedUrl"
+
+    def fetch(url, params=None, headers=None):
+        assert "news.google.com" in url
+        return '<div data-n-a-sg="sig123" data-n-a-ts="1710000000"></div>'
+
+    class FakeResponse:
+        text = ')]}\'\n\n[["wrb.fr","Fbv4je","[\\"garturlres\\",\\"https://www.linkedin.com/posts/someone_carbonauten-activity-999\\",1]",null,null,null,"generic"]]'
+        def raise_for_status(self):
+            return None
+
+    class FakeClient:
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            return False
+        def post(self, url, data=None, headers=None):
+            assert "batchexecute" in url
+            assert "f.req" in (data or {})
+            return FakeResponse()
+
+    with patch("app.reputation_crawler.httpx.Client", return_value=FakeClient()):
+        resolved = resolve_google_news_url(google, fetch=fetch)
+    assert resolved == "https://linkedin.com/posts/someone_carbonauten-activity-999"
+
+
+def test_resolve_pending_keeps_linkedin_after_unwrap():
+    google = "https://news.google.com/rss/articles/CBMiOpaqueLinkedInPost"
+    pending = [
+        {
+            "url": google,
+            "title": "Team update without brand in title",
+            "snippet": "Shared on LinkedIn",
+            "channel": "linkedin",
+            "query": 'site:linkedin.com/posts "carbonauten"',
+            "pending_brand_check": "1",
+            "google_news_url": google,
+        }
+    ]
+
+    def resolve(url, fetch=None):
+        assert url == google
+        return "https://www.linkedin.com/posts/alice_carbonauten-factory-activity-1"
+
+    stats: dict[str, int] = {}
+    with patch("app.reputation_crawler.resolve_google_news_url", side_effect=resolve):
+        kept = _resolve_pending_google_news(
+            pending,
+            fetch=lambda *a, **k: "",
+            deadline=time.monotonic() + 5,
+            stats=stats,
+        )
+    assert len(kept) == 1
+    assert kept[0]["url"].endswith("alice_carbonauten-factory-activity-1")
+    assert kept[0]["channel"] == "linkedin"
+    assert stats.get("unwrapped_news") == 1
+
+
+def test_resolve_pending_drops_offbrand_linkedin_after_unwrap():
+    google = "https://news.google.com/rss/articles/CBMiOpaqueOffbrand"
+    pending = [
+        {
+            "url": google,
+            "title": "Eight Sleep mattress review",
+            "snippet": "Better sleep",
+            "channel": "linkedin",
+            "query": 'site:linkedin.com/posts "carbonauten"',
+            "pending_brand_check": "1",
+        }
+    ]
+
+    def resolve(url, fetch=None):
+        return "https://www.linkedin.com/posts/frank-thelen_eight-sleep-activity-1"
+
+    stats: dict[str, int] = {}
+    with patch("app.reputation_crawler.resolve_google_news_url", side_effect=resolve):
+        kept = _resolve_pending_google_news(
+            pending,
+            fetch=lambda *a, **k: "",
+            deadline=time.monotonic() + 5,
+            stats=stats,
+        )
+    assert kept == []
+    assert stats.get("linkedin_dropped") == 1
+
+
+def test_search_query_defers_linkedin_google_hits_without_brand_title():
+    xml = """
+    <rss><channel>
+    <item>
+      <title>Someone – Business Development - LinkedIn</title>
+      <link>https://news.google.com/rss/articles/CBMiOpaque</link>
+      <description>Profile teaser</description>
+      <source url="https://www.linkedin.com">LinkedIn</source>
+    </item>
+    </channel></rss>
+    """
+
+    def fetch(url, params=None, headers=None):
+        if "duckduckgo" in url:
+            raise RuntimeError("ddg blocked")
+        return xml
+
+    rows = _search_query('site:linkedin.com/posts "carbonauten"', include_news=True, fetch=fetch)
+    assert len(rows) == 1
+    assert rows[0].get("pending_brand_check") == "1"
+    assert rows[0]["channel"] == "linkedin"
 
 
 def test_default_people_uses_config(monkeypatch):

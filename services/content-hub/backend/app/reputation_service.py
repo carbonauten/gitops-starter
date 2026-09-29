@@ -162,6 +162,7 @@ def list_mentions(
     db: Session,
     *,
     sentiment: Optional[str] = None,
+    channel: Optional[str] = None,
     query: Optional[str] = None,
     seen_from: Optional[date] = None,
     seen_to: Optional[date] = None,
@@ -173,6 +174,8 @@ def list_mentions(
     )
     if sentiment:
         stmt = stmt.where(ReputationMention.sentiment == sentiment)
+    if channel:
+        stmt = stmt.where(ReputationMention.channel == channel)
     if query:
         like = f"%{query.strip()}%"
         stmt = stmt.where(
