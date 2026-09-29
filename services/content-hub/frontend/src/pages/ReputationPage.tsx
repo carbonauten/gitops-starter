@@ -15,6 +15,7 @@ import { LoadingState } from "../components/LoadingState";
 import { usePermissions } from "../hooks/usePermissions";
 
 const SENTIMENTS = ["negative", "neutral", "positive"] as const;
+const CHANNELS = ["linkedin", "news", "web"] as const;
 const REASONS = ["gdpr", "inaccurate", "defamation", "other"] as const;
 const TIMEOUT_MESSAGE = "Request timed out. Please try again.";
 
@@ -23,7 +24,8 @@ export function ReputationPage() {
   const { canEdit } = usePermissions();
   const [summary, setSummary] = useState<ReputationSummary | null>(null);
   const [items, setItems] = useState<ReputationMention[]>([]);
-  const [sentiment, setSentiment] = useState("negative");
+  const [sentiment, setSentiment] = useState("");
+  const [channel, setChannel] = useState("");
   const [query, setQuery] = useState("");
   const [seenFrom, setSeenFrom] = useState("");
   const [seenTo, setSeenTo] = useState("");
@@ -57,6 +59,7 @@ export function ReputationPage() {
         fetchReputationSummary(),
         fetchReputationMentions({
           sentiment: sentiment || undefined,
+          channel: channel || undefined,
           q: query || undefined,
           seen_from: seenFrom || undefined,
           seen_to: seenTo || undefined,
@@ -73,7 +76,7 @@ export function ReputationPage() {
 
   useEffect(() => {
     void load();
-  }, [sentiment, seenFrom, seenTo]);
+  }, [sentiment, channel, seenFrom, seenTo]);
 
   useEffect(() => {
     if (summary?.last_run?.status !== "running") {
@@ -213,6 +216,9 @@ export function ReputationPage() {
             defaultValue: summary.last_run.status,
           })}{" "}
           · {summary.last_run.found} {t("reputation.hits")}
+          {typeof summary.last_run.created === "number"
+            ? ` · ${summary.last_run.created} ${t("reputation.newHits")}`
+            : ""}
           {summary.last_run.stats
             ? ` · ${[
                 summary.last_run.stats.web ? `web ${summary.last_run.stats.web}` : "",
@@ -223,6 +229,9 @@ export function ReputationPage() {
                   : summary.last_run.stats.china_press
                     ? `china ${summary.last_run.stats.china_press}`
                     : "",
+                summary.last_run.stats.unwrapped_news
+                  ? `unwrapped ${summary.last_run.stats.unwrapped_news}`
+                  : "",
               ]
                 .filter(Boolean)
                 .join(" · ")}`
@@ -241,6 +250,14 @@ export function ReputationPage() {
           {SENTIMENTS.map((item) => (
             <option key={item} value={item}>
               {t(`reputation.sentiments.${item}`)}
+            </option>
+          ))}
+        </select>
+        <select value={channel} onChange={(event) => setChannel(event.target.value)}>
+          <option value="">{t("reputation.allChannels")}</option>
+          {CHANNELS.map((item) => (
+            <option key={item} value={item}>
+              {t(`reputation.channels.${item}`)}
             </option>
           ))}
         </select>
@@ -287,7 +304,7 @@ export function ReputationPage() {
       ) : null}
       {!loading && items.length === 0 ? (
         <EmptyState
-          message={query || seenFrom || seenTo ? t("reputation.emptyFiltered") : t("reputation.empty")}
+          message={query || seenFrom || seenTo || sentiment || channel ? t("reputation.emptyFiltered") : t("reputation.empty")}
           icon="⌕"
         />
       ) : null}

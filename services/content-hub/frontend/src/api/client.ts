@@ -1445,12 +1445,14 @@ export async function fetchReputationSummary(): Promise<ReputationSummary> {
 
 export async function fetchReputationMentions(filters?: {
   sentiment?: string;
+  channel?: string;
   q?: string;
   seen_from?: string;
   seen_to?: string;
 }): Promise<ReputationMention[]> {
   const params = new URLSearchParams();
   if (filters?.sentiment) params.set("sentiment", filters.sentiment);
+  if (filters?.channel) params.set("channel", filters.channel);
   if (filters?.q) params.set("q", filters.q);
   if (filters?.seen_from) params.set("seen_from", filters.seen_from);
   if (filters?.seen_to) params.set("seen_to", filters.seen_to);
