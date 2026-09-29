@@ -222,14 +222,35 @@ type EmailBodyFrameProps = {
  * <style>/<script>/event-handler payloads can't leak into or execute in the
  * host page (the previous dangerouslySetInnerHTML render allowed both).
  */
+const EMAIL_FRAME_BASE_STYLES = `<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #1f2937;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  img, table, video { max-width: 100%; height: auto; }
+  pre { white-space: pre-wrap; }
+</style>`;
+
 function EmailBodyFrame({ body, bodyType }: EmailBodyFrameProps) {
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [height, setHeight] = useState(200);
 
+  // The iframe's srcDoc is a separate document, so it does not inherit any
+  // of the app's CSS - without this, unstyled email markup (or a plain-text
+  // body) falls back to the browser's default UA stylesheet (large heading
+  // sizes, no word wrapping), which is what caused the oversized/overflowing
+  // text seen in the panel.
   const srcDoc =
-    bodyType === "html"
+    EMAIL_FRAME_BASE_STYLES +
+    (bodyType === "html"
       ? body
-      : `<pre style="white-space:pre-wrap;font-family:inherit;margin:0">${escapeHtml(body)}</pre>`;
+      : `<pre style="white-space:pre-wrap;font-family:inherit;margin:0">${escapeHtml(body)}</pre>`);
 
   const resize = useCallback(() => {
     const doc = frameRef.current?.contentDocument;
