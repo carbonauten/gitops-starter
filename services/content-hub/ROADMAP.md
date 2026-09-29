@@ -855,6 +855,10 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 - [x] Neue Spalte `reputation_mentions.published_at` (Artikel-/Post-Datum, nicht Crawl-Datum) — in der UI angezeigt, wenn vorhanden, sonst weiterhin "gefunden am" mit dem Crawl-Datum
 - [x] Filterung passiert vor dem Google-News-Auflösen (`resolve_google_news_url`), spart also unnötige `batchexecute`-Aufrufe für bereits zu alte Treffer
 
+### Bugfix: irreführende Crawl-Erfolgsmeldung (September 2026)
+
+- [x] Nach einem Crawl zeigte eine grüne Meldung "{{found}} Treffer, {{negative}} negativ." direkt über der Ergebnisliste an — die Zahlen bezogen sich aber auf den gerade abgeschlossenen Crawl-Lauf, nicht auf die (gefilterte) Liste darunter, die aus der gesamten Datenbank kommt. Wirkte wie eine falsche Trefferzahl. Entfernt — die bereits vorhandene "Last crawl: …"-Zeile zeigt dieselben Lauf-Statistiken unmissverständlicher an.
+
 ---
 
 ## Sprint N — M365-Verwaltung ✅ (MVP)

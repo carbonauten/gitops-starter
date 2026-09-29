@@ -968,7 +968,6 @@
     "crawlRunning": "Crawl running…",
     "crawlFailed": "Crawl failed. Please try again later.",
     "crawlTimeout": "Crawl is taking too long. Existing mentions stay visible.",
-    "crawlDone": "{{found}} hits, {{negative}} negative.",
     "statTotal": "Mentions",
     "statNegative": "Negative",
     "statOpenRequests": "Open deletion requests",

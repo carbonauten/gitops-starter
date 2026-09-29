@@ -93,13 +93,11 @@ export function ReputationPage() {
             return;
           }
           if (status === "ok") {
-            setNoticeIsWarning(false);
-            setNotice(
-              t("reputation.crawlDone", {
-                found: nextSummary.last_run?.found ?? 0,
-                negative: nextSummary.last_run?.negative ?? 0,
-              }),
-            );
+            // No separate success notice here on purpose: the persistent "Last
+            // crawl: …" line below already shows this run's found/new/channel
+            // breakdown, and those numbers describe the crawl run, not the
+            // (unrelated, filtered) result list right underneath — showing both
+            // made it look like the count of visible results was wrong.
           } else {
             setError(
               nextSummary.last_run?.error === "timed_out"

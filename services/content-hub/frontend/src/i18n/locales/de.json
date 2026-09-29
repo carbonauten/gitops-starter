@@ -968,7 +968,6 @@
     "crawlRunning": "Crawl läuft…",
     "crawlFailed": "Crawl fehlgeschlagen. Bitte später erneut versuchen.",
     "crawlTimeout": "Crawl dauert zu lange. Die bisherigen Treffer bleiben sichtbar.",
-    "crawlDone": "{{found}} Treffer, davon {{negative}} negativ.",
     "statTotal": "Treffer",
     "statNegative": "Negativ",
     "statOpenRequests": "Offene Löschanträge",
