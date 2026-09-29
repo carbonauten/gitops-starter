@@ -836,6 +836,11 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 - [x] `request_deletion()` ignorierte den Rückgabewert von `send_plain_email()` — schlug der interne Mail-Versand fehl (nicht konfiguriert oder Zustellfehler), zeigte die UI trotzdem "…wurde intern erfasst und per E-Mail gesendet." an. Jetzt liefert die API `email_sent` mit, und die UI zeigt bei Fehlschlag eine Warnung statt einer falschen Erfolgsmeldung.
 
+### Bugfix Crawler (September 2026)
+
+- [x] Der geteilte `httpx.Client` wurde per `contextvars.ContextVar` an die Suche weitergereicht, aber die läuft in `ThreadPoolExecutor`-Worker-Threads — Python-Context-Vars werden nicht automatisch in neue Threads übernommen. Jeder Fetch baute dadurch eine eigene neue Verbindung auf statt die gepoolte zu nutzen (Performance-Verlust, weniger Treffer pro 70s-Zeitbudget). Fix: Context wird per `contextvars.copy_context()` explizit an alle `pool.submit(...)`-Aufrufe übergeben.
+- [x] `unwrap_google_news_url()` probierte den Beschreibungs-Link-Shortcut, bevor überhaupt geprüft wurde, ob die URL von Google News stammt — lief dadurch für jeden RSS-Feed (auch den firmeneigenen WordPress-Feed-Fallback) und konnte die korrekte Artikel-URL durch einen unrelaten Link aus dem Beschreibungstext ersetzen. Jetzt wird zuerst auf `news.google.com` geprüft.
+
 ---
 
 ## Sprint N — M365-Verwaltung ✅ (MVP)
