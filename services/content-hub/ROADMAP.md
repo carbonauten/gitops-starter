@@ -841,6 +841,13 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 - [x] Der geteilte `httpx.Client` wurde per `contextvars.ContextVar` an die Suche weitergereicht, aber die läuft in `ThreadPoolExecutor`-Worker-Threads — Python-Context-Vars werden nicht automatisch in neue Threads übernommen. Jeder Fetch baute dadurch eine eigene neue Verbindung auf statt die gepoolte zu nutzen (Performance-Verlust, weniger Treffer pro 70s-Zeitbudget). Fix: Context wird per `contextvars.copy_context()` explizit an alle `pool.submit(...)`-Aufrufe übergeben.
 - [x] `unwrap_google_news_url()` probierte den Beschreibungs-Link-Shortcut, bevor überhaupt geprüft wurde, ob die URL von Google News stammt — lief dadurch für jeden RSS-Feed (auch den firmeneigenen WordPress-Feed-Fallback) und konnte die korrekte Artikel-URL durch einen unrelaten Link aus dem Beschreibungstext ersetzen. Jetzt wird zuerst auf `news.google.com` geprüft.
 
+### LinkedIn-Treffer waren größtenteils unsichtbar (September 2026)
+
+- [x] Moderne (opake) Google-News-Artikel-IDs für LinkedIn-Treffer ließen sich mit dem einfachen Base64-Unwrap nicht auflösen — Nutzer sahen nur `news.google.com`-Wrapper-Links statt echter `linkedin.com/posts/…`-URLs. Neu: `resolve_google_news_url()` löst diese über Googles interne `batchexecute`-RPC auf (GET Artikel-Seite für Signatur/Timestamp, POST die RPC-Payload).
+- [x] LinkedIn-Post-Titel aus Google News enthalten oft nicht "carbonauten" (nur Personenname + Jobtitel) — der Brand-Filter verwarf solche Treffer, bevor die echte URL bekannt war. Jetzt wird die Brand-Prüfung für LinkedIn-Kandidaten aufgeschoben, bis nach dem Auflösen der echten URL erneut geprüft wird.
+- [x] Kanal-Filter (LinkedIn / News / Web) in der Web-Reputation-UI; Standard-Sentiment-Filter von "Negativ" auf "Alle" geändert (verbarg vorher fast alle LinkedIn-Treffer, die selten als negativ eingestuft werden)
+- [x] Der neue `_resolve_pending_google_news()`-Thread-Pool tappte beim Zusammenführen in denselben Context-Var-Bug wie oben — mit demselben `contextvars.copy_context()`-Muster behoben, inkl. eigenem Regressionstest
+
 ---
 
 ## Sprint N — M365-Verwaltung ✅ (MVP)

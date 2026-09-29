@@ -909,9 +909,16 @@ def _resolve_pending_google_news(
     ][:MAX_GOOGLE_NEWS_RESOLVES]
     if to_resolve and time.monotonic() < deadline:
         remaining = max(0.1, deadline - time.monotonic())
+        # Called from run_reputation_crawl's main thread, after it has already set
+        # _http_client for this crawl — capture that context here (same reason as
+        # the search-phase pool below) so resolve_google_news_url's fetch/post calls
+        # in worker threads reuse the shared client instead of opening a new one
+        # per request; plain ThreadPoolExecutor.submit() does not propagate contextvars.
+        ctx = contextvars.copy_context()
         with ThreadPoolExecutor(max_workers=min(PAGE_FETCH_WORKERS, max(1, len(to_resolve)))) as pool:
             futures = {
-                pool.submit(resolve_google_news_url, item["url"], fetch=fetch): item for item in to_resolve
+                pool.submit(ctx.run, resolve_google_news_url, item["url"], fetch=fetch): item
+                for item in to_resolve
             }
             try:
                 for future in as_completed(futures, timeout=remaining):

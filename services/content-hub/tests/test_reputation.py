@@ -403,6 +403,37 @@ def test_resolve_google_news_url_via_batchexecute():
     assert resolved == "https://linkedin.com/posts/someone_carbonauten-activity-999"
 
 
+def test_resolve_pending_google_news_reuses_shared_client():
+    """_resolve_pending_google_news() opens its own ThreadPoolExecutor (separate
+    from the search-phase pool) — it needs its own contextvars.copy_context()
+    capture, or resolve_google_news_url() would silently stop reusing the shared
+    httpx.Client for every URL it resolves, same bug as the search phase."""
+    from app.reputation_crawler import _http_client
+
+    marker = object()
+    token = _http_client.set(marker)
+    seen_clients: list[object] = []
+    try:
+        def fake_resolve(url, *, fetch=None):
+            seen_clients.append(_http_client.get())
+            return url
+
+        google_urls = [f"https://news.google.com/rss/articles/{i}" for i in range(3)]
+        pending = [{"url": url, "title": "t", "snippet": "s", "channel": "linkedin"} for url in google_urls]
+        with patch("app.reputation_crawler.resolve_google_news_url", side_effect=fake_resolve):
+            _resolve_pending_google_news(
+                pending,
+                fetch=lambda *a, **k: "",
+                deadline=time.monotonic() + 5,
+                stats={},
+            )
+    finally:
+        _http_client.reset(token)
+
+    assert seen_clients, "resolve_google_news_url was never called"
+    assert all(client is marker for client in seen_clients)
+
+
 def test_resolve_pending_keeps_linkedin_after_unwrap():
     google = "https://news.google.com/rss/articles/CBMiOpaqueLinkedInPost"
     pending = [
