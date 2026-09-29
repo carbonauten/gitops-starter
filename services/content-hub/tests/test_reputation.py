@@ -1,6 +1,8 @@
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta, timezone
 from unittest.mock import patch
 import base64
+import contextvars
 import time
 
 from sqlalchemy import select
@@ -22,8 +24,81 @@ from app.reputation_crawler import (
     search_company_china,
     search_news,
     unwrap_google_news_url,
+    _http_client,
     _search_query,
 )
+
+
+def test_http_client_contextvar_reaches_thread_pool_workers():
+    """Regression test: run_reputation_crawl() sets the shared httpx.Client via
+    _http_client (a contextvars.ContextVar) in the main thread, then dispatches
+    fetches through a ThreadPoolExecutor. Plain ThreadPoolExecutor.submit() does
+    NOT propagate contextvars into worker threads on its own — the crawl code
+    must capture the context with contextvars.copy_context() and submit via
+    pool.submit(ctx.run, fn, ...) so default_fetch() actually sees the shared
+    client instead of opening a fresh one for every request."""
+    marker = object()
+    token = _http_client.set(marker)
+    try:
+        ctx = contextvars.copy_context()
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            without_propagation = pool.submit(_http_client.get).result()
+            with_propagation = pool.submit(ctx.run, _http_client.get).result()
+        assert without_propagation is None, (
+            "sanity check: plain ThreadPoolExecutor.submit() should NOT see the "
+            "context var — if this fails, Python's contextvars semantics changed "
+            "and the ctx.run() wrapper in run_reputation_crawl() may no longer be needed"
+        )
+        assert with_propagation is marker
+    finally:
+        _http_client.reset(token)
+
+
+def test_run_reputation_crawl_reuses_shared_client(auth_client, monkeypatch):
+    """End-to-end version of the regression above: a real run_reputation_crawl()
+    call (fetch=None, the code path the scheduled/manual crawl actually uses)
+    must only ever construct one httpx.Client, not one per HTTP request."""
+    from app import reputation_crawler as rc
+    from app.database import _SessionLocal
+
+    created_clients: list[object] = []
+
+    class FakeResponse:
+        text = "<rss><channel></channel></rss>"
+
+        def raise_for_status(self) -> None:
+            return None
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs) -> None:
+            created_clients.append(self)
+
+        def get(self, *args, **kwargs) -> FakeResponse:
+            return FakeResponse()
+
+        def close(self) -> None:
+            return None
+
+        def __enter__(self) -> "FakeClient":
+            return self
+
+        def __exit__(self, *exc_info) -> None:
+            return None
+
+    monkeypatch.setattr(rc.httpx, "Client", FakeClient)
+    monkeypatch.setattr(rc, "default_queries", lambda settings=None: ["carbonauten GmbH"])
+
+    db = _SessionLocal()
+    try:
+        run = rc.run_reputation_crawl(db, fetch=None, include_news=True, fetch_pages=False)
+        assert run.status == "ok"
+    finally:
+        db.close()
+
+    assert len(created_clients) == 1, (
+        f"expected the shared client to be reused by every worker thread, "
+        f"got {len(created_clients)} separate httpx.Client instances"
+    )
 
 
 DDG_HTML = """
@@ -339,6 +414,15 @@ def test_unwrap_google_news_url_from_description_href():
     google = "https://news.google.com/rss/articles/CBMiOpaqueModernIdWithoutUrl"
     desc = '<a href="https://handelsblatt.example/carbonauten-chibi">lesen</a>'
     assert unwrap_google_news_url(google, description_html=desc) == "https://handelsblatt.example/carbonauten-chibi"
+
+
+def test_unwrap_google_news_url_ignores_description_for_non_google_link():
+    """A non-Google-News link (e.g. the company WordPress feed fallback in
+    search_company_china) must never be swapped for an unrelated href found in
+    its own RSS description — only Google News redirect links get unwrapped."""
+    direct = "https://carbonauten.com/blog/chibi-baustart"
+    desc = '<a href="https://carbonauten.com/tag/china">Mehr zu China</a>'
+    assert unwrap_google_news_url(direct, description_html=desc) == direct
 
 
 def test_parse_news_rss_unwraps_google_article_link():

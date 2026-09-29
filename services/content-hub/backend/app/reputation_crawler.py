@@ -309,16 +309,24 @@ def unwrap_google_news_url(url: str, *, description_html: str = "") -> str:
     Classic RSS article ids still embed the destination in base64 protobuf bytes.
     Newer opaque ids are left unchanged so callers can skip page fetches.
     Description HTML sometimes carries a direct publisher href.
+
+    Must check is_google_news_url() before trying the description-href shortcut,
+    not after — this runs on every RSS item from any feed (including the plain
+    WordPress company feed fallback in search_company_china), and a description
+    can contain unrelated outbound links (tags, image credits, references). Only
+    for an actual Google News URL is "some other link in the description" a
+    reasonable guess at the real destination; for anything else it would silently
+    replace a perfectly correct <link> with the wrong URL.
     """
     raw = (url or "").strip()
     if not raw:
         return ""
-    from_desc = _first_external_href(description_html)
-    if from_desc:
-        return from_desc
     normalized = normalize_url(raw)
     if not is_google_news_url(normalized):
         return normalized
+    from_desc = _first_external_href(description_html)
+    if from_desc:
+        return from_desc
     path = urlparse(normalized).path or ""
     match = re.search(r"/articles/([^/?#]+)", path)
     if not match:
@@ -818,16 +826,23 @@ def run_reputation_crawl(
         )
         client_token = _http_client.set(owned_client)
 
+    # contextvars are per-OS-thread and are NOT inherited by threads a plain
+    # ThreadPoolExecutor spawns — without capturing and re-running the context
+    # explicitly, default_fetch() in every worker would see _http_client as
+    # unset and open a brand-new httpx.Client per request instead of reusing
+    # owned_client, defeating connection pooling for the whole crawl.
+    ctx = contextvars.copy_context()
+
     deadline = time.monotonic() + CRAWL_BUDGET_SEC
     try:
         jobs = [(query, include_news) for query in queries]
         pool = ThreadPoolExecutor(max_workers=min(SEARCH_WORKERS, max(1, len(jobs) + 2)))
         futures = {
-            pool.submit(_search_query, query, include_news=news, fetch=active_fetch): ("query", query)
+            pool.submit(ctx.run, _search_query, query, include_news=news, fetch=active_fetch): ("query", query)
             for query, news in jobs
         }
-        futures[pool.submit(search_company_china, fetch=active_fetch)] = ("company_china", "company-china")
-        futures[pool.submit(search_china_press, fetch=active_fetch)] = ("china_press", "china-press")
+        futures[pool.submit(ctx.run, search_company_china, fetch=active_fetch)] = ("company_china", "company-china")
+        futures[pool.submit(ctx.run, search_china_press, fetch=active_fetch)] = ("china_press", "china-press")
         remaining = max(0.1, deadline - time.monotonic())
         pending: list[dict[str, str]] = []
         try:
@@ -880,7 +895,7 @@ def run_reputation_crawl(
         remaining = max(0.0, deadline - time.monotonic())
         if to_fetch and remaining > 0.2:
             page_futures = {
-                pool.submit(fetch_excerpt, item["url"], fetch=active_fetch): item for item in to_fetch
+                pool.submit(ctx.run, fetch_excerpt, item["url"], fetch=active_fetch): item for item in to_fetch
             }
             try:
                 for future in as_completed(page_futures, timeout=remaining):
