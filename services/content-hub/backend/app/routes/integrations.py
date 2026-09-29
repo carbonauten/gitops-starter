@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
+from ..ai_service import ai_configured, summarize_article
 from ..auth import get_session, new_oauth_state, set_session
 from ..database import get_db
 from ..dependencies import get_current_user, require_it_master
@@ -31,7 +32,7 @@ from ..outlook_service import (
     save_outlook_message,
 )
 from ..publish_service import update_publish_settings
-from ..schemas import EntraConfigSaveRequest, OutlookMailSaveRequest
+from ..schemas import EntraConfigSaveRequest, OutlookMailSaveRequest, OutlookMailSummarizeRequest
 
 router = APIRouter(prefix="/api/integrations", tags=["integrations"])
 
@@ -332,3 +333,22 @@ async def outlook_mail_save(
         destination=payload.destination,
     )
     return {"saved": saved}
+
+
+@router.post("/outlook/mail/summarize")
+async def outlook_mail_summarize(
+    payload: OutlookMailSummarizeRequest,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+) -> dict:
+    if not ai_configured():
+        raise HTTPException(status_code=503, detail="ai_not_configured")
+    message = await get_outlook_message(db, user_id=user.get("db_id", ""), message_id=payload.message_id)
+    summary = summarize_article(
+        title=str(message.get("subject") or ""),
+        content=str(message.get("body") or ""),
+        language=payload.language,
+    )
+    if not summary:
+        raise HTTPException(status_code=502, detail="ai_summary_failed")
+    return {"summary": summary}

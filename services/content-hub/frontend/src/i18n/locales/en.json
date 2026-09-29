@@ -422,6 +422,8 @@
     "saved": "Email saved (article draft + file in the Emails folder).",
     "openArticle": "Open article",
     "openOutlook": "Open in Outlook",
+    "aiSummarize": "AI summary",
+    "aiSummaryTitle": "AI summary",
     "from": "From",
     "received": "Received",
     "entraSetupNeeded": "Microsoft sign-in is not active yet. As IT Master you can paste the Entra app details here — then everyone gets a 1-click Connect button.",

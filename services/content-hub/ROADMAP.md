@@ -871,6 +871,12 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 - [x] Fix: eigenes Basis-Stylesheet wird jetzt in jedes iframe-Dokument injiziert (App-Schriftart/-größe, `overflow-wrap: anywhere`, `max-width: 100%` für Bilder/Tabellen) — E-Mails sehen wieder normal groß aus und lange Wörter/URLs brechen sauber um, statt die Detailspalte zu sprengen
 - [x] `.outlook-mail-list-pane` (Nachrichtenliste links) hatte gar keine eigene CSS-Regel — im Gegensatz zur Detailspalte rechts fehlten Rahmen/Hintergrund komplett, wirkte optisch inkonsistent. Jetzt mit demselben Karten-Look wie die Detailspalte
 
+### KI-Zusammenfassung im Postfach (September 2026)
+
+- [x] Neuer Button "KI-Zusammenfassung" in der Mail-Detailansicht (nur sichtbar, wenn `/api/ai/status` KI als konfiguriert meldet) — holt die Nachricht serverseitig per `message_id` erneut über Graph und lässt sie per bestehender `summarize_article()`-Infrastruktur (schon aus dem KI-Schreibassistenz-Sprint) in 3–5 Stichpunkten in der aktuellen UI-Sprache zusammenfassen
+- [x] Neuer Endpunkt `POST /api/integrations/outlook/mail/summarize` (`{message_id, language}`) — gleiches Berechtigungsmodell wie die übrigen Mail-Routen (jeder verbundene Nutzer, kein `require_editor`), da das Postfach schon für alle Accounts freigegeben ist; 503 wenn keine KI konfiguriert ist
+- [x] On-demand statt automatisch bei jedem Öffnen einer Mail, um nicht bei jedem Klick unnötig einen LLM-Call auszulösen (Kosten/Latenz)
+
 ---
 
 ## Sprint N — M365-Verwaltung ✅ (MVP)
