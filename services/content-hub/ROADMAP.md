@@ -877,6 +877,11 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 - [x] Neuer Endpunkt `POST /api/integrations/outlook/mail/summarize` (`{message_id, language}`) — gleiches Berechtigungsmodell wie die übrigen Mail-Routen (jeder verbundene Nutzer, kein `require_editor`), da das Postfach schon für alle Accounts freigegeben ist; 503 wenn keine KI konfiguriert ist
 - [x] On-demand statt automatisch bei jedem Öffnen einer Mail, um nicht bei jedem Klick unnötig einen LLM-Call auszulösen (Kosten/Latenz)
 
+### Bugfix: "Unexpected error" statt echter Fehlermeldung (September 2026)
+
+- [x] Ursache: der globale `HTTPException`-Handler (`main.py`) übersetzt den `detail`-Code über `errors.<code>` in den Locale-Dateien und fällt bei fehlendem Eintrag auf `errors.generic` ("An unexpected error occurred.") zurück — für `ai_not_configured`, `ai_summary_failed`, `ai_translation_failed`, `ai_rewrite_failed`, `ai_draft_failed`, `empty_content`, `empty_notes`, `outlook_not_connected`, `outlook_mail_not_connected`, `outlook_mail_failed` und `integration_token_failed` fehlte in allen drei Sprachen (de/en/zh-CN) der Übersetzungseintrag, jede dieser Fehlermeldungen erschien nur als generisches "Unexpected error" — u. a. beim neuen KI-Zusammenfassung-Button in der Mailbox
+- [x] Fix: fehlende `errors.*`-Einträge in allen drei Locale-Dateien ergänzt — betroffene Aktionen zeigen jetzt eine konkrete, hilfreiche Meldung statt der generischen Fehlermeldung
+
 ---
 
 ## Sprint N — M365-Verwaltung ✅ (MVP)
