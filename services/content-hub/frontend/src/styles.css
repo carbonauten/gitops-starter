@@ -829,6 +829,7 @@ a {
 }
 
 .outlook-mail-body {
+  display: block;
   margin-top: 0.85rem;
   max-height: 22rem;
   overflow: auto;
@@ -836,9 +837,8 @@ a {
   line-height: 1.45;
 }
 
-.outlook-mail-body img {
-  max-width: 100%;
-  height: auto;
+.outlook-mail-body-frame {
+  background: #fff;
 }
 
 @media (max-width: 860px) {
