@@ -12,6 +12,7 @@ budget. Does not log in, bypass paywalls, or ignore rate limits.
 
 from __future__ import annotations
 
+import base64
 import contextvars
 import html as html_lib
 import json
@@ -136,12 +137,15 @@ CHINA_COVERAGE_TOKENS = (
     "中国",
 )
 
-MAX_QUERIES = 12
+MAX_QUERIES = 20
 MAX_PAGE_FETCHES = 24
 FETCH_TIMEOUT_SEC = 5.0
 CRAWL_BUDGET_SEC = 70.0
 SEARCH_WORKERS = 6
 PAGE_FETCH_WORKERS = 6
+
+# Always matched in addition to REPUTATION_BRAND_TERMS (Chinese trade name + spacing variants).
+BUILTIN_BRAND_TERMS = ("碳基科技", "fuck co2", "fuck co₂")
 
 NEWS_EDITION_DE = {"hl": "de", "gl": "DE", "ceid": "DE:de"}
 NEWS_EDITION_US = {"hl": "en-US", "gl": "US", "ceid": "US:en"}
@@ -163,6 +167,21 @@ def _utc_now() -> datetime:
 
 def _csv_terms(value: str) -> list[str]:
     return [part.strip() for part in (value or "").split(",") if part.strip()]
+
+
+def brand_terms(settings: Settings | None = None) -> list[str]:
+    """Configured brand strings used only for on-brand filtering (not search queries)."""
+    settings = settings or get_settings()
+    configured = _csv_terms(getattr(settings, "reputation_brand_terms", "") or "")
+    seen: set[str] = set()
+    terms: list[str] = []
+    for item in configured + list(BUILTIN_BRAND_TERMS):
+        key = item.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        terms.append(item)
+    return terms or ["carbonauten", "fuckco2", "碳基科技"]
 
 
 def default_people(settings: Settings | None = None) -> list[str]:
@@ -190,18 +209,18 @@ def is_company_host(url: str) -> bool:
     return host == "carbonauten.com" or host.endswith(".carbonauten.com") or host in {"fuckco2.shop", "fuckco2.com"}
 
 
-def is_on_brand(text: str, url: str = "") -> bool:
+def is_on_brand(text: str, url: str = "", *, settings: Settings | None = None) -> bool:
+    """True when title/snippet/body (not the search query) mentions a brand term or company host."""
     if is_company_host(url):
         return True
-    blob = (text or "").lower()
-    original = text or ""
-    return (
-        "carbonauten" in blob
-        or "fuckco2" in blob
-        or "fuck co2" in blob
-        or "fuck co₂" in blob
-        or "碳基科技" in original
-    )
+    blob = text or ""
+    lower = blob.lower()
+    for term in brand_terms(settings):
+        if not term:
+            continue
+        if term.lower() in lower or term in blob:
+            return True
+    return False
 
 
 def is_china_coverage(text: str) -> bool:
@@ -247,6 +266,69 @@ def normalize_url(raw: str) -> str:
 def source_host(url: str) -> str:
     host = (urlparse(url).netloc or "").lower()
     return host[4:] if host.startswith("www.") else host
+
+
+def is_google_news_url(url: str) -> bool:
+    host = source_host(url)
+    return host == "news.google.com" or host.endswith(".news.google.com")
+
+
+def _decode_google_news_article_id(article_id: str) -> str:
+    """Best-effort extract of an embedded http(s) URL from classic Google News article ids."""
+    candidate = unquote((article_id or "").split("?")[0].strip())
+    if not candidate:
+        return ""
+    # Some feeds prefix with CBMi / AU_y…; decode as-is with urlsafe base64 padding.
+    pad = "=" * ((4 - len(candidate) % 4) % 4)
+    try:
+        data = base64.urlsafe_b64decode(candidate + pad)
+    except Exception:  # noqa: BLE001
+        return ""
+    text = data.decode("latin-1", errors="ignore")
+    match = re.search(r"https?://[^\x00-\x1f\s\"'<>\\]+", text)
+    if not match:
+        return ""
+    return match.group(0).rstrip("\\").rstrip("/")
+
+
+def _first_external_href(markup: str) -> str:
+    for href in re.findall(r"""href=["']([^"']+)["']""", markup or "", flags=re.IGNORECASE):
+        url = normalize_url(html_lib.unescape(href))
+        if not url:
+            continue
+        host = source_host(url)
+        if host.endswith("google.com") or host.endswith("duckduckgo.com") or host.endswith("gstatic.com"):
+            continue
+        return url
+    return ""
+
+
+def unwrap_google_news_url(url: str, *, description_html: str = "") -> str:
+    """Resolve news.google.com article links to the publisher URL when possible.
+
+    Classic RSS article ids still embed the destination in base64 protobuf bytes.
+    Newer opaque ids are left unchanged so callers can skip page fetches.
+    Description HTML sometimes carries a direct publisher href.
+    """
+    raw = (url or "").strip()
+    if not raw:
+        return ""
+    from_desc = _first_external_href(description_html)
+    if from_desc:
+        return from_desc
+    normalized = normalize_url(raw)
+    if not is_google_news_url(normalized):
+        return normalized
+    path = urlparse(normalized).path or ""
+    match = re.search(r"/articles/([^/?#]+)", path)
+    if not match:
+        return normalized
+    decoded = _decode_google_news_article_id(match.group(1))
+    if decoded:
+        unwrapped = normalize_url(decoded)
+        if unwrapped and not is_google_news_url(unwrapped):
+            return unwrapped
+    return normalized
 
 
 def is_linkedin_url(url: str) -> bool:
@@ -324,8 +406,10 @@ def parse_news_rss(markup: str, *, limit: int = 12) -> list[dict[str, str]]:
     for item in root.findall(".//item"):
         title = (item.findtext("title") or "").strip()
         link = (item.findtext("link") or "").strip()
-        description = _strip_tags(item.findtext("description") or "")
-        url = normalize_url(link)
+        description_raw = item.findtext("description") or ""
+        description = _strip_tags(description_raw)
+        original_url = normalize_url(link)
+        url = unwrap_google_news_url(link, description_html=description_raw)
         if not url or not title:
             continue
         source_el = item.find("source")
@@ -335,12 +419,15 @@ def parse_news_rss(markup: str, *, limit: int = 12) -> list[dict[str, str]]:
             channel = "linkedin"
         else:
             channel = detect_channel(url, fallback="news")
-        results.append({
+        row = {
             "url": url,
             "title": title[:500],
             "snippet": description[:800],
             "channel": channel,
-        })
+        }
+        if original_url and original_url != url:
+            row["google_news_url"] = original_url
+        results.append(row)
     return results[:limit]
 
 
@@ -381,7 +468,8 @@ def parse_wordpress_json(payload: str) -> list[dict[str, str]]:
 def _keep_china_row(row: dict[str, str], *, query: str) -> dict[str, str] | None:
     url = row.get("url") or ""
     coverage_text = " ".join(part for part in (row.get("title"), row.get("snippet"), url) if part)
-    brand_text = " ".join(part for part in (row.get("title"), row.get("snippet"), query, url) if part)
+    # Brand filter must not include the search query — queries already contain brand terms.
+    brand_text = " ".join(part for part in (row.get("title"), row.get("snippet"), row.get("excerpt"), url) if part)
     if not url or not is_china_coverage(coverage_text) or not is_on_brand(brand_text, url):
         return None
     row = dict(row)
@@ -558,6 +646,15 @@ def fetch_excerpt(url: str, *, fetch: FetchFn | None = None) -> str:
 
 
 def crawl_run_to_dict(row: ReputationCrawlRun) -> dict[str, Any]:
+    stats: dict[str, Any] = {}
+    raw_stats = getattr(row, "stats", "") or ""
+    if raw_stats:
+        try:
+            parsed = json.loads(raw_stats)
+            if isinstance(parsed, dict):
+                stats = parsed
+        except json.JSONDecodeError:
+            stats = {}
     return {
         "id": row.id,
         "status": row.status,
@@ -567,6 +664,7 @@ def crawl_run_to_dict(row: ReputationCrawlRun) -> dict[str, Any]:
         "updated": int(row.updated or 0),
         "negative": int(row.negative or 0),
         "error": row.error or "",
+        "stats": stats,
         "started_at": row.started_at.isoformat() if row.started_at else None,
         "finished_at": row.finished_at.isoformat() if row.finished_at else None,
     }
@@ -660,7 +758,17 @@ def _search_query(query: str, *, include_news: bool, fetch: FetchFn) -> list[dic
             )
         except Exception:  # noqa: BLE001
             logger.info("News search failed for query %s", query)
-    return [row for row in rows if is_on_brand(" ".join((row.get("title") or "", row.get("snippet") or "", query)), row.get("url") or "")]
+    kept: list[dict[str, str]] = []
+    for row in rows:
+        # Do not include the search query in brand text — every query contains brand terms.
+        brand_text = " ".join(part for part in (row.get("title"), row.get("snippet"), row.get("excerpt")) if part)
+        if is_on_brand(brand_text, row.get("url") or ""):
+            kept.append(row)
+    return kept
+
+
+def _bump_stat(stats: dict[str, int], key: str, amount: int = 1) -> None:
+    stats[key] = int(stats.get(key) or 0) + amount
 
 
 def run_reputation_crawl(
@@ -682,12 +790,22 @@ def run_reputation_crawl(
     else:
         run.status = "running"
         run.error = ""
+        run.stats = ""
         db.add(run)
         db.commit()
 
     queries = default_queries(settings)
     seen_urls: set[str] = set()
     created = updated = negative = 0
+    stats: dict[str, int] = {
+        "web": 0,
+        "news": 0,
+        "linkedin": 0,
+        "company_china": 0,
+        "china_press": 0,
+        "unwrapped_news": 0,
+        "page_fetches": 0,
+    }
     owned_client: httpx.Client | None = None
     pool: ThreadPoolExecutor | None = None
     client_token = None
@@ -705,11 +823,11 @@ def run_reputation_crawl(
         jobs = [(query, include_news) for query in queries]
         pool = ThreadPoolExecutor(max_workers=min(SEARCH_WORKERS, max(1, len(jobs) + 2)))
         futures = {
-            pool.submit(_search_query, query, include_news=news, fetch=active_fetch): query
+            pool.submit(_search_query, query, include_news=news, fetch=active_fetch): ("query", query)
             for query, news in jobs
         }
-        futures[pool.submit(search_company_china, fetch=active_fetch)] = "company-china"
-        futures[pool.submit(search_china_press, fetch=active_fetch)] = "china-press"
+        futures[pool.submit(search_company_china, fetch=active_fetch)] = ("company_china", "company-china")
+        futures[pool.submit(search_china_press, fetch=active_fetch)] = ("china_press", "china-press")
         remaining = max(0.1, deadline - time.monotonic())
         pending: list[dict[str, str]] = []
         try:
@@ -717,6 +835,7 @@ def run_reputation_crawl(
             for future in completed:
                 if time.monotonic() >= deadline:
                     break
+                source_key, _label = futures[future]
                 try:
                     batch = future.result()
                 except Exception:  # noqa: BLE001
@@ -726,10 +845,24 @@ def run_reputation_crawl(
                     url = item.get("url") or ""
                     if not url or url in seen_urls:
                         continue
+                    if item.get("google_news_url") and not is_google_news_url(url):
+                        _bump_stat(stats, "unwrapped_news")
                     seen_urls.add(url)
                     pending.append(item)
+                    channel = item.get("channel") or detect_channel(url)
+                    if source_key == "company_china":
+                        _bump_stat(stats, "company_china")
+                    elif source_key == "china_press":
+                        _bump_stat(stats, "china_press")
+                    elif channel == "linkedin":
+                        _bump_stat(stats, "linkedin")
+                    elif channel == "news":
+                        _bump_stat(stats, "news")
+                    else:
+                        _bump_stat(stats, "web")
                 run.queries = len(queries)
                 run.found = len(seen_urls)
+                run.stats = json.dumps(stats, ensure_ascii=False)
                 db.add(run)
                 db.commit()
                 if time.monotonic() >= deadline:
@@ -758,6 +891,7 @@ def run_reputation_crawl(
                         body = ""
                     if body:
                         item["excerpt"] = body
+                        _bump_stat(stats, "page_fetches")
                     if time.monotonic() >= deadline:
                         break
             except TimeoutError:
@@ -777,6 +911,7 @@ def run_reputation_crawl(
         run.created = created
         run.updated = updated
         run.negative = negative
+        run.stats = json.dumps(stats, ensure_ascii=False)
         db.add(run)
         db.commit()
 
@@ -786,6 +921,7 @@ def run_reputation_crawl(
         run.created = created
         run.updated = updated
         run.negative = negative
+        run.stats = json.dumps(stats, ensure_ascii=False)
         run.finished_at = _utc_now()
         db.add(run)
         db.commit()
@@ -795,6 +931,7 @@ def run_reputation_crawl(
         logger.exception("Reputation crawl failed")
         run.status = "failed"
         run.error = str(exc)[:500]
+        run.stats = json.dumps(stats, ensure_ascii=False)
         run.finished_at = _utc_now()
         db.add(run)
         db.commit()

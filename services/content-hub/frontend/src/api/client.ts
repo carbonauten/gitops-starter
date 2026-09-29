@@ -1420,6 +1420,7 @@ export type ReputationSummary = {
     updated: number;
     negative: number;
     error?: string;
+    stats?: Record<string, number>;
     started_at?: string | null;
     finished_at?: string | null;
   } | null;
@@ -1433,6 +1434,7 @@ export type ReputationCrawlRun = {
   updated: number;
   negative: number;
   error?: string;
+  stats?: Record<string, number>;
   started_at?: string | null;
   finished_at?: string | null;
 };

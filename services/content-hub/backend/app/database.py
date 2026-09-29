@@ -546,6 +546,7 @@ class ReputationCrawlRun(Base):
     updated: Mapped[int] = mapped_column(Integer, default=0)
     negative: Mapped[int] = mapped_column(Integer, default=0)
     error: Mapped[str] = mapped_column(String(500), default="")
+    stats: Mapped[str] = mapped_column(Text, default="")  # JSON: per-source / unwrap counters
     started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
@@ -770,6 +771,20 @@ def ensure_schema_updates(engine, is_sqlite: bool) -> None:
                         )
             except Exception as exc:  # noqa: BLE001
                 logger.warning("Could not add shop_page_views.ip_address: %s", exc)
+
+    if inspector.has_table("reputation_crawl_runs"):
+        columns = {column["name"] for column in inspector.get_columns("reputation_crawl_runs")}
+        if "stats" not in columns:
+            try:
+                with engine.begin() as connection:
+                    if is_sqlite:
+                        connection.execute(text("ALTER TABLE reputation_crawl_runs ADD COLUMN stats TEXT DEFAULT ''"))
+                    else:
+                        connection.execute(
+                            text("ALTER TABLE reputation_crawl_runs ADD COLUMN stats TEXT NOT NULL DEFAULT ''")
+                        )
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Could not add reputation_crawl_runs.stats: %s", exc)
 
 
 DEFAULT_DEPARTMENTS: tuple[tuple[str, str, int], ...] = (
