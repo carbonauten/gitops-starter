@@ -859,6 +859,12 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 
 - [x] Nach einem Crawl zeigte eine grüne Meldung "{{found}} Treffer, {{negative}} negativ." direkt über der Ergebnisliste an — die Zahlen bezogen sich aber auf den gerade abgeschlossenen Crawl-Lauf, nicht auf die (gefilterte) Liste darunter, die aus der gesamten Datenbank kommt. Wirkte wie eine falsche Trefferzahl. Entfernt — die bereits vorhandene "Last crawl: …"-Zeile zeigt dieselben Lauf-Statistiken unmissverständlicher an.
 
+### Bugfix: Mailbox-Ansicht verzog das Layout (September 2026)
+
+- [x] Ursache gefunden: `OutlookMailPanel` rendert den E-Mail-Body ungefiltert per `dangerouslySetInnerHTML` — enthält die Mail ein `<style>`-Block (bei Outlook-/HTML-Mails der Normalfall), gilt der global für die ganze Seite und verzerrte dadurch das komplette App-Layout, sobald eine Nachricht geöffnet wurde
+- [x] Gleichzeitig eine echte XSS-Lücke: Event-Handler-Attribute (`<img onerror=...>` u.ä.) in einer per `innerHTML` eingefügten Mail werden ausgeführt, obwohl `<script>`-Tags selbst nicht laufen
+- [x] Fix: E-Mail-Body (HTML wie Text) wird jetzt in einem sandboxed `<iframe srcDoc>` gerendert (`sandbox="allow-same-origin allow-popups"`, **kein** `allow-scripts`) — Styles/Skripte der Mail bleiben im iframe-Dokument isoliert, können weder das App-Layout noch die Seite selbst beeinflussen; Höhe wird per `onLoad` automatisch an den Inhalt angepasst
+
 ---
 
 ## Sprint N — M365-Verwaltung ✅ (MVP)

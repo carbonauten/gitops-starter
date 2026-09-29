@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
@@ -195,15 +195,7 @@ export function OutlookMailPanel({ connected }: Props) {
               <p className="muted">
                 {t("mail.received")}: {detail.received_at || "—"}
               </p>
-              <div
-                className="outlook-mail-body"
-                dangerouslySetInnerHTML={{
-                  __html:
-                    detail.body_type === "html"
-                      ? detail.body
-                      : `<pre style="white-space:pre-wrap;font-family:inherit">${escapeHtml(detail.body)}</pre>`,
-                }}
-              />
+              <EmailBodyFrame body={detail.body} bodyType={detail.body_type} />
             </>
           )}
         </div>
@@ -218,4 +210,47 @@ function escapeHtml(value: string): string {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
+}
+
+type EmailBodyFrameProps = {
+  body: string;
+  bodyType: "html" | "text";
+};
+
+/**
+ * Renders untrusted email content inside a sandboxed iframe so embedded
+ * <style>/<script>/event-handler payloads can't leak into or execute in the
+ * host page (the previous dangerouslySetInnerHTML render allowed both).
+ */
+function EmailBodyFrame({ body, bodyType }: EmailBodyFrameProps) {
+  const frameRef = useRef<HTMLIFrameElement>(null);
+  const [height, setHeight] = useState(200);
+
+  const srcDoc =
+    bodyType === "html"
+      ? body
+      : `<pre style="white-space:pre-wrap;font-family:inherit;margin:0">${escapeHtml(body)}</pre>`;
+
+  const resize = useCallback(() => {
+    const doc = frameRef.current?.contentDocument;
+    if (doc?.body) {
+      setHeight(doc.body.scrollHeight + 16);
+    }
+  }, []);
+
+  useEffect(() => {
+    resize();
+  }, [srcDoc, resize]);
+
+  return (
+    <iframe
+      ref={frameRef}
+      className="outlook-mail-body outlook-mail-body-frame"
+      title="email-body"
+      srcDoc={srcDoc}
+      sandbox="allow-same-origin allow-popups"
+      onLoad={resize}
+      style={{ width: "100%", height, border: "none" }}
+    />
+  );
 }
