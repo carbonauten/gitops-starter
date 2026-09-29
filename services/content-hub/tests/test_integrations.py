@@ -205,3 +205,42 @@ def test_outlook_mail_save_rejects_invalid_destination(auth_client):
         json={"message_id": "msg-1", "destination": "trash"},
     )
     assert response.status_code == 422
+
+
+def test_outlook_mail_summarize_requires_ai(auth_client):
+    _connect_outlook_for_logged_in_user()
+    response = auth_client.post(
+        "/api/integrations/outlook/mail/summarize",
+        json={"message_id": "msg-1", "language": "en"},
+    )
+    assert response.status_code == 503
+
+
+def test_outlook_mail_summarize_with_mocked_ai(viewer_auth_client, monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    from app.config import get_settings
+
+    get_settings.cache_clear()
+
+    _connect_outlook_for_logged_in_user()
+    detail = {
+        "id": "msg-1",
+        "subject": "Kiln update",
+        "body": "<p>New kiln is online.</p>",
+        "body_type": "html",
+    }
+    with patch(
+        "app.routes.integrations.get_outlook_message",
+        new=AsyncMock(return_value=detail),
+    ), patch(
+        "app.routes.integrations.summarize_article",
+        return_value="- Kiln is online\n- No action needed",
+    ) as mocked_summarize:
+        response = viewer_auth_client.post(
+            "/api/integrations/outlook/mail/summarize",
+            json={"message_id": "msg-1", "language": "en"},
+        )
+    assert response.status_code == 200
+    assert "Kiln is online" in response.json()["summary"]
+    mocked_summarize.assert_called_once_with(title="Kiln update", content="<p>New kiln is online.</p>", language="en")
+    get_settings.cache_clear()

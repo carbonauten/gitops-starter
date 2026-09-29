@@ -522,6 +522,8 @@
     "saved": "邮件已保存（文章草稿 + Emails 文件夹中的文件）。",
     "openArticle": "打开文章",
     "openOutlook": "在 Outlook 中打开",
+    "aiSummarize": "AI 摘要",
+    "aiSummaryTitle": "AI 摘要",
     "from": "发件人",
     "received": "接收时间",
     "entraSetupNeeded": "尚未启用 Microsoft 登录。作为 IT-Master，您可在此填入 Entra 应用信息 — 之后所有人即可一键连接。",

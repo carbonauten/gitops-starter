@@ -522,6 +522,8 @@
     "saved": "E-Mail gespeichert (Artikel-Entwurf + Datei im Ordner E-Mails).",
     "openArticle": "Artikel öffnen",
     "openOutlook": "In Outlook öffnen",
+    "aiSummarize": "KI-Zusammenfassung",
+    "aiSummaryTitle": "KI-Zusammenfassung",
     "from": "Von",
     "received": "Empfangen",
     "entraSetupNeeded": "Microsoft-Anmeldung ist noch nicht aktiv. Als IT-Master kannst du die Entra-App hier hinterlegen — danach erscheint der 1-Klick-Button für alle.",

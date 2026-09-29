@@ -18,6 +18,11 @@ class OutlookMailSaveRequest(BaseModel):
     destination: Literal["article", "file", "both"] = "both"
 
 
+class OutlookMailSummarizeRequest(BaseModel):
+    message_id: str = Field(min_length=1, max_length=512)
+    language: str = Field(default="de", pattern="^(de|en|zh-CN)$")
+
+
 class EntraConfigSaveRequest(BaseModel):
     tenant_id: str = Field(min_length=1, max_length=100)
     client_id: str = Field(min_length=1, max_length=100)

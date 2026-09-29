@@ -3,9 +3,11 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import {
+  fetchAiStatus,
   fetchOutlookMail,
   fetchOutlookMailMessage,
   saveOutlookMail,
+  summarizeOutlookMail,
   type OutlookMailMessage,
   type OutlookMailSummary,
 } from "../api/client";
@@ -15,7 +17,7 @@ type Props = {
 };
 
 export function OutlookMailPanel({ connected }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [messages, setMessages] = useState<OutlookMailSummary[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [detail, setDetail] = useState<OutlookMailMessage | null>(null);
@@ -25,6 +27,20 @@ export function OutlookMailPanel({ connected }: Props) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [savedArticleId, setSavedArticleId] = useState("");
+  const [aiAvailable, setAiAvailable] = useState(false);
+  const [summarizing, setSummarizing] = useState(false);
+  const [summary, setSummary] = useState("");
+  const [summaryError, setSummaryError] = useState("");
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        setAiAvailable((await fetchAiStatus()).available);
+      } catch {
+        setAiAvailable(false);
+      }
+    })();
+  }, []);
 
   const loadMessages = useCallback(
     async (search = "") => {
@@ -61,10 +77,29 @@ export function OutlookMailPanel({ connected }: Props) {
     setError("");
     setNotice("");
     setSavedArticleId("");
+    setSummary("");
+    setSummaryError("");
     try {
       setDetail(await fetchOutlookMailMessage(id));
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
+    }
+  }
+
+  async function handleSummarize() {
+    if (!selectedId) return;
+    setSummarizing(true);
+    setSummaryError("");
+    try {
+      const uiLanguage = (["de", "en", "zh-CN"].includes(i18n.language) ? i18n.language : "de") as
+        | "de"
+        | "en"
+        | "zh-CN";
+      setSummary(await summarizeOutlookMail(selectedId, uiLanguage));
+    } catch (err) {
+      setSummaryError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setSummarizing(false);
     }
   }
 
@@ -186,6 +221,16 @@ export function OutlookMailPanel({ connected }: Props) {
                     {t("mail.openOutlook")}
                   </a>
                 ) : null}
+                {aiAvailable ? (
+                  <button
+                    type="button"
+                    className="ghost-button"
+                    disabled={summarizing}
+                    onClick={() => void handleSummarize()}
+                  >
+                    {summarizing ? t("common.loading") : t("mail.aiSummarize")}
+                  </button>
+                ) : null}
               </div>
               <h3>{detail.subject}</h3>
               <p className="muted">
@@ -195,6 +240,13 @@ export function OutlookMailPanel({ connected }: Props) {
               <p className="muted">
                 {t("mail.received")}: {detail.received_at || "—"}
               </p>
+              {summaryError ? <p className="error-text">{summaryError}</p> : null}
+              {summary ? (
+                <div className="ai-summary-box">
+                  <strong>{t("mail.aiSummaryTitle")}</strong>
+                  <pre>{summary}</pre>
+                </div>
+              ) : null}
               <EmailBodyFrame body={detail.body} bodyType={detail.body_type} />
             </>
           )}

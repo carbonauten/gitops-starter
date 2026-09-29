@@ -868,6 +868,21 @@ export async function saveOutlookMail(
   return payload.saved;
 }
 
+export async function summarizeOutlookMail(
+  messageId: string,
+  language: "de" | "en" | "zh-CN" = "de",
+): Promise<string> {
+  const payload = await request<{ summary: string }>(
+    "/api/integrations/outlook/mail/summarize",
+    {
+      method: "POST",
+      body: JSON.stringify({ message_id: messageId, language }),
+    },
+    45000,
+  );
+  return payload.summary;
+}
+
 export async function fetchPlatformInfo(): Promise<PlatformInfo> {
   const payload = await request<PlatformInfo & { status: string }>("/api/health");
   return {
