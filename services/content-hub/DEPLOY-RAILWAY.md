@@ -415,6 +415,7 @@ Der Shop läuft auf derselben Railway-App wie `app.carbonauten.com`.
 | `REPUTATION_CRAWL_INTERVAL_HOURS` | Automatischer Crawl-Abstand (Default `6`) |
 | `REPUTATION_BRAND_TERMS` | Markenbegriffe für On-Brand-Filter, komma-getrennt (Default `carbonauten GmbH,carbonauten,FuckCo2,fuckco2,碳基科技`) |
 | `REPUTATION_PEOPLE` | Personen für LinkedIn-Suche, komma-getrennt (Default `Torsten Becker`) |
+| `REPUTATION_LOOKBACK_DAYS` | Datierte Treffer älter als das werden verworfen (Default `90`); `0` deaktiviert das Zeitfenster. Gilt nur für Quellen mit echtem Datum (Google News RSS inkl. WordPress-Feed-Fallback) — DuckDuckGo-Treffer haben kein Datum und werden nie herausgefiltert. |
 | `SHOP_REQUIRE_ACCOUNT_CHECKOUT` | `true` = Checkout nur mit Kundenkonto |
 | `SHOP_ADMIN_EMAIL` / `SHOP_ADMIN_PASSWORD` / `SHOP_ADMIN_NAME` | optional; sonst = `INITIAL_ADMIN_*` — Master-Konto für Shop-Login |
 | `SHOP_BOT_PROTECTION_ENABLED` | Bot-Schutz an/aus (Default `true`) — Rate-Limit + Honeypot |

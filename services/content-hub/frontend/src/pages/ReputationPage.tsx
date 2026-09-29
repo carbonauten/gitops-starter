@@ -334,8 +334,9 @@ export function ReputationPage() {
               <p className="muted">
                 {item.source_host} ·{" "}
                 {t(`reputation.channels.${item.channel}`, { defaultValue: item.channel })} · {item.query}
-                {item.last_seen_at
-                  ? ` · ${new Date(item.last_seen_at).toLocaleDateString(i18n.language)}`
+                {item.published_at ? ` · ${new Date(item.published_at).toLocaleDateString(i18n.language)}` : ""}
+                {!item.published_at && item.last_seen_at
+                  ? ` · ${t("reputation.foundOn")} ${new Date(item.last_seen_at).toLocaleDateString(i18n.language)}`
                   : ""}
                 {item.sentiment_reasons ? ` · ${item.sentiment_reasons}` : ""}
               </p>

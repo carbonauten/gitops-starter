@@ -848,6 +848,13 @@ Siehe [DEPLOY-RAILWAY.md](./DEPLOY-RAILWAY.md).
 - [x] Kanal-Filter (LinkedIn / News / Web) in der Web-Reputation-UI; Standard-Sentiment-Filter von "Negativ" auf "Alle" geändert (verbarg vorher fast alle LinkedIn-Treffer, die selten als negativ eingestuft werden)
 - [x] Der neue `_resolve_pending_google_news()`-Thread-Pool tappte beim Zusammenführen in denselben Context-Var-Bug wie oben — mit demselben `contextvars.copy_context()`-Muster behoben, inkl. eigenem Regressionstest
 
+### Standard-Zeitfenster 90 Tage (September 2026)
+
+- [x] `REPUTATION_LOOKBACK_DAYS` (Default `90`, `0` = deaktiviert): datierte Treffer außerhalb des Fensters werden gar nicht erst übernommen — vorher gab es kein Zeitfenster, der Crawler nahm einfach, was DuckDuckGo/Google News gerade zurückgaben
+- [x] Nur Quellen mit echtem Datum werden gefiltert (Google News RSS `<pubDate>`, inkl. WordPress-Feed-Fallback für China) — DuckDuckGo-Treffer haben kein Datum und werden nie wegen Alters verworfen; ein unbekanntes Datum zählt nie als "zu alt"
+- [x] Neue Spalte `reputation_mentions.published_at` (Artikel-/Post-Datum, nicht Crawl-Datum) — in der UI angezeigt, wenn vorhanden, sonst weiterhin "gefunden am" mit dem Crawl-Datum
+- [x] Filterung passiert vor dem Google-News-Auflösen (`resolve_google_news_url`), spart also unnötige `batchexecute`-Aufrufe für bereits zu alte Treffer
+
 ---
 
 ## Sprint N — M365-Verwaltung ✅ (MVP)

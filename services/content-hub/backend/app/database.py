@@ -507,6 +507,7 @@ class ReputationMention(Base):
     sentiment_score: Mapped[int] = mapped_column(Integer, default=0)
     sentiment_reasons: Mapped[str] = mapped_column(String(500), default="")
     language: Mapped[str] = mapped_column(String(10), default="")
+    published_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -785,6 +786,16 @@ def ensure_schema_updates(engine, is_sqlite: bool) -> None:
                         )
             except Exception as exc:  # noqa: BLE001
                 logger.warning("Could not add reputation_crawl_runs.stats: %s", exc)
+
+    if inspector.has_table("reputation_mentions"):
+        columns = {column["name"] for column in inspector.get_columns("reputation_mentions")}
+        if "published_at" not in columns:
+            try:
+                with engine.begin() as connection:
+                    column_type = "DATETIME" if is_sqlite else "TIMESTAMP WITH TIME ZONE"
+                    connection.execute(text(f"ALTER TABLE reputation_mentions ADD COLUMN published_at {column_type}"))
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Could not add reputation_mentions.published_at: %s", exc)
 
 
 DEFAULT_DEPARTMENTS: tuple[tuple[str, str, int], ...] = (
