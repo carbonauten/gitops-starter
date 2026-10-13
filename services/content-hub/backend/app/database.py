@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Generator, Optional
 from uuid import uuid4
 
-from sqlalchemy import Boolean, Date, DateTime, Integer, String, Text, UniqueConstraint, create_engine, event, func, select, text
+from sqlalchemy import Boolean, Date, DateTime, Integer, LargeBinary, String, Text, UniqueConstraint, create_engine, event, func, select, text
 from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
@@ -53,6 +53,9 @@ class FileAsset(Base):
     folder: Mapped[str] = mapped_column(String(200), default="general")
     folder_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True, index=True)
     storage_path: Mapped[str] = mapped_column(String(1000))
+    # Set for files uploaded via the IT-Master "master documents" upload (storage_path
+    # is then the "db://postgres" sentinel); NULL for files in local disk/OSS storage.
+    content: Mapped[Optional[bytes]] = mapped_column(LargeBinary, nullable=True)
     uploaded_by_id: Mapped[str] = mapped_column(String(100))
     uploaded_by_name: Mapped[str] = mapped_column(String(200))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -621,6 +624,13 @@ def ensure_schema_updates(engine, is_sqlite: bool) -> None:
         if "folder_id" not in columns:
             with engine.begin() as connection:
                 connection.execute(text("ALTER TABLE file_assets ADD COLUMN folder_id VARCHAR(36)"))
+        if "content" not in columns:
+            try:
+                with engine.begin() as connection:
+                    column_type = "BLOB" if is_sqlite else "BYTEA"
+                    connection.execute(text(f"ALTER TABLE file_assets ADD COLUMN content {column_type}"))
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("Could not add file_assets.content: %s", exc)
     if inspector.has_table("articles"):
         columns = {column["name"] for column in inspector.get_columns("articles")}
         scheduled_type = scheduled_publish_column_type(is_sqlite)

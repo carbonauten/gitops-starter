@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Literal, Optional
+from uuid import uuid4
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, Response, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
@@ -11,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..database import FileAsset, get_db
-from ..dependencies import get_current_user, require_editor
+from ..dependencies import get_current_user, require_editor, require_it_master
 from ..embedding_service import delete_embedding, queue_reembed
 from ..file_folder_service import (
     build_folder_tree,
@@ -255,6 +256,15 @@ def public_file_preview(
     file_asset = db.get(FileAsset, payload["file_id"])
     if not file_asset:
         raise HTTPException(status_code=404, detail="not_found")
+    if file_asset.content is not None:
+        return StreamingResponse(
+            iter([file_asset.content]),
+            media_type=file_asset.content_type,
+            headers={
+                "Content-Disposition": f'inline; filename="{file_asset.original_name}"',
+                "Cache-Control": "private, max-age=60",
+            },
+        )
     if file_asset.storage_path.startswith("oss://"):
         content = read_upload(file_asset.storage_path)
         return StreamingResponse(
@@ -314,6 +324,52 @@ async def upload_file(
     return {"file": _to_response(file_asset)}
 
 
+@router.post("/upload-master", status_code=201)
+async def upload_master_documents(
+    background_tasks: BackgroundTasks,
+    uploads: list[UploadFile] = File(...),
+    folder: str = Form(default="general"),
+    folder_id: Optional[str] = Form(default=None),
+    db: Session = Depends(get_db),
+    user: dict = Depends(require_it_master),
+) -> dict:
+    """IT-Master-only multi-file upload. Content is stored directly in Postgres
+    (the `content` column) rather than local disk/OSS - see FileAsset.content."""
+    settings = get_settings()
+    target_folder = resolve_upload_folder(db, folder_id=folder_id, folder_slug=folder)
+    created: list[FileAsset] = []
+    for upload in uploads:
+        content = await upload.read()
+        if not content:
+            raise HTTPException(status_code=400, detail="empty_file")
+        if len(content) > settings.max_upload_bytes:
+            raise HTTPException(status_code=400, detail="file_too_large")
+
+        original_name = Path(upload.filename or "upload.bin").name
+        stored_name = f"{uuid4().hex}{Path(original_name).suffix.lower()}"
+
+        file_asset = FileAsset(
+            original_name=original_name,
+            stored_name=stored_name,
+            content_type=upload.content_type or "application/octet-stream",
+            size_bytes=len(content),
+            folder=folder_path(target_folder),
+            folder_id=target_folder.id,
+            storage_path="db://postgres",
+            content=content,
+            uploaded_by_id=user["id"],
+            uploaded_by_name=user["name"],
+        )
+        db.add(file_asset)
+        created.append(file_asset)
+
+    db.commit()
+    for file_asset in created:
+        db.refresh(file_asset)
+        queue_reembed(background_tasks, entity_type="file", entity_id=file_asset.id)
+    return {"files": [_to_response(file_asset) for file_asset in created]}
+
+
 @router.get("/{file_id}")
 def get_file_metadata(
     file_id: str,
@@ -335,6 +391,12 @@ def download_file(
     file_asset = db.get(FileAsset, file_id)
     if not file_asset:
         raise HTTPException(status_code=404, detail="not_found")
+    if file_asset.content is not None:
+        return StreamingResponse(
+            iter([file_asset.content]),
+            media_type=file_asset.content_type,
+            headers={"Content-Disposition": f'attachment; filename="{file_asset.original_name}"'},
+        )
     if file_asset.storage_path.startswith("oss://"):
         content = read_upload(file_asset.storage_path)
         return StreamingResponse(
@@ -361,7 +423,8 @@ def delete_file(
     file_asset = db.get(FileAsset, file_id)
     if not file_asset:
         raise HTTPException(status_code=404, detail="not_found")
-    delete_upload(file_asset.storage_path)
+    if file_asset.content is None:
+        delete_upload(file_asset.storage_path)
     db.delete(file_asset)
     db.commit()
     delete_embedding(db, entity_type="file", entity_id=file_id)
