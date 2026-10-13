@@ -130,6 +130,7 @@
     "subtitle": "Plattform, SharePoint und OneDrive an einem Ort",
     "empty": "Noch keine Dateien in diesem Ordner.",
     "upload": "Dateien auswählen",
+    "uploadSuccess": "{{count}} Datei(en) erfolgreich hochgeladen.",
     "dropHint": "Dateien hierher ziehen oder Button klicken",
     "masterOnlyHint": "Nur IT-Master können hier Dokumente hochladen.",
     "searchPlaceholder": "Dateien durchsuchen…",
