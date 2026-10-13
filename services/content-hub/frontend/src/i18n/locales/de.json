@@ -131,6 +131,7 @@
     "empty": "Noch keine Dateien in diesem Ordner.",
     "upload": "Dateien auswählen",
     "dropHint": "Dateien hierher ziehen oder Button klicken",
+    "masterOnlyHint": "Nur IT-Master können hier Dokumente hochladen.",
     "searchPlaceholder": "Dateien durchsuchen…",
     "foldersTitle": "Ordner",
     "up": "Eine Ebene höher",

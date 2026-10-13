@@ -1021,3 +1021,22 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] Ohne KI-Keys bleibt das bisherige Regex-Verhalten erhalten
 
 ---
+
+## IT-Master-Dokumenten-Upload (Oktober 2026)
+
+**Ziel:** Ein Drag-&-Drop-Mehrfach-Upload im Files-Bereich, bei dem die Datei-Inhalte direkt in Postgres liegen (nicht lokal/OSS) — nur für IT-Master.
+
+### Deliverables
+
+- [x] Neuer Endpunkt `POST /api/files/upload-master` (nur `require_it_master`) — nimmt mehrere Dateien in einem Request entgegen (`uploads: list[UploadFile]`) statt pro Datei ein eigener Request
+- [x] `FileAsset.content` (neue `BYTEA`/`BLOB`-Spalte) speichert die Rohbytes direkt in Postgres; `storage_path` bekommt dafür das Sentinel `db://postgres`
+- [x] Download/Public-Preview/Delete-Routen erkennen `content IS NOT NULL` zuerst und bedienen Postgres-gespeicherte Dateien transparent — vor dem bestehenden `oss://`/lokalen Pfad-Fallback
+- [x] Der bestehende `POST /api/files/upload` (Einzeldatei, lokal/OSS, `require_editor`) bleibt unverändert — wird weiterhin von der Zertifikats- und Produkt-Datei-Anhang-Funktion genutzt, die nicht auf IT-Master beschränkt werden sollte
+- [x] Frontend: Files-Seite blendet die Drag-&-Drop-Upload-Zone nur für `isItMaster` ein (vorher: keinerlei Rechteprüfung im Frontend); andere Rollen sehen einen Hinweistext
+- [x] Mehrfachauswahl/Drop sendet jetzt alle Dateien in einem einzigen Request statt sequenziell einen Request pro Datei
+
+### Hinweis
+
+- [x] Bewusste Entscheidung des Nutzers, Dateiinhalte direkt in Postgres statt lokal/OSS zu speichern — bläht die DB auf und verlangsamt Backups/Vacuum bei vielen/großen Dateien stärker als der bestehende OSS-Pfad, wurde aber explizit so gewünscht
+
+---

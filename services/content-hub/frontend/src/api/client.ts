@@ -989,6 +989,22 @@ export async function uploadFile(file: File, folder: string, folderId?: string):
   return payload.file;
 }
 
+// IT-Master-only "master documents" upload: multiple files in one request,
+// content is stored directly in Postgres rather than local disk/OSS.
+export async function uploadFiles(files: File[], folder: string, folderId?: string): Promise<FileAsset[]> {
+  const body = new FormData();
+  for (const file of files) {
+    body.append("uploads", file);
+  }
+  body.append("folder", folder);
+  if (folderId) body.append("folder_id", folderId);
+  const payload = await request<{ files: FileAsset[] }>("/api/files/upload-master", {
+    method: "POST",
+    body,
+  });
+  return payload.files;
+}
+
 export async function importFileFromSharePoint(
   itemId: string,
   folder = "certificates",

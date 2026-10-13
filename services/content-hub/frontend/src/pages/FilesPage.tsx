@@ -8,7 +8,7 @@ import {
   fetchOfficeSession,
   fileDownloadUrl,
   outlookConnectUrl,
-  uploadFile,
+  uploadFiles,
   type FileBrowseItem,
   type FileBrowseResult,
   type FileSource,
@@ -17,6 +17,7 @@ import {
 import { EmptyState } from "../components/EmptyState";
 import { LoadingState } from "../components/LoadingState";
 import { OfficeOnlinePanel } from "../components/OfficeOnlinePanel";
+import { usePermissions } from "../hooks/usePermissions";
 
 const OFFICE_EXT = /\.(docx?|xlsx?|pptx?|odt|ods|odp)$/i;
 const OFFICE_MIME = /officedocument|msword|ms-excel|ms-powerpoint|opendocument/i;
@@ -55,6 +56,7 @@ function fileTypeIcon(file: FileBrowseItem): string {
 
 export function FilesPage() {
   const { t } = useTranslation();
+  const { isItMaster } = usePermissions();
   const [sources, setSources] = useState<FileSource[]>([]);
   const [source, setSource] = useState<FileSource["id"]>("platform");
   const [browse, setBrowse] = useState<FileBrowseResult | null>(null);
@@ -113,14 +115,12 @@ export function FilesPage() {
   }
 
   async function handleUpload(selected: FileList | null) {
-    if (!selected || selected.length === 0 || source !== "platform") return;
+    if (!selected || selected.length === 0 || source !== "platform" || !isItMaster) return;
     setUploading(true);
     setError("");
     try {
       const folderId = currentItemId !== "root" ? currentItemId : undefined;
-      for (const file of Array.from(selected)) {
-        await uploadFile(file, browse?.breadcrumbs.at(-1)?.name || "general", folderId);
-      }
+      await uploadFiles(Array.from(selected), browse?.breadcrumbs.at(-1)?.name || "general", folderId);
       await reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
@@ -227,7 +227,7 @@ export function FilesPage() {
         <p className="muted">{t("files.sharepointHint")}</p>
       ) : null}
 
-      {source === "platform" ? (
+      {source === "platform" && isItMaster ? (
         <div
           className="upload-zone"
           onDragOver={(event) => event.preventDefault()}
@@ -254,6 +254,7 @@ export function FilesPage() {
           />
         </div>
       ) : null}
+      {source === "platform" && !isItMaster ? <p className="muted">{t("files.masterOnlyHint")}</p> : null}
 
       <div className="file-browser">
         <aside className="file-browser-sidebar">

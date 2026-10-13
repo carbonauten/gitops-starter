@@ -131,6 +131,7 @@
     "empty": "No files in this folder yet.",
     "upload": "Choose files",
     "dropHint": "Drag files here or click the button",
+    "masterOnlyHint": "Only IT Master can upload documents here.",
     "searchPlaceholder": "Search files…",
     "foldersTitle": "Folders",
     "up": "Up one level",
