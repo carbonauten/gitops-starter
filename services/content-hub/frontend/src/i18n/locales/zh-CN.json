@@ -130,6 +130,7 @@
     "subtitle": "平台、SharePoint 和 OneDrive 一站式浏览",
     "empty": "此文件夹中暂无文件。",
     "upload": "选择文件",
+    "uploadSuccess": "已成功上传 {{count}} 个文件。",
     "dropHint": "将文件拖到此处或点击按钮",
     "masterOnlyHint": "只有 IT 管理员可以在此处上传文档。",
     "searchPlaceholder": "搜索文件…",

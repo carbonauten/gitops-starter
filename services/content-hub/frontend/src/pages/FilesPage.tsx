@@ -65,6 +65,7 @@ export function FilesPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [inputEl, setInputEl] = useState<HTMLInputElement | null>(null);
   const [officeSession, setOfficeSession] = useState<OfficeSession | null>(null);
   const [officeOpen, setOfficeOpen] = useState(false);
@@ -76,6 +77,7 @@ export function FilesPage() {
     void (async () => {
       setLoading(true);
       setError("");
+      setNotice("");
       try {
         const [nextSources, nextBrowse] = await Promise.all([
           fetchFileSources(),
@@ -118,9 +120,15 @@ export function FilesPage() {
     if (!selected || selected.length === 0 || source !== "platform" || !isItMaster) return;
     setUploading(true);
     setError("");
+    setNotice("");
     try {
       const folderId = currentItemId !== "root" ? currentItemId : undefined;
-      await uploadFiles(Array.from(selected), browse?.breadcrumbs.at(-1)?.name || "general", folderId);
+      const uploaded = await uploadFiles(
+        Array.from(selected),
+        browse?.breadcrumbs.at(-1)?.name || "general",
+        folderId,
+      );
+      setNotice(t("files.uploadSuccess", { count: uploaded.length }));
       await reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
@@ -255,6 +263,7 @@ export function FilesPage() {
         </div>
       ) : null}
       {source === "platform" && !isItMaster ? <p className="muted">{t("files.masterOnlyHint")}</p> : null}
+      {notice ? <p className="success-text" role="status">{notice}</p> : null}
 
       <div className="file-browser">
         <aside className="file-browser-sidebar">

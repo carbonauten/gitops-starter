@@ -1039,4 +1039,10 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 
 - [x] Bewusste Entscheidung des Nutzers, Dateiinhalte direkt in Postgres statt lokal/OSS zu speichern — bläht die DB auf und verlangsamt Backups/Vacuum bei vielen/großen Dateien stärker als der bestehende OSS-Pfad, wurde aber explizit so gewünscht
 
+### Bugfix: Mehrfach-Upload funktionierte nur einzeln (Oktober 2026)
+
+- [x] Ursache: nginx (Reverse Proxy vor dem FastAPI-Backend) hatte kein `client_max_body_size` für `/api/` gesetzt — Standardwert ist 1 MB. Eine einzelne kleine Datei blieb knapp darunter und ging durch, ein kombinierter Mehrfach-Upload-Request (mehrere Dateien in einem `multipart/form-data`-Body) überschritt die 1-MB-Grenze fast immer und wurde von nginx mit 413 abgewiesen, bevor er die App überhaupt erreichte — sah für den Nutzer aus wie "geht nur eine Datei nach der anderen", obwohl Frontend und Backend bereits echten gebündelten Mehrfach-Upload unterstützten
+- [x] Fix: `client_max_body_size 300m` für `/api/` in `deploy/nginx.conf.template` — deckt einen realistischen Upload-Batch mit Puffer ab (App-seitiges Limit bleibt 25 MB pro Datei)
+- [x] Zusätzlich: Erfolgsmeldung nach Upload ("X Datei(en) erfolgreich hochgeladen.") — vorher keinerlei Rückmeldung außer dem aktualisierten Listing
+
 ---
