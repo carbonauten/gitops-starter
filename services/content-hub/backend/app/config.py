@@ -57,6 +57,11 @@ class Settings(BaseSettings):
     smtp_use_tls: bool = True
     resend_api_key: str = ""
 
+    # Self-hosted Mailcow mail server (see infra/mailcow/README.md for setup).
+    mailcow_api_url: str = ""
+    mailcow_api_key: str = ""
+    mailcow_default_domain: str = ""
+
     notion_api_key: str = ""
     notion_database_id: str = ""
     notion_client_id: str = ""
@@ -154,6 +159,10 @@ class Settings(BaseSettings):
     @property
     def entra_configured(self) -> bool:
         return bool(self.azure_tenant_id and self.azure_client_id and self.azure_client_secret)
+
+    @property
+    def mailcow_env_configured(self) -> bool:
+        return bool(self.mailcow_api_url.strip() and self.mailcow_api_key.strip())
 
     @property
     def it_admin_emails_list(self) -> set[str]:

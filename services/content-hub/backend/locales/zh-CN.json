@@ -71,5 +71,10 @@
   "errors.outlook_mail_not_connected": "Outlook 邮箱尚未连接。",
   "errors.outlook_mail_failed": "暂时无法加载 Outlook 邮件，请重试。",
   "errors.integration_token_failed": "无法刷新连接，请重新连接该集成。",
+  "errors.mailcow_domain_required": "请指定域名。",
+  "errors.mailcow_invalid_local_part": "电子邮件地址格式无效。",
+  "errors.mailcow_already_exists": "该邮箱已存在。",
+  "errors.mailcow_request_failed": "无法连接邮件服务器，请重试。",
+  "errors.mailcow_request_rejected": "邮件服务器拒绝了此请求。",
   "messages.language_updated": "语言已更新。"
 }
