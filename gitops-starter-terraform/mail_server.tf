@@ -11,15 +11,8 @@
 // it by default for new accounts, like most VPS providers), pointing DNS at
 // the output IP, finishing the Mailcow web setup, and creating an API key to
 // paste into the platform's Administration -> Mail server page.
-
-terraform {
-  required_providers {
-    hcloud = {
-      source  = "hetznercloud/hcloud"
-      version = ">= 1.45"
-    }
-  }
-}
+// (hcloud is declared in main.tf's single required_providers block - Terraform
+// only allows one per module.)
 
 variable "hcloud_token" {
   description = "Hetzner Cloud API token (Console -> your project -> Security -> API Tokens -> generate, Read & Write)."

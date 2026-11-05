@@ -11,6 +11,10 @@ terraform {
       source  = "aliyun/alicloud"
       version = ">= 1.200"
     }
+    hcloud = {
+      source  = "hetznercloud/hcloud"
+      version = ">= 1.45"
+    }
   }
 }
 

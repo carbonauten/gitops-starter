@@ -16,13 +16,9 @@ Mailcow's documented conventions, but verify each step against your actual
 deployment — Mailcow doesn't publish a versioned API contract, and cloud
 provider resource schemas change over time.
 
-**Note on this repo's Terraform layout:** there are two separate Terraform
-trees in this repo - this one (`infra/terraform/`) and a second,
-unrelated one at the repo root (`gitops-starter-terraform/`), which is what
-the "Terraform CI" GitHub Actions workflow actually validates. The mail
-server resources below live only in `infra/terraform/` and are not covered
-by that CI check; validate changes here manually (`terraform validate` from
-`infra/terraform/`) before applying.
+The Terraform for this lives in `gitops-starter-terraform/` at the repo
+root (not under `infra/`) - that's the directory the "Terraform CI" GitHub
+Actions workflow validates on every push/PR.
 
 ## Prerequisites
 
@@ -42,7 +38,7 @@ you later.
 ## 1. Provision the VM
 
 ```bash
-cd infra/terraform
+cd gitops-starter-terraform
 terraform init
 terraform apply \
   -target=hcloud_ssh_key.mail_server \
@@ -63,7 +59,7 @@ unrelated parts of this repo; don't let a plain `terraform apply` with no
 Note the `mail_server_public_ip` output — you need it for the DNS records
 below. VM boot takes a few minutes; cloud-init then installs Docker and
 mailcow-dockerized automatically (see
-`infra/terraform/templates/mailcow_cloud_init.yaml.tpl`). SSH in (`ssh
+`gitops-starter-terraform/templates/mailcow_cloud_init.yaml.tpl`). SSH in (`ssh
 root@<ip>`, using the private key matching `mail_server_ssh_public_key`) and
 check `/opt/mailcow/BOOTSTRAP_DONE` exists before continuing.
 
