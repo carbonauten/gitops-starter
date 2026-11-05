@@ -1081,4 +1081,13 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] Inerte Kopie von `.github/workflows/terraform-ci.yml` innerhalb von `gitops-starter-terraform/.github/` entfernt (lief ohnehin nie — GitHub Actions liest Workflows nur vom Repo-Root)
 - [x] Alle Verweise in `README.md`, `services/content-hub/README.md` und `infra/mailcow/README.md` auf den neuen Pfad aktualisiert
 
+### Mail-Server-Terraform: Backups + separates Storage-Volume (November 2026)
+
+- [x] `mail_server_enable_backups` (Default `true`): Hetzners natives tägliches Server-Backup (7-Tage-Rotation) — deckt aber nur die lokale Server-Disk ab, **nicht** das angehängte Mail-Daten-Volume
+- [x] Neues `hcloud_volume` + `hcloud_volume_attachment` (`mail_server_volume_size_gb`, Default 20 GB): Mail-Daten und Dockers eigener Storage liegen jetzt auf einem separaten Volume statt der lokalen Server-Disk — übersteht einen Server-Rebuild, Storage wächst per Variable + `terraform apply` statt per Server-Resize
+- [x] Cloud-Init mountet das Volume (mit Warte-Schleife für den Fall, dass der Server schneller bootet als das Volume attached ist, und formatiert nur beim allerersten Mal — ein Server-Rebuild formatiert das bestehende Volume NICHT neu), setzt Dockers `data-root` dorthin, bevor Docker installiert wird
+- [x] Täglicher Cron-Job (03:15) führt Mailcows eigenes `backup_and_restore.sh` aus, Ablage auf demselben Volume mit 14-Tage-Aufbewahrung — schützt vor Mailcow-eigenen Fehlern, **nicht** vor Verlust des Volumes selbst (dafür bräuchte es eine Kopie außerhalb des Servers, z. B. Hetzner Storage Box — nicht eingerichtet)
+- [x] Bewusst NICHT gebaut: Monitoring/Alerting als Terraform-Ressource — dafür gibt es kein verlässliches natives Hetzner-Terraform-Primitive; besser über ein bestehendes Uptime-Monitoring-Tool abdecken
+- [x] `terraform validate` + `fmt -check` sauber; YAML-Struktur und alle drei eingebetteten Bash-Skripte im Cloud-Init-Template mit `bash -n` syntaktisch geprüft (keine echte VM zum Testen vorhanden)
+
 ---
