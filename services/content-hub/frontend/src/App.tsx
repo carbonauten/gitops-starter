@@ -16,6 +16,7 @@ import { PublishPage } from "./pages/PublishPage";
 import { AuditLogPage } from "./pages/AuditLogPage";
 import { WorkflowPage } from "./pages/WorkflowPage";
 import { M365AdminPage } from "./pages/M365AdminPage";
+import { MailServerPage } from "./pages/MailServerPage";
 import { UsersAdminPage } from "./pages/UsersAdminPage";
 import { SearchPage } from "./pages/SearchPage";
 import { PublishCalendarPage } from "./pages/PublishCalendarPage";
@@ -214,6 +215,14 @@ export default function App() {
         element={
           <MasterRoute>
             <M365AdminPage />
+          </MasterRoute>
+        }
+      />
+      <Route
+        path="/mail-server"
+        element={
+          <MasterRoute>
+            <MailServerPage />
           </MasterRoute>
         }
       />

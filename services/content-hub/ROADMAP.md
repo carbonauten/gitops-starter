@@ -1046,3 +1046,23 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] Zusätzlich: Erfolgsmeldung nach Upload ("X Datei(en) erfolgreich hochgeladen.") — vorher keinerlei Rückmeldung außer dem aktualisierten Listing
 
 ---
+
+## Eigener Mail-Server (Mailcow) (November 2026)
+
+**Ziel:** Echte E-Mail-Adressen/Postfächer selbst hosten und direkt aus der Plattform anlegen können — auf Wunsch des Nutzers als voll selbst betriebener Server statt Managed-Hosting (M365/Migadu), trotz des damit verbundenen Betriebsaufwands (Spam-Reputation, DKIM/SPF/DMARC, Sicherheitsupdates).
+
+### Deliverables
+
+- [x] Terraform (`infra/terraform/mail_server.tf`): dedizierte Azure-VM + NSG (nur SSH von einer festgelegten Admin-CIDR, SMTP/IMAP/HTTPS-Ports öffentlich) + Public IP mit PTR-Record + Cloud-Init-Bootstrap (installiert Docker, klont `mailcow-dockerized`, startet es automatisch)
+- [x] `infra/mailcow/README.md`: Schritt-für-Schritt-Anleitung inkl. DNS-Tabelle (A/MX/SPF/DKIM/DMARC/PTR) und laufende Betriebsaufgaben (Updates, Backups, Blacklist-Monitoring)
+- [x] Backend: `mailcow_service.py` spricht Mailcows REST-API (Postfächer auflisten/anlegen/löschen); `mailcow_config_service.py` speichert API-URL/Key verschlüsselt (gleiches Muster wie die Entra-Konfiguration) — Env-Var zuerst, sonst gespeicherte IT-Master-Config
+- [x] Neue Route `/api/mail-server/*`, ausschließlich `require_it_master`
+- [x] Demo-Modus ohne echten Mailcow: zeigt Beispiel-Postfächer, damit die UI schon vor dem Server-Setup nutzbar ist (gleiches Muster wie der M365-Verzeichnis-Mock)
+- [x] Neue Admin-Seite "Mail-Server" (IT-Master) zum Konfigurieren der Verbindung und Anlegen/Löschen von Postfächern
+
+### Wichtiger Hinweis zur Verifikation
+
+- [x] Die Mailcow-API-Integration folgt Mailcows dokumentierten REST-Konventionen, wurde aber **nicht gegen eine echte laufende Mailcow-Instanz getestet** (es gab keine) — vor Produktiveinsatz gegen den echten Server verifizieren. Terraform wurde nur mit `terraform validate` gegen das aktuelle `azurerm`-Provider-Schema geprüft (kein `apply`, da keine echten Azure-Zugangsdaten in dieser Session verfügbar waren)
+- [x] `terraform apply`, DNS-Einträge setzen und der erste Mailcow-Web-Setup-Schritt sind manuelle Schritte, die jemand mit echtem Azure/DNS-Zugriff ausführen muss
+
+---

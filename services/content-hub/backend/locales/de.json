@@ -71,5 +71,10 @@
   "errors.outlook_mail_not_connected": "Outlook-Postfach ist noch nicht verbunden.",
   "errors.outlook_mail_failed": "Outlook-Mails konnten gerade nicht geladen werden. Bitte erneut versuchen.",
   "errors.integration_token_failed": "Verbindung konnte nicht erneuert werden. Bitte die Integration neu verbinden.",
+  "errors.mailcow_domain_required": "Bitte eine Domain angeben.",
+  "errors.mailcow_invalid_local_part": "Ungültiges E-Mail-Adressformat.",
+  "errors.mailcow_already_exists": "Dieses Postfach existiert bereits.",
+  "errors.mailcow_request_failed": "Mail-Server nicht erreichbar. Bitte erneut versuchen.",
+  "errors.mailcow_request_rejected": "Der Mail-Server hat diese Anfrage abgelehnt.",
   "messages.language_updated": "Sprache wurde aktualisiert."
 }

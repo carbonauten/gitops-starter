@@ -71,5 +71,10 @@
   "errors.outlook_mail_not_connected": "Outlook mail is not connected yet.",
   "errors.outlook_mail_failed": "Could not load Outlook mail right now. Please try again.",
   "errors.integration_token_failed": "Could not refresh the connection. Please reconnect the integration.",
+  "errors.mailcow_domain_required": "Please specify a domain.",
+  "errors.mailcow_invalid_local_part": "Invalid email address format.",
+  "errors.mailcow_already_exists": "This mailbox already exists.",
+  "errors.mailcow_request_failed": "Could not reach the mail server. Please try again.",
+  "errors.mailcow_request_rejected": "The mail server rejected this request.",
   "messages.language_updated": "Language updated."
 }

@@ -2273,3 +2273,69 @@ export async function fetchAuditLog(limit = 100): Promise<AuditEntry[]> {
   const payload = await request<{ entries: AuditEntry[] }>(`/api/audit?limit=${limit}`);
   return payload.entries;
 }
+
+export type MailServerStatus = {
+  configured: boolean;
+  mock: boolean;
+  source: "env" | "stored" | "none";
+  api_url: string;
+  default_domain: string;
+  stored_configured: boolean;
+  env_configured: boolean;
+  updated_at: string | null;
+  updated_by_name: string;
+};
+
+export type Mailbox = {
+  email: string;
+  local_part: string;
+  domain: string;
+  display_name: string;
+  quota_mb: number;
+  active: boolean;
+};
+
+export async function fetchMailServerStatus(): Promise<MailServerStatus> {
+  return request<MailServerStatus>("/api/mail-server/status");
+}
+
+export async function saveMailServerConfig(payload: {
+  api_url: string;
+  api_key?: string;
+  default_domain?: string;
+}): Promise<MailServerStatus> {
+  return request<MailServerStatus>("/api/mail-server/config", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function clearMailServerConfig(): Promise<MailServerStatus> {
+  return request<MailServerStatus>("/api/mail-server/config", { method: "DELETE" });
+}
+
+export async function fetchMailboxes(domain?: string): Promise<Mailbox[]> {
+  const params = new URLSearchParams();
+  if (domain?.trim()) params.set("domain", domain.trim());
+  const suffix = params.toString() ? `?${params.toString()}` : "";
+  const payload = await request<{ mailboxes: Mailbox[] }>(`/api/mail-server/mailboxes${suffix}`);
+  return payload.mailboxes;
+}
+
+export async function createMailbox(payload: {
+  local_part: string;
+  domain: string;
+  display_name?: string;
+  password: string;
+  quota_mb?: number;
+}): Promise<Mailbox> {
+  const response = await request<{ mailbox: Mailbox }>("/api/mail-server/mailboxes", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return response.mailbox;
+}
+
+export async function deleteMailbox(email: string): Promise<void> {
+  await request(`/api/mail-server/mailboxes/${encodeURIComponent(email)}`, { method: "DELETE" });
+}

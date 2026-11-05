@@ -145,6 +145,16 @@ Nach dem Setzen einmal als IT-Master auf **Suche → Suchindex aktualisieren** k
 
 Ohne E-Mail-Konfiguration wird die Einladung trotzdem erstellt; der Link erscheint in der Admin-Oberfläche zum manuellen Teilen. Prüfen: `/api/health` → `"email_delivery_configured": true`
 
+**Eigener Mail-Server (Mailcow)**, für das Anlegen echter E-Mail-Postfächer/Adressen unter Administration → Mail-Server (siehe [infra/mailcow/README.md](../../infra/mailcow/README.md) zum Aufsetzen):
+
+| Variable | Wert | Beschreibung |
+|----------|------|--------------|
+| `MAILCOW_API_URL` | z. B. `https://mail.carbonauten.com` | Basis-URL der Mailcow-Instanz |
+| `MAILCOW_API_KEY` | API-Key aus Mailcow (Configuration → Access → API) | |
+| `MAILCOW_DEFAULT_DOMAIN` | z. B. `carbonauten.com` | Vorausgewählte Domain beim Anlegen neuer Postfächer |
+
+Ohne diese Variablen (und ohne von einem IT-Master in der UI gespeicherte Werte) zeigt die Seite Beispiel-Postfächer im Demo-Modus, damit die UI schon vor dem Server-Setup nutzbar ist.
+
 `DATABASE_URL` kommt aus Schritt 3 (Reference).
 
 ---
