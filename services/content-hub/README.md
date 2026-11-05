@@ -102,4 +102,4 @@ docker compose up -d
 - Image: `ghcr.io/<org>/content-hub:latest`
 - Helm chart: `gitops/charts/content-hub`
 - Argo CD app: `platform/argocd/content-hub-application.yaml`
-- Terraform: `infra/terraform/content-hub.tf`
+- Terraform: `gitops-starter-terraform/content-hub.tf`

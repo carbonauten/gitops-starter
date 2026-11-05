@@ -1053,7 +1053,7 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 
 ### Deliverables
 
-- [x] Terraform (`infra/terraform/mail_server.tf`): dedizierte Azure-VM + NSG (nur SSH von einer festgelegten Admin-CIDR, SMTP/IMAP/HTTPS-Ports öffentlich) + Public IP mit PTR-Record + Cloud-Init-Bootstrap (installiert Docker, klont `mailcow-dockerized`, startet es automatisch)
+- [x] Terraform (`gitops-starter-terraform/mail_server.tf`): dedizierte Azure-VM + NSG (nur SSH von einer festgelegten Admin-CIDR, SMTP/IMAP/HTTPS-Ports öffentlich) + Public IP mit PTR-Record + Cloud-Init-Bootstrap (installiert Docker, klont `mailcow-dockerized`, startet es automatisch)
 - [x] `infra/mailcow/README.md`: Schritt-für-Schritt-Anleitung inkl. DNS-Tabelle (A/MX/SPF/DKIM/DMARC/PTR) und laufende Betriebsaufgaben (Updates, Backups, Blacklist-Monitoring)
 - [x] Backend: `mailcow_service.py` spricht Mailcows REST-API (Postfächer auflisten/anlegen/löschen); `mailcow_config_service.py` speichert API-URL/Key verschlüsselt (gleiches Muster wie die Entra-Konfiguration) — Env-Var zuerst, sonst gespeicherte IT-Master-Config
 - [x] Neue Route `/api/mail-server/*`, ausschließlich `require_it_master`
@@ -1068,8 +1068,17 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 ### Wechsel Azure → Hetzner Cloud (November 2026)
 
 - [x] `az login` scheiterte beim Nutzer (leeres `azureProfile.json` nach mehreren Versuchen, Fehler beim Browser-Login) — auf Nutzerwunsch komplett auf Hetzner Cloud umgestellt, da dort nur ein einzelnes API-Token aus dem Web-Dashboard nötig ist statt eines OAuth-Login-Flows
-- [x] `infra/terraform/mail_server.tf` nutzt jetzt `hcloud_server`/`hcloud_firewall`/`hcloud_ssh_key`/`hcloud_rdns` (Hetzner, Rechenzentrum Falkenstein/Deutschland) statt Azure-Ressourcen; Cloud-Init-Template unverändert (Cloud-Init ist anbieterunabhängig)
+- [x] `gitops-starter-terraform/mail_server.tf` nutzt jetzt `hcloud_server`/`hcloud_firewall`/`hcloud_ssh_key`/`hcloud_rdns` (Hetzner, Rechenzentrum Falkenstein/Deutschland) statt Azure-Ressourcen; Cloud-Init-Template unverändert (Cloud-Init ist anbieterunabhängig)
 - [x] `infra/mailcow/README.md` entsprechend aktualisiert, inkl. Hinweis: Port 25 ist bei Hetzner (wie bei praktisch jedem VPS-Anbieter) standardmäßig gesperrt und muss per Support-Ticket freigeschaltet werden — das ist kein Azure-spezifisches Problem gewesen
 - [x] Entdeckt dabei: Es gibt zwei getrennte Terraform-Bäume im Repo (`infra/terraform/` und `gitops-starter-terraform/` im Root) — die echte "Terraform CI"-Workflow prüft nur Letzteren. `infra/terraform/` (und damit die Mail-Server-Ressourcen) wird von keiner CI automatisch validiert; selbst mit `terraform validate` geprüft, bevor gemergt wurde
+
+### Terraform-Duplikat aufgeräumt (November 2026)
+
+- [x] `infra/terraform/` (main.tf, variables.tf, outputs.tf, content-hub.tf, mail_server.tf, templates/) komplett nach `gitops-starter-terraform/` verschoben — dort, wo die echte "Terraform CI" tatsächlich validiert. `infra/terraform/` existiert nicht mehr
+- [x] Dabei entdeckt: `gitops-starter-terraform/main.tf` war bereits die reparierte Version (`azurerm_virtual_network_gateway` statt des kaputten `azurerm_vpn_gateway`, aktuelle Alibaba-Provider-Syntax ohne deprecated Felder) — genau der Schema-Fehler, den ich beim ersten Mail-Server-PR in `infra/terraform/main.tf` fand, war in `gitops-starter-terraform/` schon gefixt. Die konsolidierte Version übernimmt diese reparierte Basis
+- [x] `terraform validate` lief danach gegen die im Lock-File gepinnten Provider-Versionen (azurerm 4.62.1, alicloud 1.272.1) **und** gegen die jeweils aktuellsten Versionen sauber durch
+- [x] Lock-File nur um den neuen `hetznercloud/hcloud`-Eintrag ergänzt, bestehende azurerm/alicloud-Pins unangetastet gelassen
+- [x] Inerte Kopie von `.github/workflows/terraform-ci.yml` innerhalb von `gitops-starter-terraform/.github/` entfernt (lief ohnehin nie — GitHub Actions liest Workflows nur vom Repo-Root)
+- [x] Alle Verweise in `README.md`, `services/content-hub/README.md` und `infra/mailcow/README.md` auf den neuen Pfad aktualisiert
 
 ---

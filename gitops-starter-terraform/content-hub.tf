@@ -35,11 +35,11 @@ resource "azurerm_log_analytics_workspace" "content_hub" {
 }
 
 resource "azurerm_container_app_environment" "content_hub" {
-  count                       = var.content_hub_enabled ? 1 : 0
-  name                        = "${var.content_hub_name}-env"
-  location                    = azurerm_resource_group.azure_rg.location
-  resource_group_name         = azurerm_resource_group.azure_rg.name
-  log_analytics_workspace_id  = azurerm_log_analytics_workspace.content_hub[0].id
+  count                      = var.content_hub_enabled ? 1 : 0
+  name                       = "${var.content_hub_name}-env"
+  location                   = azurerm_resource_group.azure_rg.location
+  resource_group_name        = azurerm_resource_group.azure_rg.name
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.content_hub[0].id
 }
 
 resource "azurerm_container_app" "content_hub" {

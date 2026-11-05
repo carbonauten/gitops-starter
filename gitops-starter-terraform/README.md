@@ -4,9 +4,11 @@ Standalone Terraform configuration extracted from the `gitops-starter` repositor
 
 Contains multi-cloud infrastructure scaffolding for:
 
-- Azure: resource group, VNet, VPN gateway, Data Lake (ADLS Gen2), **Blob Storage** (standard account with containers `data` and `uploads`, versioning, private access)
-- Alibaba Cloud: VPC, VPN gateway, security group, OSS-based data lake
-- Outputs that describe VPN gateways, VNet/VPC IDs, and data lake endpoints.
+- Azure (`main.tf`): resource group, VNet, VPN gateway, Data Lake (ADLS Gen2), **Blob Storage** (standard account with containers `data` and `uploads`, versioning, private access)
+- Azure (`content-hub.tf`, opt-in via `content_hub_enabled`): Container Apps hosting for the content-hub service, as an alternative to its usual Railway deployment
+- Alibaba Cloud (`main.tf`): VPC, VPN gateway, security group, OSS-based data lake
+- Hetzner Cloud (`mail_server.tf`): self-hosted Mailcow mail server VM for app.carbonauten.com's mailbox feature - see [infra/mailcow/README.md](../infra/mailcow/README.md) for the full setup (DNS records, Mailcow web setup, connecting it to the platform)
+- Outputs that describe VPN gateways, VNet/VPC IDs, data lake endpoints, and the mail server's public IP.
 
 To use:
 
