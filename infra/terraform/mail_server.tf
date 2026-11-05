@@ -1,11 +1,31 @@
-// Self-hosted mail server (Mailcow) - dedicated VM so SMTP/IMAP traffic and
-// mail storage are isolated from the other services in this repo. Reuses the
-// Azure resource group/vnet already defined in main.tf.
+// Self-hosted mail server (Mailcow) on Hetzner Cloud - dedicated VM so
+// SMTP/IMAP traffic and mail storage are isolated from the other services in
+// this repo, and from the Azure/Alibaba resources in main.tf/content-hub.tf.
+//
+// Chose Hetzner over Azure here specifically for its simple API-token auth
+// (no az-login-style OAuth flow) and because it's commonly used for
+// self-hosted Mailcow in practice. EU (German) data centers.
 //
 // After `terraform apply` succeeds, there are still manual steps - see
-// infra/mailcow/README.md: pointing DNS at the output IP, finishing the
-// Mailcow web setup, and creating an API key to paste into the platform's
-// Administration -> Mail server page.
+// infra/mailcow/README.md: requesting port 25 be unblocked (Hetzner blocks
+// it by default for new accounts, like most VPS providers), pointing DNS at
+// the output IP, finishing the Mailcow web setup, and creating an API key to
+// paste into the platform's Administration -> Mail server page.
+
+terraform {
+  required_providers {
+    hcloud = {
+      source  = "hetznercloud/hcloud"
+      version = ">= 1.45"
+    }
+  }
+}
+
+variable "hcloud_token" {
+  description = "Hetzner Cloud API token (Console -> your project -> Security -> API Tokens -> generate, Read & Write)."
+  type        = string
+  sensitive   = true
+}
 
 variable "mail_server_fqdn" {
   description = "Public hostname for the mail server, e.g. mail.carbonauten.com. Must resolve to mail_server_public_ip's output once you add the DNS record."
@@ -22,128 +42,111 @@ variable "mail_server_ssh_public_key" {
   type        = string
 }
 
-variable "mail_server_admin_username" {
-  description = "Linux admin username for SSH access."
+variable "mail_server_type" {
+  description = "Hetzner server type. cx22 (2 vCPU/4GB) is enough for a handful of mailboxes; go larger for more volume/mailboxes."
   type        = string
-  default     = "mailcowadmin"
+  default     = "cx22"
 }
 
-variable "mail_server_vm_size" {
-  description = "Azure VM size. B2s (2 vCPU/4GB) is enough for a handful of mailboxes; go larger for more volume/mailboxes."
+variable "mail_server_location" {
+  description = "Hetzner data center location."
   type        = string
-  default     = "Standard_B2s"
+  default     = "fsn1" # Falkenstein, Germany
 }
 
-variable "mail_server_disk_size_gb" {
-  description = "OS + mail storage disk size in GB."
-  type        = number
-  default     = 64
+provider "hcloud" {
+  token = var.hcloud_token
 }
 
-resource "azurerm_subnet" "mail_server_subnet" {
-  name                 = "mail-server-subnet"
-  resource_group_name  = azurerm_resource_group.azure_rg.name
-  virtual_network_name = azurerm_virtual_network.azure_vnet.name
-  address_prefixes     = ["10.0.10.0/24"]
+resource "hcloud_ssh_key" "mail_server" {
+  name       = "mail-server-admin-key"
+  public_key = var.mail_server_ssh_public_key
 }
 
-resource "azurerm_public_ip" "mail_server_ip" {
-  name                = "mail-server-ip"
-  resource_group_name = azurerm_resource_group.azure_rg.name
-  location            = azurerm_resource_group.azure_rg.location
-  allocation_method   = "Static"
-  sku                 = "Standard"
-  # Best-effort PTR record for mail reputation. Some providers only honor this
-  # once the forward A record (mail_server_fqdn -> this IP) already resolves -
-  # add the A record first, then re-apply if this doesn't take effect.
-  reverse_fqdn = "${var.mail_server_fqdn}."
-}
+resource "hcloud_firewall" "mail_server" {
+  name = "mail-server-firewall"
 
-resource "azurerm_network_security_group" "mail_server_nsg" {
-  name                = "mail-server-nsg"
-  resource_group_name = azurerm_resource_group.azure_rg.name
-  location            = azurerm_resource_group.azure_rg.location
-
-  security_rule {
-    name                       = "ssh-admin-only"
-    priority                   = 100
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "22"
-    source_address_prefix      = var.mail_server_allowed_ssh_cidr
-    destination_address_prefix = "*"
+  rule {
+    direction  = "in"
+    protocol   = "tcp"
+    port       = "22"
+    source_ips = [var.mail_server_allowed_ssh_cidr]
   }
 
-  security_rule {
-    name                       = "mail-and-web-public"
-    priority                   = 110
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_ranges    = ["25", "80", "443", "465", "587", "993", "4190"]
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
+  rule {
+    direction  = "in"
+    protocol   = "tcp"
+    port       = "25"
+    source_ips = ["0.0.0.0/0", "::/0"]
+  }
+
+  rule {
+    direction  = "in"
+    protocol   = "tcp"
+    port       = "80"
+    source_ips = ["0.0.0.0/0", "::/0"]
+  }
+
+  rule {
+    direction  = "in"
+    protocol   = "tcp"
+    port       = "443"
+    source_ips = ["0.0.0.0/0", "::/0"]
+  }
+
+  rule {
+    direction  = "in"
+    protocol   = "tcp"
+    port       = "465"
+    source_ips = ["0.0.0.0/0", "::/0"]
+  }
+
+  rule {
+    direction  = "in"
+    protocol   = "tcp"
+    port       = "587"
+    source_ips = ["0.0.0.0/0", "::/0"]
+  }
+
+  rule {
+    direction  = "in"
+    protocol   = "tcp"
+    port       = "993"
+    source_ips = ["0.0.0.0/0", "::/0"]
+  }
+
+  rule {
+    direction  = "in"
+    protocol   = "tcp"
+    port       = "4190"
+    source_ips = ["0.0.0.0/0", "::/0"]
   }
 }
 
-resource "azurerm_network_interface" "mail_server_nic" {
-  name                = "mail-server-nic"
-  resource_group_name = azurerm_resource_group.azure_rg.name
-  location            = azurerm_resource_group.azure_rg.location
+resource "hcloud_server" "mail_server" {
+  name         = "mail-server"
+  server_type  = var.mail_server_type
+  location     = var.mail_server_location
+  image        = "ubuntu-22.04"
+  ssh_keys     = [hcloud_ssh_key.mail_server.id]
+  firewall_ids = [hcloud_firewall.mail_server.id]
 
-  ip_configuration {
-    name                          = "internal"
-    subnet_id                     = azurerm_subnet.mail_server_subnet.id
-    private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.mail_server_ip.id
-  }
-}
-
-resource "azurerm_network_interface_security_group_association" "mail_server_nic_nsg" {
-  network_interface_id      = azurerm_network_interface.mail_server_nic.id
-  network_security_group_id = azurerm_network_security_group.mail_server_nsg.id
-}
-
-resource "azurerm_linux_virtual_machine" "mail_server" {
-  name                = "mail-server"
-  resource_group_name = azurerm_resource_group.azure_rg.name
-  location            = azurerm_resource_group.azure_rg.location
-  size                = var.mail_server_vm_size
-  admin_username      = var.mail_server_admin_username
-
-  network_interface_ids = [azurerm_network_interface.mail_server_nic.id]
-
-  admin_ssh_key {
-    username   = var.mail_server_admin_username
-    public_key = var.mail_server_ssh_public_key
-  }
-
-  os_disk {
-    caching              = "ReadWrite"
-    storage_account_type = "Standard_LRS"
-    disk_size_gb         = var.mail_server_disk_size_gb
-  }
-
-  source_image_reference {
-    publisher = "Canonical"
-    offer     = "0001-com-ubuntu-server-jammy"
-    sku       = "22_04-lts-gen2"
-    version   = "latest"
-  }
-
-  custom_data = base64encode(templatefile("${path.module}/templates/mailcow_cloud_init.yaml.tpl", {
+  user_data = templatefile("${path.module}/templates/mailcow_cloud_init.yaml.tpl", {
     mail_server_fqdn = var.mail_server_fqdn
-  }))
+  })
+}
+
+resource "hcloud_rdns" "mail_server_ipv4" {
+  server_id  = hcloud_server.mail_server.id
+  ip_address = hcloud_server.mail_server.ipv4_address
+  dns_ptr    = var.mail_server_fqdn
 }
 
 output "mail_server_public_ip" {
   description = "Point your DNS A record (mail_server_fqdn) at this IP, plus MX/SPF/DKIM/DMARC per infra/mailcow/README.md."
-  value       = azurerm_public_ip.mail_server_ip.ip_address
+  value       = hcloud_server.mail_server.ipv4_address
 }
 
 output "mail_server_ssh_command" {
-  value = "ssh ${var.mail_server_admin_username}@${azurerm_public_ip.mail_server_ip.ip_address}"
+  value = "ssh root@${hcloud_server.mail_server.ipv4_address}"
 }

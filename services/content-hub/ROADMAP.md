@@ -1065,4 +1065,11 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] Die Mailcow-API-Integration folgt Mailcows dokumentierten REST-Konventionen, wurde aber **nicht gegen eine echte laufende Mailcow-Instanz getestet** (es gab keine) — vor Produktiveinsatz gegen den echten Server verifizieren. Terraform wurde nur mit `terraform validate` gegen das aktuelle `azurerm`-Provider-Schema geprüft (kein `apply`, da keine echten Azure-Zugangsdaten in dieser Session verfügbar waren)
 - [x] `terraform apply`, DNS-Einträge setzen und der erste Mailcow-Web-Setup-Schritt sind manuelle Schritte, die jemand mit echtem Azure/DNS-Zugriff ausführen muss
 
+### Wechsel Azure → Hetzner Cloud (November 2026)
+
+- [x] `az login` scheiterte beim Nutzer (leeres `azureProfile.json` nach mehreren Versuchen, Fehler beim Browser-Login) — auf Nutzerwunsch komplett auf Hetzner Cloud umgestellt, da dort nur ein einzelnes API-Token aus dem Web-Dashboard nötig ist statt eines OAuth-Login-Flows
+- [x] `infra/terraform/mail_server.tf` nutzt jetzt `hcloud_server`/`hcloud_firewall`/`hcloud_ssh_key`/`hcloud_rdns` (Hetzner, Rechenzentrum Falkenstein/Deutschland) statt Azure-Ressourcen; Cloud-Init-Template unverändert (Cloud-Init ist anbieterunabhängig)
+- [x] `infra/mailcow/README.md` entsprechend aktualisiert, inkl. Hinweis: Port 25 ist bei Hetzner (wie bei praktisch jedem VPS-Anbieter) standardmäßig gesperrt und muss per Support-Ticket freigeschaltet werden — das ist kein Azure-spezifisches Problem gewesen
+- [x] Entdeckt dabei: Es gibt zwei getrennte Terraform-Bäume im Repo (`infra/terraform/` und `gitops-starter-terraform/` im Root) — die echte "Terraform CI"-Workflow prüft nur Letzteren. `infra/terraform/` (und damit die Mail-Server-Ressourcen) wird von keiner CI automatisch validiert; selbst mit `terraform validate` geprüft, bevor gemergt wurde
+
 ---
