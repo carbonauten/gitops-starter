@@ -43,7 +43,9 @@ terraform init
 terraform apply \
   -target=hcloud_ssh_key.mail_server \
   -target=hcloud_firewall.mail_server \
+  -target=hcloud_volume.mail_data \
   -target=hcloud_server.mail_server \
+  -target=hcloud_volume_attachment.mail_data \
   -target=hcloud_rdns.mail_server_ipv4 \
   -var="hcloud_token=<your Hetzner API token>" \
   -var="mail_server_fqdn=mail.carbonauten.com" \
@@ -57,11 +59,14 @@ unrelated parts of this repo; don't let a plain `terraform apply` with no
 `-target` try to also touch those.)
 
 Note the `mail_server_public_ip` output — you need it for the DNS records
-below. VM boot takes a few minutes; cloud-init then installs Docker and
-mailcow-dockerized automatically (see
+below. VM boot takes a few minutes; cloud-init then mounts the attached
+`mail_data` volume at `/mnt/mail-data` (formatting it on first use only - a
+rebuilt server reuses the same volume and its data untouched), points
+Docker's own storage there too, and installs Docker + mailcow-dockerized
+automatically (see
 `gitops-starter-terraform/templates/mailcow_cloud_init.yaml.tpl`). SSH in (`ssh
 root@<ip>`, using the private key matching `mail_server_ssh_public_key`) and
-check `/opt/mailcow/BOOTSTRAP_DONE` exists before continuing.
+check `/mnt/mail-data/BOOTSTRAP_DONE` exists before continuing.
 
 ## 2. DNS records
 
@@ -113,13 +118,30 @@ In app.carbonauten.com → Administration → Mail server, paste:
 Until this is filled in, that page shows sample/demo mailboxes so the UI is
 still usable to preview during development.
 
-## Ongoing operational responsibility
+## What's automated vs. what's still on you
 
 This is the part a managed provider (M365, Migadu, etc.) would otherwise
-carry for you:
+carry for you. Two pieces are now handled by the Terraform/cloud-init setup;
+the rest still needs a human:
 
-- **Security updates**: `apt-get upgrade` + `docker compose pull && docker compose up -d` regularly on the VM.
-- **Backups**: Mailcow ships `helper-scripts/backup_and_restore.sh` — schedule it, and store backups off the VM.
-- **Blacklist monitoring**: check `mail.carbonauten.com`'s IP against RBLs (e.g. mxtoolbox.com) periodically, especially after any spike in outbound volume.
-- **Disk space**: mail accumulates; monitor `/opt/mailcow` usage - the disk size comes bundled with `mail_server_type` (e.g. cx22 includes 40GB). Resize via `mail_server_type` + `terraform apply`, or attach an `hcloud_volume` for more headroom, once you're closer to the limit.
-- **Uptime**: nothing in this repo monitors the VM itself; consider adding it to whatever uptime checks you already use for app.carbonauten.com.
+- **Server backups (automated)**: `mail_server_enable_backups` (default
+  `true`) turns on Hetzner's native daily server backup, rolling 7-day
+  retention, no setup needed. **This only covers the server's local disk,
+  not the attached `mail_data` volume** — so it backs up the OS, not your
+  mail. Set `mail_server_enable_backups = false` to opt out (saves ~20% of
+  the server's cost).
+- **Application-level backups (automated, but incomplete)**: a daily cron job
+  (`/etc/cron.d/mailcow-backup`, 03:15) runs mailcow's own
+  `backup_and_restore.sh`, writing to `/mnt/mail-data/backups` with 14-day
+  retention. This protects against mailcow-level mistakes (bad config change,
+  accidental deletion) — **not** against losing the volume itself. For real
+  disaster recovery, periodically copy `/mnt/mail-data/backups` off this
+  server (e.g. to a Hetzner Storage Box, or `rsync`/`restic` to an
+  S3-compatible target) — not set up here.
+- **Disk space (semi-automated)**: mail data and Docker's storage both live
+  on the `mail_data` volume, sized via `mail_server_volume_size_gb` (default
+  20GB). Grow it by raising that variable and re-applying (Hetzner volumes
+  only grow, never shrink) — no server resize needed.
+- **Security updates (manual)**: `apt-get upgrade` + `docker compose pull && docker compose up -d` regularly on the VM.
+- **Blacklist monitoring (manual)**: check `mail.carbonauten.com`'s IP against RBLs (e.g. mxtoolbox.com) periodically, especially after any spike in outbound volume.
+- **Uptime (manual)**: nothing in this repo monitors the VM itself; consider adding it to whatever uptime checks you already use for app.carbonauten.com.

@@ -47,6 +47,18 @@ variable "mail_server_location" {
   default     = "fsn1" # Falkenstein, Germany
 }
 
+variable "mail_server_enable_backups" {
+  description = "Enable Hetzner's automatic daily server backups (rolling 7-day retention, costs +20% of server price). Covers the server's local disk only - NOT the attached mail_data volume, which has its own backup story (see mail_server.tf comments and infra/mailcow/README.md)."
+  type        = bool
+  default     = true
+}
+
+variable "mail_server_volume_size_gb" {
+  description = "Size of the separate Hetzner Volume mail data (and Docker's own storage) lives on, in GB. Resizable later via this variable + terraform apply (grow-only)."
+  type        = number
+  default     = 20
+}
+
 provider "hcloud" {
   token = var.hcloud_token
 }
@@ -116,6 +128,23 @@ resource "hcloud_firewall" "mail_server" {
   }
 }
 
+// Mail data (and Docker's own storage, so mailcow's named volumes end up
+// here too) lives on this separate volume rather than the server's local
+// disk - the volume survives a server rebuild, and growing storage is a
+// volume resize (mail_server_volume_size_gb + apply) instead of a server
+// resize. Trade-off: Hetzner's automatic server backups (below) do NOT cover
+// attached volumes - this volume's data protection is the cron-scheduled
+// mailcow backup script in the cloud-init template, written to this same
+// volume. That protects against application-level mistakes, not against
+// losing the volume itself; true disaster recovery needs an off-server copy
+// (e.g. a Hetzner Storage Box) - not set up here, see infra/mailcow/README.md.
+resource "hcloud_volume" "mail_data" {
+  name     = "mail-server-data"
+  size     = var.mail_server_volume_size_gb
+  location = var.mail_server_location
+  format   = "ext4"
+}
+
 resource "hcloud_server" "mail_server" {
   name         = "mail-server"
   server_type  = var.mail_server_type
@@ -123,10 +152,24 @@ resource "hcloud_server" "mail_server" {
   image        = "ubuntu-22.04"
   ssh_keys     = [hcloud_ssh_key.mail_server.id]
   firewall_ids = [hcloud_firewall.mail_server.id]
+  # Native Hetzner server backups (rolling daily, 7-day retention). Covers the
+  # server's local disk only - see hcloud_volume.mail_data's comment above for
+  # why mail data itself needs a different backup path.
+  backups = var.mail_server_enable_backups
 
   user_data = templatefile("${path.module}/templates/mailcow_cloud_init.yaml.tpl", {
     mail_server_fqdn = var.mail_server_fqdn
+    mail_data_device = hcloud_volume.mail_data.linux_device
   })
+}
+
+resource "hcloud_volume_attachment" "mail_data" {
+  volume_id = hcloud_volume.mail_data.id
+  server_id = hcloud_server.mail_server.id
+  # Mounted explicitly by the cloud-init script instead (fixed path, and it
+  # needs to happen before Docker installs so Docker's data-root can point at
+  # it) rather than Hetzner's own automount, which uses an ID-based path.
+  automount = false
 }
 
 resource "hcloud_rdns" "mail_server_ipv4" {
@@ -138,6 +181,11 @@ resource "hcloud_rdns" "mail_server_ipv4" {
 output "mail_server_public_ip" {
   description = "Point your DNS A record (mail_server_fqdn) at this IP, plus MX/SPF/DKIM/DMARC per infra/mailcow/README.md."
   value       = hcloud_server.mail_server.ipv4_address
+}
+
+output "mail_server_volume_id" {
+  description = "Hetzner Volume ID holding mail data - survives server rebuilds/deletes independently."
+  value       = hcloud_volume.mail_data.id
 }
 
 output "mail_server_ssh_command" {
