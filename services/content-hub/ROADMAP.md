@@ -1090,4 +1090,12 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] Bewusst NICHT gebaut: Monitoring/Alerting als Terraform-Ressource — dafür gibt es kein verlässliches natives Hetzner-Terraform-Primitive; besser über ein bestehendes Uptime-Monitoring-Tool abdecken
 - [x] `terraform validate` + `fmt -check` sauber; YAML-Struktur und alle drei eingebetteten Bash-Skripte im Cloud-Init-Template mit `bash -n` syntaktisch geprüft (keine echte VM zum Testen vorhanden)
 
+### Pausiert zugunsten Strato (November 2026)
+
+- [x] Beim Sichten der bestehenden Infrastruktur stellte sich heraus, dass bei Strato bereits eine laufende, bezahlte E-Mail-Hosting-Lösung existiert (eigene Postfächer, mehrere Domains, 80 GB Speicher, Virenscanner, Webmail) — Postfächer lassen sich dort schon heute manuell über das Strato-Kundenpanel anlegen
+- [x] Auf Nutzerwunsch: Mailcow/Hetzner-Vorhaben vorerst **pausiert**, Postfach-Verwaltung läuft bis auf Weiteres über das Strato-Panel statt automatisiert aus der Plattform heraus
+- [x] Keine Hetzner-Infrastruktur wurde je tatsächlich provisioniert (`terraform apply` wurde nie ausgeführt, nur `validate`/`fmt`) — es fallen keine laufenden Kosten an und nichts muss zurückgebaut werden
+- [x] Terraform (`gitops-starter-terraform/mail_server.tf`), Cloud-Init-Template, `mailcow_service.py`/`mailcow_config_service.py`, Route `/api/mail-server/*` und die Admin-Seite „Mail-Server" bleiben unverändert im Repo liegen — falls programmatisches Anlegen von Adressen aus der Plattform später doch gebraucht wird (Strato bietet dafür keine API), ist die Grundlage bereits vorhanden
+- [x] Grund für die spätere Automatisierung, falls gewünscht: Strato hat keine öffentliche API für Postfach-Verwaltung — nur das Web-Formular im Kundenpanel
+
 ---
