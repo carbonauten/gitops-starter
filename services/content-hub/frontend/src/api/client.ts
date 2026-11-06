@@ -2339,3 +2339,93 @@ export async function createMailbox(payload: {
 export async function deleteMailbox(email: string): Promise<void> {
   await request(`/api/mail-server/mailboxes/${encodeURIComponent(email)}`, { method: "DELETE" });
 }
+
+export type ImapAccount = {
+  id: string;
+  label: string;
+  host: string;
+  port: number;
+  use_ssl: boolean;
+  username: string;
+  folder: string;
+  created_by_name: string;
+  created_at: string | null;
+};
+
+export type ImapMailPerson = {
+  name: string;
+  email: string;
+};
+
+export type ImapMailSummary = {
+  id: string;
+  subject: string;
+  from: ImapMailPerson;
+  received_at?: string | null;
+  preview: string;
+  is_read: boolean;
+  has_attachments: boolean;
+};
+
+export type ImapMailMessage = ImapMailSummary & {
+  to: ImapMailPerson[];
+  cc: ImapMailPerson[];
+  body: string;
+  body_type: "html" | "text";
+};
+
+export async function fetchImapAccounts(): Promise<ImapAccount[]> {
+  const payload = await request<{ accounts: ImapAccount[] }>("/api/imap-mail/accounts");
+  return payload.accounts;
+}
+
+export async function createImapAccount(payload: {
+  label: string;
+  host: string;
+  port?: number;
+  use_ssl?: boolean;
+  username: string;
+  password: string;
+  folder?: string;
+}): Promise<ImapAccount> {
+  const response = await request<{ account: ImapAccount }>("/api/imap-mail/accounts", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return response.account;
+}
+
+export async function deleteImapAccount(accountId: string): Promise<void> {
+  await request(`/api/imap-mail/accounts/${encodeURIComponent(accountId)}`, { method: "DELETE" });
+}
+
+export async function fetchImapMessages(accountId: string, top = 30): Promise<ImapMailSummary[]> {
+  const params = new URLSearchParams({ top: String(top) });
+  const payload = await request<{ messages: ImapMailSummary[] }>(
+    `/api/imap-mail/accounts/${encodeURIComponent(accountId)}/messages?${params}`,
+  );
+  return payload.messages;
+}
+
+export async function fetchImapMessage(accountId: string, messageId: string): Promise<ImapMailMessage> {
+  const payload = await request<{ message: ImapMailMessage }>(
+    `/api/imap-mail/accounts/${encodeURIComponent(accountId)}/messages/${encodeURIComponent(messageId)}`,
+  );
+  return payload.message;
+}
+
+export async function summarizeImapMessage(
+  accountId: string,
+  messageId: string,
+  language: "de" | "en" | "zh-CN" = "de",
+): Promise<string> {
+  const payload = await request<{ summary: string }>(
+    `/api/imap-mail/accounts/${encodeURIComponent(accountId)}/messages/${encodeURIComponent(messageId)}/summarize`,
+    {
+      method: "POST",
+      body: JSON.stringify({ language }),
+    },
+    45000,
+  );
+  return payload.summary;
+}

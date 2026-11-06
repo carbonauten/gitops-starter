@@ -22,6 +22,7 @@
     "users": "Mitarbeiterverwaltung",
     "m365": "M365-Verwaltung",
     "mailServer": "Mail-Server",
+    "imapMail": "Postfächer (IMAP)",
     "openMenu": "Menü öffnen",
     "closeMenu": "Menü schließen",
     "shopCustomers": "Benutzerverwaltung",
@@ -1103,5 +1104,27 @@
     "delete": "Löschen",
     "confirmDeleteMailbox": "Postfach {{email}} löschen? Das kann nicht rückgängig gemacht werden.",
     "mailboxDeleted": "Postfach {{email}} gelöscht."
+  },
+  "imapMail": {
+    "title": "Postfächer (IMAP)",
+    "subtitle": "Bestehende Postfächer (z. B. bei Strato gehostet) per IMAP in der Plattform anzeigen.",
+    "createTitle": "Postfach verbinden",
+    "createHint": "Zugangsdaten eines bestehenden Postfachs eintragen (z. B. von Strato) — es wird kein neues Postfach angelegt, nur gelesen.",
+    "label": "Bezeichnung",
+    "host": "IMAP-Host",
+    "port": "Port",
+    "useSsl": "SSL/TLS verwenden",
+    "username": "Benutzername",
+    "password": "Passwort",
+    "folder": "Ordner",
+    "createAccount": "Postfach verbinden",
+    "accountCreated": "Postfach „{{label}}“ verbunden.",
+    "deleteAccount": "Postfach trennen",
+    "confirmDeleteAccount": "Postfach „{{label}}“ trennen? Gespeicherte Zugangsdaten werden gelöscht.",
+    "accountDeleted": "Postfach „{{label}}“ getrennt.",
+    "empty": "Noch kein Postfach verbunden.",
+    "selectAccount": "Postfach",
+    "noMessages": "Keine Nachrichten gefunden.",
+    "selectHint": "Nachricht aus der Liste auswählen."
   }
 }

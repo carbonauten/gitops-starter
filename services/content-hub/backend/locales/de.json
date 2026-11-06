@@ -76,5 +76,9 @@
   "errors.mailcow_already_exists": "Dieses Postfach existiert bereits.",
   "errors.mailcow_request_failed": "Mail-Server nicht erreichbar. Bitte erneut versuchen.",
   "errors.mailcow_request_rejected": "Der Mail-Server hat diese Anfrage abgelehnt.",
+  "errors.imap_connect_failed": "Verbindung zum Postfach-Server fehlgeschlagen. Bitte Host/Port prüfen.",
+  "errors.imap_login_failed": "Anmeldung am Postfach fehlgeschlagen. Bitte Benutzername/Passwort prüfen.",
+  "errors.imap_folder_not_found": "Der angegebene Ordner wurde im Postfach nicht gefunden.",
+  "errors.imap_search_failed": "Nachrichten konnten nicht abgerufen werden. Bitte erneut versuchen.",
   "messages.language_updated": "Sprache wurde aktualisiert."
 }
