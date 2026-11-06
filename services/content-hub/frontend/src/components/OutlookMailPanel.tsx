@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
@@ -11,6 +11,7 @@ import {
   type OutlookMailMessage,
   type OutlookMailSummary,
 } from "../api/client";
+import { EmailBodyFrame } from "./EmailBodyFrame";
 
 type Props = {
   connected: boolean;
@@ -256,74 +257,3 @@ export function OutlookMailPanel({ connected }: Props) {
   );
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
-
-type EmailBodyFrameProps = {
-  body: string;
-  bodyType: "html" | "text";
-};
-
-/**
- * Renders untrusted email content inside a sandboxed iframe so embedded
- * <style>/<script>/event-handler payloads can't leak into or execute in the
- * host page (the previous dangerouslySetInnerHTML render allowed both).
- */
-const EMAIL_FRAME_BASE_STYLES = `<style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
-    color: #1f2937;
-    overflow-wrap: anywhere;
-    word-break: break-word;
-  }
-  img, table, video { max-width: 100%; height: auto; }
-  pre { white-space: pre-wrap; }
-</style>`;
-
-function EmailBodyFrame({ body, bodyType }: EmailBodyFrameProps) {
-  const frameRef = useRef<HTMLIFrameElement>(null);
-  const [height, setHeight] = useState(200);
-
-  // The iframe's srcDoc is a separate document, so it does not inherit any
-  // of the app's CSS - without this, unstyled email markup (or a plain-text
-  // body) falls back to the browser's default UA stylesheet (large heading
-  // sizes, no word wrapping), which is what caused the oversized/overflowing
-  // text seen in the panel.
-  const srcDoc =
-    EMAIL_FRAME_BASE_STYLES +
-    (bodyType === "html"
-      ? body
-      : `<pre style="white-space:pre-wrap;font-family:inherit;margin:0">${escapeHtml(body)}</pre>`);
-
-  const resize = useCallback(() => {
-    const doc = frameRef.current?.contentDocument;
-    if (doc?.body) {
-      setHeight(doc.body.scrollHeight + 16);
-    }
-  }, []);
-
-  useEffect(() => {
-    resize();
-  }, [srcDoc, resize]);
-
-  return (
-    <iframe
-      ref={frameRef}
-      className="outlook-mail-body outlook-mail-body-frame"
-      title="email-body"
-      srcDoc={srcDoc}
-      sandbox="allow-same-origin allow-popups"
-      onLoad={resize}
-      style={{ width: "100%", height, border: "none" }}
-    />
-  );
-}

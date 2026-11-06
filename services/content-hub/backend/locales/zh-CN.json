@@ -76,5 +76,9 @@
   "errors.mailcow_already_exists": "该邮箱已存在。",
   "errors.mailcow_request_failed": "无法连接邮件服务器，请重试。",
   "errors.mailcow_request_rejected": "邮件服务器拒绝了此请求。",
+  "errors.imap_connect_failed": "无法连接到邮箱服务器，请检查主机/端口。",
+  "errors.imap_login_failed": "邮箱登录失败，请检查用户名/密码。",
+  "errors.imap_folder_not_found": "在此邮箱中未找到指定的文件夹。",
+  "errors.imap_search_failed": "无法加载邮件，请重试。",
   "messages.language_updated": "语言已更新。"
 }

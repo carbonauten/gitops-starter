@@ -76,5 +76,9 @@
   "errors.mailcow_already_exists": "This mailbox already exists.",
   "errors.mailcow_request_failed": "Could not reach the mail server. Please try again.",
   "errors.mailcow_request_rejected": "The mail server rejected this request.",
+  "errors.imap_connect_failed": "Could not connect to the mailbox server. Please check host/port.",
+  "errors.imap_login_failed": "Mailbox login failed. Please check username/password.",
+  "errors.imap_folder_not_found": "The specified folder was not found in this mailbox.",
+  "errors.imap_search_failed": "Could not load messages. Please try again.",
   "messages.language_updated": "Language updated."
 }
