@@ -1125,6 +1125,14 @@
     "empty": "Noch kein Postfach verbunden.",
     "selectAccount": "Postfach",
     "noMessages": "Keine Nachrichten gefunden.",
-    "selectHint": "Nachricht aus der Liste auswählen."
+    "selectHint": "Nachricht aus der Liste auswählen.",
+    "manageAccounts": "Postfächer verwalten",
+    "hideAccounts": "Verwaltung ausblenden",
+    "connectedAccounts": "Verbundene Postfächer",
+    "testHint": "Beim Verbinden wird die Zugangsdaten-Prüfung direkt gegen den Server durchgeführt.",
+    "testing": "Verbindung wird geprüft…",
+    "searchPlaceholder": "Betreff oder Absender durchsuchen…",
+    "refresh": "Aktualisieren",
+    "unreadCount": "{{count}} ungelesen"
   }
 }

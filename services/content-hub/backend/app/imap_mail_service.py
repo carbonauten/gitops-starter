@@ -96,12 +96,41 @@ def _parse_date(raw: str) -> str | None:
     return dt.isoformat()
 
 
-def list_messages(db: Session, *, account_id: str, limit: int = 30) -> list[dict[str, Any]]:
+def test_connection(*, host: str, port: int, use_ssl: bool, username: str, password: str, folder: str) -> None:
+    """Try an actual IMAP login + folder select without touching any stored
+    account - used to fail fast with a clear error when saving new
+    credentials, instead of only discovering a typo'd host/password the
+    first time someone opens the mailbox."""
+    creds = ImapCredentials(
+        id="",
+        label="",
+        host=host,
+        port=port,
+        use_ssl=use_ssl,
+        username=username,
+        password=password,
+        folder=folder or "INBOX",
+    )
+    conn = _connect(creds)
+    try:
+        _select_folder(conn, creds.folder)
+    finally:
+        _disconnect(conn)
+
+
+def _search_criteria(search: str) -> tuple[str, ...]:
+    query = (search or "").strip().replace('"', "").replace("\\", "")
+    if not query:
+        return ("ALL",)
+    return ("OR", "SUBJECT", f'"{query}"', "FROM", f'"{query}"')
+
+
+def list_messages(db: Session, *, account_id: str, limit: int = 30, search: str = "") -> list[dict[str, Any]]:
     creds = get_imap_credentials(db, account_id)
     conn = _connect(creds)
     try:
         _select_folder(conn, creds.folder)
-        status, data = conn.uid("search", None, "ALL")
+        status, data = conn.uid("search", None, *_search_criteria(search))
         if status != "OK":
             raise HTTPException(status_code=502, detail="imap_search_failed")
         uids = data[0].split() if data and data[0] else []

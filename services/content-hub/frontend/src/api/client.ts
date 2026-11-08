@@ -2399,8 +2399,12 @@ export async function deleteImapAccount(accountId: string): Promise<void> {
   await request(`/api/imap-mail/accounts/${encodeURIComponent(accountId)}`, { method: "DELETE" });
 }
 
-export async function fetchImapMessages(accountId: string, top = 30): Promise<ImapMailSummary[]> {
-  const params = new URLSearchParams({ top: String(top) });
+export async function fetchImapMessages(
+  accountId: string,
+  options?: { top?: number; q?: string },
+): Promise<ImapMailSummary[]> {
+  const params = new URLSearchParams({ top: String(options?.top || 30) });
+  if (options?.q?.trim()) params.set("q", options.q.trim());
   const payload = await request<{ messages: ImapMailSummary[] }>(
     `/api/imap-mail/accounts/${encodeURIComponent(accountId)}/messages?${params}`,
   );

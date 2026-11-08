@@ -1125,6 +1125,14 @@
     "empty": "尚未连接任何邮箱。",
     "selectAccount": "邮箱",
     "noMessages": "未找到邮件。",
-    "selectHint": "从列表中选择一封邮件。"
+    "selectHint": "从列表中选择一封邮件。",
+    "manageAccounts": "管理邮箱",
+    "hideAccounts": "隐藏管理",
+    "connectedAccounts": "已连接的邮箱",
+    "testHint": "连接时会先直接向服务器验证凭据。",
+    "testing": "正在测试连接…",
+    "searchPlaceholder": "搜索主题或发件人…",
+    "refresh": "刷新",
+    "unreadCount": "{{count}} 封未读"
   }
 }

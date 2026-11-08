@@ -1125,6 +1125,14 @@
     "empty": "No mailbox connected yet.",
     "selectAccount": "Mailbox",
     "noMessages": "No messages found.",
-    "selectHint": "Select a message from the list."
+    "selectHint": "Select a message from the list.",
+    "manageAccounts": "Manage mailboxes",
+    "hideAccounts": "Hide management",
+    "connectedAccounts": "Connected mailboxes",
+    "testHint": "Connecting tests the credentials directly against the server first.",
+    "testing": "Testing connection…",
+    "searchPlaceholder": "Search subject or sender…",
+    "refresh": "Refresh",
+    "unreadCount": "{{count}} unread"
   }
 }

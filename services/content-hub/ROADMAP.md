@@ -1117,4 +1117,13 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] Vorschautext in der Nachrichtenliste bewusst leer gelassen (würde pro Nachricht einen zusätzlichen Fetch des Bodys erfordern) und Anhang-Erkennung nicht implementiert (bräuchte BODYSTRUCTURE-Fetch) — beides spätere Erweiterung, kein blockierendes Problem
 - [x] Zugriff ist komplett IT-Master-gated, auch das reine Lesen von Nachrichten — einfachstes sicheres Modell für gemeinsam genutzte Postfach-Zugangsdaten ohne eigenes Berechtigungssystem pro Adresse
 
+### Postfächer (IMAP): UX-Ausbau (November 2026)
+
+- [x] Verbindung wird jetzt **vor** dem Speichern echt getestet (`imap_mail_service.test_connection`) — falscher Host/Port/Passwort schlägt sofort mit übersetzter Fehlermeldung fehl, statt erst beim späteren Öffnen des Postfachs unbemerkt zu bleiben
+- [x] Verwaltungsbereich (Postfach verbinden/trennen) standardmäßig eingeklappt, sobald mindestens ein Postfach verbunden ist — Lesen der Mails ist jetzt der primäre Fokus der Seite statt des Formulars; öffnet sich automatisch wieder, sobald kein Postfach mehr verbunden ist
+- [x] Verbundene Postfächer werden als Liste mit Host/Port/Ordner angezeigt (statt nur das aktuell ausgewählte), jedes mit eigenem Trennen-Button
+- [x] Such-/Filterleiste (Betreff/Absender) analog zur bestehenden Outlook-Mailbox — Backend-Suche über `IMAP SEARCH OR SUBJECT/FROM` (ASCII-Suchbegriffe, kein `CHARSET UTF-8`, da nicht alle Server das unterstützen — bekannte Einschränkung)
+- [x] Aktualisieren-Button neben der Suche, Ungelesen-Zähler als Badge neben dem Postfach-Titel
+- [x] Empfangsdatum jetzt lokalisiert formatiert (`Intl.DateTimeFormat`) statt als rohe ISO-Zeichenkette, auch in der Nachrichtenliste sichtbar (vorher nur im Detail, dort unformatiert)
+
 ---
