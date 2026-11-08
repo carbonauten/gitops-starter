@@ -22,6 +22,7 @@
     "users": "Employee management",
     "m365": "M365 admin",
     "mailServer": "Mail server",
+    "imapMail": "Mailboxes (IMAP)",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "shopCustomers": "Customer accounts",
@@ -1103,5 +1104,27 @@
     "delete": "Delete",
     "confirmDeleteMailbox": "Delete mailbox {{email}}? This cannot be undone.",
     "mailboxDeleted": "Mailbox {{email}} deleted."
+  },
+  "imapMail": {
+    "title": "Mailboxes (IMAP)",
+    "subtitle": "Show existing mailboxes (e.g. hosted at Strato) inside the platform via IMAP.",
+    "createTitle": "Connect a mailbox",
+    "createHint": "Enter the credentials of an existing mailbox (e.g. from Strato) - no new mailbox is created, this is read-only.",
+    "label": "Label",
+    "host": "IMAP host",
+    "port": "Port",
+    "useSsl": "Use SSL/TLS",
+    "username": "Username",
+    "password": "Password",
+    "folder": "Folder",
+    "createAccount": "Connect mailbox",
+    "accountCreated": "Mailbox \"{{label}}\" connected.",
+    "deleteAccount": "Disconnect mailbox",
+    "confirmDeleteAccount": "Disconnect mailbox \"{{label}}\"? Stored credentials will be deleted.",
+    "accountDeleted": "Mailbox \"{{label}}\" disconnected.",
+    "empty": "No mailbox connected yet.",
+    "selectAccount": "Mailbox",
+    "noMessages": "No messages found.",
+    "selectHint": "Select a message from the list."
   }
 }

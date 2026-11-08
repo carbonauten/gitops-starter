@@ -1098,4 +1098,23 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] Terraform (`gitops-starter-terraform/mail_server.tf`), Cloud-Init-Template, `mailcow_service.py`/`mailcow_config_service.py`, Route `/api/mail-server/*` und die Admin-Seite „Mail-Server" bleiben unverändert im Repo liegen — falls programmatisches Anlegen von Adressen aus der Plattform später doch gebraucht wird (Strato bietet dafür keine API), ist die Grundlage bereits vorhanden
 - [x] Grund für die spätere Automatisierung, falls gewünscht: Strato hat keine öffentliche API für Postfach-Verwaltung — nur das Web-Formular im Kundenpanel
 
+### Strato-Postfächer in der Plattform anzeigen (IMAP) (November 2026)
+
+**Ziel:** Bestehende, bei Strato gehostete Postfächer direkt in der Plattform lesen können — ohne neuen Mail-Server, da Strato bereits funktioniert und nur eine Anzeige-Integration fehlte. Strato bietet keine REST-API wie Mailcow, nur Standard-IMAP/SMTP, daher ein eigener, protokoll-generischer Weg statt der OAuth/Graph-Anbindung wie bei Outlook.
+
+### Deliverables
+
+- [x] Neue Tabelle `imap_mail_accounts`: IT-Master hinterlegt beliebig viele Postfächer (Host, Port, SSL, Benutzername, Passwort verschlüsselt, Ordner) — mehrere gemeinsam genutzte Adressen (`info@`, `support@`, …) statt einem einzelnen OAuth-Konto pro Mitarbeiter wie bei Outlook
+- [x] `imap_config_service.py`: Zugangsdaten-Verwaltung (Passwort verschlüsselt über denselben Mechanismus wie die Outlook-Tokens)
+- [x] `imap_mail_service.py`: liest Postfächer über Pythons `imaplib`/`email` (Nachrichtenliste per UID-Suche, Detailansicht inkl. HTML/Text-Body) — bewusst read-only, keine Zustellung/kein Versand
+- [x] Neue Route `/api/imap-mail/*`, ausschließlich `require_it_master` (gemeinsam genutzte Postfach-Zugangsdaten, kein differenziertes Freigabemodell pro Postfach — kann bei Bedarf später gelockert werden)
+- [x] Neue Admin-Seite „Postfächer (IMAP)" zum Verbinden/Trennen von Postfächern und zum Lesen von Nachrichten inkl. KI-Zusammenfassung (nutzt dieselbe `summarize_article`-Funktion wie die Outlook-Mailbox)
+- [x] `EmailBodyFrame` (sandboxed iframe) aus `OutlookMailPanel.tsx` in eine gemeinsame Komponente extrahiert und von beiden Mailbox-Ansichten genutzt — unverändertes Verhalten, nur Duplizierung entfernt
+
+### Bekannte Einschränkungen (v1)
+
+- [x] **Nicht gegen ein echtes Strato-Postfach getestet** — nur gegen eine Fake-IMAP-Verbindung in den Tests (`tests/test_imap_mail.py`), da in dieser Session keine echten Zugangsdaten verfügbar waren. Vor Produktivnutzung mit einem echten Postfach verifizieren
+- [x] Vorschautext in der Nachrichtenliste bewusst leer gelassen (würde pro Nachricht einen zusätzlichen Fetch des Bodys erfordern) und Anhang-Erkennung nicht implementiert (bräuchte BODYSTRUCTURE-Fetch) — beides spätere Erweiterung, kein blockierendes Problem
+- [x] Zugriff ist komplett IT-Master-gated, auch das reine Lesen von Nachrichten — einfachstes sicheres Modell für gemeinsam genutzte Postfach-Zugangsdaten ohne eigenes Berechtigungssystem pro Adresse
+
 ---

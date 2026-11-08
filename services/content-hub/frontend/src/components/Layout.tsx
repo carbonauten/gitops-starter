@@ -144,6 +144,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
         { to: "/users", label: t("nav.users"), icon: "☰" },
         { to: "/m365", label: t("nav.m365"), icon: "☁" },
         { to: "/mail-server", label: t("nav.mailServer"), icon: "✉" },
+        { to: "/imap-mail", label: t("nav.imapMail"), icon: "▧" },
         { to: "/audit", label: t("nav.audit"), icon: "≡" },
       ]
     : [];

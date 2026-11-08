@@ -22,6 +22,7 @@
     "users": "员工管理",
     "m365": "M365 管理",
     "mailServer": "邮件服务器",
+    "imapMail": "邮箱（IMAP）",
     "openMenu": "打开菜单",
     "closeMenu": "关闭菜单",
     "shopCustomers": "客户账户",
@@ -1103,5 +1104,27 @@
     "delete": "删除",
     "confirmDeleteMailbox": "删除邮箱 {{email}}？此操作无法撤销。",
     "mailboxDeleted": "邮箱 {{email}} 已删除。"
+  },
+  "imapMail": {
+    "title": "邮箱（IMAP）",
+    "subtitle": "通过 IMAP 在平台内查看现有邮箱（例如托管在 Strato 上的邮箱）。",
+    "createTitle": "连接邮箱",
+    "createHint": "输入现有邮箱的凭据（例如 Strato）——不会创建新邮箱，仅用于读取。",
+    "label": "名称",
+    "host": "IMAP 主机",
+    "port": "端口",
+    "useSsl": "使用 SSL/TLS",
+    "username": "用户名",
+    "password": "密码",
+    "folder": "文件夹",
+    "createAccount": "连接邮箱",
+    "accountCreated": "邮箱“{{label}}”已连接。",
+    "deleteAccount": "断开邮箱",
+    "confirmDeleteAccount": "断开邮箱“{{label}}”？已保存的凭据将被删除。",
+    "accountDeleted": "邮箱“{{label}}”已断开。",
+    "empty": "尚未连接任何邮箱。",
+    "selectAccount": "邮箱",
+    "noMessages": "未找到邮件。",
+    "selectHint": "从列表中选择一封邮件。"
   }
 }

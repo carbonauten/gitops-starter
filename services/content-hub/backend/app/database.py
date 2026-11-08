@@ -235,6 +235,30 @@ class UserIntegration(Base):
     )
 
 
+class ImapMailAccount(Base):
+    """IT-Master-configured IMAP mailbox (e.g. a Strato-hosted address) shown
+    read-only inside the platform. Unlike Outlook (OAuth2/Graph), providers
+    like Strato publish no REST API - only IMAP/SMTP - so this stores plain
+    basic-auth credentials (password encrypted) instead of OAuth tokens."""
+
+    __tablename__ = "imap_mail_accounts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    label: Mapped[str] = mapped_column(String(200), default="")
+    host: Mapped[str] = mapped_column(String(300), default="")
+    port: Mapped[int] = mapped_column(Integer, default=993)
+    use_ssl: Mapped[bool] = mapped_column(Boolean, default=True)
+    username: Mapped[str] = mapped_column(String(300), default="")
+    password_enc: Mapped[str] = mapped_column(Text, default="")
+    folder: Mapped[str] = mapped_column(String(200), default="INBOX")
+    created_by_id: Mapped[str] = mapped_column(String(100), default="")
+    created_by_name: Mapped[str] = mapped_column(String(200), default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
 class Publication(Base):
     __tablename__ = "publications"
 
