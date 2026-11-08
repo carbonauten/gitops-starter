@@ -9,7 +9,7 @@ from ..audit_service import log_audit
 from ..database import get_db
 from ..dependencies import require_it_master
 from ..imap_config_service import create_imap_account, delete_imap_account, list_imap_accounts
-from ..imap_mail_service import get_message, list_messages
+from ..imap_mail_service import get_message, list_messages, test_connection
 
 router = APIRouter(prefix="/api/imap-mail", tags=["imap-mail"])
 
@@ -42,6 +42,16 @@ def post_account(
     db: Session = Depends(get_db),
     user: dict = Depends(require_it_master),
 ) -> dict:
+    # Fail fast with a clear, translated error (wrong host/port/password) instead
+    # of only finding out once someone later opens the mailbox.
+    test_connection(
+        host=payload.host,
+        port=payload.port,
+        use_ssl=payload.use_ssl,
+        username=payload.username,
+        password=payload.password,
+        folder=payload.folder,
+    )
     account = create_imap_account(
         db,
         label=payload.label,
@@ -72,10 +82,11 @@ def delete_account_route(
 def get_messages_route(
     account_id: str,
     top: int = 30,
+    q: str = "",
     db: Session = Depends(get_db),
     _user: dict = Depends(require_it_master),
 ) -> dict:
-    return {"messages": list_messages(db, account_id=account_id, limit=top)}
+    return {"messages": list_messages(db, account_id=account_id, limit=top, search=q)}
 
 
 @router.get("/accounts/{account_id}/messages/{message_id}")

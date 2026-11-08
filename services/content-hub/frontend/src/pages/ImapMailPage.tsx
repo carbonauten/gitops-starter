@@ -17,6 +17,16 @@ import { EmailBodyFrame } from "../components/EmailBodyFrame";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingState } from "../components/LoadingState";
 
+function formatDateTime(iso: string | null | undefined, locale: string): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
 export function ImapMailPage() {
   const { t, i18n } = useTranslation();
   const [accounts, setAccounts] = useState<ImapAccount[]>([]);
@@ -24,6 +34,7 @@ export function ImapMailPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [showAccountPanel, setShowAccountPanel] = useState(false);
 
   const [label, setLabel] = useState("");
   const [host, setHost] = useState("");
@@ -36,6 +47,7 @@ export function ImapMailPage() {
   const [selectedAccountId, setSelectedAccountId] = useState("");
   const [messages, setMessages] = useState<ImapMailSummary[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
+  const [query, setQuery] = useState("");
   const [selectedMessageId, setSelectedMessageId] = useState("");
   const [detail, setDetail] = useState<ImapMailMessage | null>(null);
   const [mailError, setMailError] = useState("");
@@ -51,6 +63,9 @@ export function ImapMailPage() {
     try {
       const list = await fetchImapAccounts();
       setAccounts(list);
+      if (list.length === 0) {
+        setShowAccountPanel(true);
+      }
       if (!selectedAccountId && list.length > 0) {
         setSelectedAccountId(list[0].id);
       }
@@ -74,7 +89,7 @@ export function ImapMailPage() {
   }, []);
 
   const loadMessages = useCallback(
-    async (accountId: string) => {
+    async (accountId: string, search = "") => {
       if (!accountId) {
         setMessages([]);
         return;
@@ -82,7 +97,7 @@ export function ImapMailPage() {
       setLoadingMessages(true);
       setMailError("");
       try {
-        setMessages(await fetchImapMessages(accountId, 30));
+        setMessages(await fetchImapMessages(accountId, { top: 30, q: search }));
       } catch (err) {
         setMailError(err instanceof Error ? err.message : t("common.error"));
         setMessages([]);
@@ -98,6 +113,7 @@ export function ImapMailPage() {
     setDetail(null);
     setSummary("");
     setSummaryError("");
+    setQuery("");
     void loadMessages(selectedAccountId);
   }, [selectedAccountId, loadMessages]);
 
@@ -126,6 +142,7 @@ export function ImapMailPage() {
       setFolder("INBOX");
       await reloadAccounts();
       setSelectedAccountId(account.id);
+      setShowAccountPanel(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
@@ -184,11 +201,18 @@ export function ImapMailPage() {
     }
   }
 
+  const unreadCount = messages.filter((message) => !message.is_read).length;
+
   return (
     <section className="page">
-      <header className="page-header">
-        <h1>{t("imapMail.title")}</h1>
-        <p className="muted">{t("imapMail.subtitle")}</p>
+      <header className="page-header row-header">
+        <div>
+          <h1>{t("imapMail.title")}</h1>
+          <p className="muted">{t("imapMail.subtitle")}</p>
+        </div>
+        <button type="button" className="ghost-button" onClick={() => setShowAccountPanel((value) => !value)}>
+          {showAccountPanel ? t("imapMail.hideAccounts") : t("imapMail.manageAccounts")}
+        </button>
       </header>
 
       {error ? <p className="error-text">{error}</p> : null}
@@ -198,179 +222,238 @@ export function ImapMailPage() {
         </p>
       ) : null}
 
-      <div className="integration-connect-block">
-        <div className="integration-connect-header">
-          <strong>{t("imapMail.createTitle")}</strong>
-        </div>
-        <p className="muted">{t("imapMail.createHint")}</p>
-        <form className="entra-setup-form" onSubmit={(event) => void handleCreateAccount(event)}>
-          <label>
-            {t("imapMail.label")}
-            <input
-              value={label}
-              onChange={(event) => setLabel(event.target.value)}
-              placeholder="info@carbonauten.com"
-              required
-              autoComplete="off"
-            />
-          </label>
-          <div className="row-actions">
-            <label>
-              {t("imapMail.host")}
-              <input
-                value={host}
-                onChange={(event) => setHost(event.target.value)}
-                placeholder="imap.strato.de"
-                required
-                autoComplete="off"
-              />
-            </label>
-            <label>
-              {t("imapMail.port")}
-              <input
-                type="number"
-                value={port}
-                onChange={(event) => setPort(event.target.value)}
-                min={1}
-                max={65535}
-                required
-              />
-            </label>
-          </div>
-          <label className="checkbox-row">
-            <input type="checkbox" checked={useSsl} onChange={(event) => setUseSsl(event.target.checked)} />
-            {t("imapMail.useSsl")}
-          </label>
-          <label>
-            {t("imapMail.username")}
-            <input
-              value={username}
-              onChange={(event) => setUsername(event.target.value)}
-              placeholder="info@carbonauten.com"
-              required
-              autoComplete="off"
-            />
-          </label>
-          <label>
-            {t("imapMail.password")}
-            <input
-              type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              autoComplete="new-password"
-            />
-          </label>
-          <label>
-            {t("imapMail.folder")}
-            <input value={folder} onChange={(event) => setFolder(event.target.value)} placeholder="INBOX" />
-          </label>
-          <button type="submit" className="primary-button" disabled={busy}>
-            {busy ? t("common.loading") : t("imapMail.createAccount")}
-          </button>
-        </form>
-      </div>
-
       {loadingAccounts ? <LoadingState /> : null}
-      {!loadingAccounts && accounts.length === 0 ? (
+
+      {!loadingAccounts && showAccountPanel ? (
+        <>
+          {accounts.length > 0 ? (
+            <div className="integration-connect-block">
+              <div className="integration-connect-header">
+                <strong>{t("imapMail.connectedAccounts")}</strong>
+              </div>
+              <div className="list-stack">
+                {accounts.map((account) => (
+                  <article key={account.id} className="list-card">
+                    <div>
+                      <h2>{account.label}</h2>
+                      <p className="muted">
+                        {account.username} · {account.host}:{account.port} · {account.folder}
+                      </p>
+                    </div>
+                    <div className="list-card-actions">
+                      <button
+                        type="button"
+                        className="ghost-button danger"
+                        disabled={busy}
+                        onClick={() => void handleDeleteAccount(account.id, account.label)}
+                      >
+                        {t("imapMail.deleteAccount")}
+                      </button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          <div className="integration-connect-block">
+            <div className="integration-connect-header">
+              <strong>{t("imapMail.createTitle")}</strong>
+            </div>
+            <p className="muted">{t("imapMail.createHint")}</p>
+            <form className="entra-setup-form" onSubmit={(event) => void handleCreateAccount(event)}>
+              <label>
+                {t("imapMail.label")}
+                <input
+                  value={label}
+                  onChange={(event) => setLabel(event.target.value)}
+                  placeholder="info@carbonauten.com"
+                  required
+                  autoComplete="off"
+                />
+              </label>
+              <div className="row-actions">
+                <label>
+                  {t("imapMail.host")}
+                  <input
+                    value={host}
+                    onChange={(event) => setHost(event.target.value)}
+                    placeholder="imap.strato.de"
+                    required
+                    autoComplete="off"
+                  />
+                </label>
+                <label>
+                  {t("imapMail.port")}
+                  <input
+                    type="number"
+                    value={port}
+                    onChange={(event) => setPort(event.target.value)}
+                    min={1}
+                    max={65535}
+                    required
+                  />
+                </label>
+              </div>
+              <label className="checkbox-row">
+                <input type="checkbox" checked={useSsl} onChange={(event) => setUseSsl(event.target.checked)} />
+                {t("imapMail.useSsl")}
+              </label>
+              <label>
+                {t("imapMail.username")}
+                <input
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  placeholder="info@carbonauten.com"
+                  required
+                  autoComplete="off"
+                />
+              </label>
+              <label>
+                {t("imapMail.password")}
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                  autoComplete="new-password"
+                />
+              </label>
+              <label>
+                {t("imapMail.folder")}
+                <input value={folder} onChange={(event) => setFolder(event.target.value)} placeholder="INBOX" />
+              </label>
+              <p className="muted">{t("imapMail.testHint")}</p>
+              <button type="submit" className="primary-button" disabled={busy}>
+                {busy ? t("imapMail.testing") : t("imapMail.createAccount")}
+              </button>
+            </form>
+          </div>
+        </>
+      ) : null}
+
+      {!loadingAccounts && accounts.length === 0 && !showAccountPanel ? (
         <EmptyState message={t("imapMail.empty")} icon="✉" />
       ) : null}
 
       {!loadingAccounts && accounts.length > 0 ? (
-        <>
-          <div className="toolbar">
-            <label>
-              {t("imapMail.selectAccount")}
-              <select value={selectedAccountId} onChange={(event) => setSelectedAccountId(event.target.value)}>
-                {accounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.label} ({account.username})
-                  </option>
-                ))}
-              </select>
-            </label>
-            {selectedAccountId ? (
+        <section className="outlook-mail-panel">
+          <header className="outlook-mail-header">
+            <div>
+              <h2>
+                {t("imapMail.inboxTitle")}
+                {unreadCount > 0 ? (
+                  <span className="integration-badge" style={{ marginLeft: "0.5rem" }}>
+                    {t("imapMail.unreadCount", { count: unreadCount })}
+                  </span>
+                ) : null}
+              </h2>
+              <label style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                {t("imapMail.selectAccount")}
+                <select value={selectedAccountId} onChange={(event) => setSelectedAccountId(event.target.value)}>
+                  {accounts.map((account) => (
+                    <option key={account.id} value={account.id}>
+                      {account.label} ({account.username})
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            <form
+              className="outlook-mail-search"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void loadMessages(selectedAccountId, query);
+              }}
+            >
+              <input
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={t("imapMail.searchPlaceholder")}
+                aria-label={t("imapMail.searchPlaceholder")}
+              />
+              <button type="submit" className="ghost-button" disabled={loadingMessages}>
+                {t("mail.search")}
+              </button>
               <button
                 type="button"
-                className="ghost-button danger"
-                disabled={busy}
-                onClick={() => {
-                  const account = accounts.find((entry) => entry.id === selectedAccountId);
-                  if (account) void handleDeleteAccount(account.id, account.label);
-                }}
+                className="ghost-button"
+                disabled={loadingMessages}
+                title={t("imapMail.refresh")}
+                onClick={() => void loadMessages(selectedAccountId, query)}
               >
-                {t("imapMail.deleteAccount")}
+                ⟳
               </button>
-            ) : null}
-          </div>
+            </form>
+          </header>
 
-          <section className="outlook-mail-panel">
-            {mailError ? <p className="error-text">{mailError}</p> : null}
-            <div className="outlook-mail-layout">
-              <div className="outlook-mail-list-pane">
-                {loadingMessages ? <p className="muted">{t("common.loading")}</p> : null}
-                {!loadingMessages && messages.length === 0 ? (
-                  <p className="muted">{t("imapMail.noMessages")}</p>
-                ) : null}
-                <ul className="outlook-mail-list">
-                  {messages.map((message) => (
-                    <li key={message.id}>
+          {mailError ? <p className="error-text">{mailError}</p> : null}
+          <div className="outlook-mail-layout">
+            <div className="outlook-mail-list-pane">
+              {loadingMessages ? <p className="muted">{t("common.loading")}</p> : null}
+              {!loadingMessages && messages.length === 0 ? (
+                <p className="muted">{t("imapMail.noMessages")}</p>
+              ) : null}
+              <ul className="outlook-mail-list">
+                {messages.map((message) => (
+                  <li key={message.id}>
+                    <button
+                      type="button"
+                      className={`outlook-mail-item${selectedMessageId === message.id ? " is-selected" : ""}${
+                        message.is_read ? "" : " is-unread"
+                      }`}
+                      onClick={() => void handleSelectMessage(message.id)}
+                    >
+                      <span className="outlook-mail-item-subject">{message.subject}</span>
+                      <span className="outlook-mail-item-from">
+                        {message.from.name || message.from.email || "—"}
+                        {message.received_at ? ` · ${formatDateTime(message.received_at, i18n.language)}` : ""}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="outlook-mail-detail-pane">
+              {!detail ? (
+                <p className="muted">{t("imapMail.selectHint")}</p>
+              ) : (
+                <>
+                  <div className="outlook-mail-detail-actions">
+                    {aiAvailable ? (
                       <button
                         type="button"
-                        className={`outlook-mail-item${selectedMessageId === message.id ? " is-selected" : ""}${
-                          message.is_read ? "" : " is-unread"
-                        }`}
-                        onClick={() => void handleSelectMessage(message.id)}
+                        className="ghost-button"
+                        disabled={summarizing}
+                        onClick={() => void handleSummarize()}
                       >
-                        <span className="outlook-mail-item-subject">{message.subject}</span>
-                        <span className="outlook-mail-item-from">
-                          {message.from.name || message.from.email || "—"}
-                        </span>
+                        {summarizing ? t("common.loading") : t("mail.aiSummarize")}
                       </button>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="outlook-mail-detail-pane">
-                {!detail ? (
-                  <p className="muted">{t("imapMail.selectHint")}</p>
-                ) : (
-                  <>
-                    <div className="outlook-mail-detail-actions">
-                      {aiAvailable ? (
-                        <button
-                          type="button"
-                          className="ghost-button"
-                          disabled={summarizing}
-                          onClick={() => void handleSummarize()}
-                        >
-                          {summarizing ? t("common.loading") : t("mail.aiSummarize")}
-                        </button>
-                      ) : null}
-                    </div>
-                    <h3>{detail.subject}</h3>
-                    <p className="muted">
-                      {t("mail.from")}: {detail.from.name || detail.from.email || "—"}
-                      {detail.from.name && detail.from.email ? ` <${detail.from.email}>` : ""}
-                    </p>
-                    <p className="muted">
-                      {t("mail.received")}: {detail.received_at || "—"}
-                    </p>
-                    {summaryError ? <p className="error-text">{summaryError}</p> : null}
-                    {summary ? (
-                      <div className="ai-summary-box">
-                        <strong>{t("mail.aiSummaryTitle")}</strong>
-                        <pre>{summary}</pre>
-                      </div>
                     ) : null}
-                    <EmailBodyFrame body={detail.body} bodyType={detail.body_type} />
-                  </>
-                )}
-              </div>
+                  </div>
+                  <h3>{detail.subject}</h3>
+                  <p className="muted">
+                    {t("mail.from")}: {detail.from.name || detail.from.email || "—"}
+                    {detail.from.name && detail.from.email ? ` <${detail.from.email}>` : ""}
+                  </p>
+                  <p className="muted">
+                    {t("mail.received")}: {formatDateTime(detail.received_at, i18n.language)}
+                  </p>
+                  {summaryError ? <p className="error-text">{summaryError}</p> : null}
+                  {summary ? (
+                    <div className="ai-summary-box">
+                      <strong>{t("mail.aiSummaryTitle")}</strong>
+                      <pre>{summary}</pre>
+                    </div>
+                  ) : null}
+                  <EmailBodyFrame body={detail.body} bodyType={detail.body_type} />
+                </>
+              )}
             </div>
-          </section>
-        </>
+          </div>
+        </section>
       ) : null}
     </section>
   );
