@@ -8,7 +8,7 @@
     "dashboard": "仪表盘",
     "articles": "文章",
     "files": "文件",
-    "mail": "邮箱",
+    "mail": "邮箱（Outlook）",
     "certificates": "证书",
     "reputation": "网络声誉",
     "products": "产品",
@@ -21,8 +21,8 @@
     "adminSection": "管理",
     "users": "员工管理",
     "m365": "M365 管理",
-    "mailServer": "邮件服务器",
-    "imapMail": "邮箱（IMAP）",
+    "mailServer": "邮件服务器（Mailcow）",
+    "imapMail": "邮箱（Strato）",
     "openMenu": "打开菜单",
     "closeMenu": "关闭菜单",
     "shopCustomers": "客户账户",
@@ -1075,8 +1075,8 @@
     "removeLicense": "移除许可证"
   },
   "mailServer": {
-    "title": "邮件服务器",
-    "subtitle": "管理自托管邮件服务器并创建电子邮件地址。",
+    "title": "邮件服务器（Mailcow）",
+    "subtitle": "自托管的 Mailcow 邮件服务器（Hetzner）——目前已暂停，尚未投入生产使用。实际邮箱目前运行在 Strato 上（参见“邮箱（Strato）”）。",
     "configTitle": "Mailcow 连接",
     "mockMode": "演示模式（未连接）",
     "liveMode": "已连接",
@@ -1106,8 +1106,8 @@
     "mailboxDeleted": "邮箱 {{email}} 已删除。"
   },
   "imapMail": {
-    "title": "邮箱（IMAP）",
-    "subtitle": "通过 IMAP 在平台内查看现有邮箱（例如托管在 Strato 上的邮箱）。",
+    "title": "邮箱（Strato）",
+    "subtitle": "通过 IMAP 在平台内查看 Strato 上托管的邮箱——这是目前实际使用的邮件服务器。",
     "createTitle": "连接邮箱",
     "createHint": "输入现有邮箱的凭据（例如 Strato）——不会创建新邮箱，仅用于读取。",
     "label": "名称",

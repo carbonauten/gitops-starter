@@ -1126,4 +1126,12 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] Aktualisieren-Button neben der Suche, Ungelesen-Zähler als Badge neben dem Postfach-Titel
 - [x] Empfangsdatum jetzt lokalisiert formatiert (`Intl.DateTimeFormat`) statt als rohe ISO-Zeichenkette, auch in der Nachrichtenliste sichtbar (vorher nur im Detail, dort unformatiert)
 
+### Klarere Beschriftung der drei Mail-Tabs (November 2026)
+
+**Problem:** Mit drei mailbezogenen Nav-Einträgen ("Postfach", "Mail-Server", "Postfächer (IMAP)") war nicht auf den ersten Blick erkennbar, welcher tatsächliche Mailserver/Anbieter hinter welchem Tab steckt — insbesondere, dass "Mail-Server" den pausierten, nie produktiv genutzten Mailcow/Hetzner-Aufbau meint, während die echten Postfächer über Strato laufen.
+
+- [x] Nav-Labels um den jeweiligen Anbieter ergänzt: „Postfach (Outlook)", „Mail-Server (Mailcow)", „Postfächer (Strato)" (vorher: „Postfach", „Mail-Server", „Postfächer (IMAP)")
+- [x] Seitentitel/-untertitel entsprechend angepasst; „Mail-Server (Mailcow)" nennt jetzt explizit, dass dieser Aufbau aktuell pausiert/nicht produktiv ist und verweist auf „Postfächer (Strato)" als den tatsächlich genutzten Weg
+- [x] DE/EN/中文 synchron aktualisiert
+
 ---

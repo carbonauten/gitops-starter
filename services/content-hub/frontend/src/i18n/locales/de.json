@@ -8,7 +8,7 @@
     "dashboard": "Dashboard",
     "articles": "Artikel",
     "files": "Dateien",
-    "mail": "Postfach",
+    "mail": "Postfach (Outlook)",
     "certificates": "Zertifikate",
     "reputation": "Web-Reputation",
     "products": "Produkte",
@@ -21,8 +21,8 @@
     "adminSection": "Administration",
     "users": "Mitarbeiterverwaltung",
     "m365": "M365-Verwaltung",
-    "mailServer": "Mail-Server",
-    "imapMail": "Postfächer (IMAP)",
+    "mailServer": "Mail-Server (Mailcow)",
+    "imapMail": "Postfächer (Strato)",
     "openMenu": "Menü öffnen",
     "closeMenu": "Menü schließen",
     "shopCustomers": "Benutzerverwaltung",
@@ -1075,8 +1075,8 @@
     "removeLicense": "Lizenz entfernen"
   },
   "mailServer": {
-    "title": "Mail-Server",
-    "subtitle": "Eigenen Mail-Server verwalten und E-Mail-Adressen anlegen.",
+    "title": "Mail-Server (Mailcow)",
+    "subtitle": "Eigener, selbst gehosteter Mailcow-Mailserver (Hetzner) — aktuell pausiert, nicht produktiv im Einsatz. Echte Postfächer laufen derzeit über Strato (siehe „Postfächer (Strato)“).",
     "configTitle": "Mailcow-Verbindung",
     "mockMode": "Demo-Modus (nicht verbunden)",
     "liveMode": "Verbunden",
@@ -1106,8 +1106,8 @@
     "mailboxDeleted": "Postfach {{email}} gelöscht."
   },
   "imapMail": {
-    "title": "Postfächer (IMAP)",
-    "subtitle": "Bestehende Postfächer (z. B. bei Strato gehostet) per IMAP in der Plattform anzeigen.",
+    "title": "Postfächer (Strato)",
+    "subtitle": "Die bei Strato gehosteten E-Mail-Postfächer per IMAP in der Plattform lesen — das ist der aktuell genutzte Mailserver.",
     "createTitle": "Postfach verbinden",
     "createHint": "Zugangsdaten eines bestehenden Postfachs eintragen (z. B. von Strato) — es wird kein neues Postfach angelegt, nur gelesen.",
     "label": "Bezeichnung",
