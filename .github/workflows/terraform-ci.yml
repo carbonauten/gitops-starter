@@ -23,7 +23,17 @@ jobs:
           terraform_version: 1.9.8
 
       - name: Terraform init
-        run: terraform init -backend=false
+        # Provider checksum downloads (esp. alicloud/hcloud from GitHub Releases)
+        # occasionally time out; retry a few times before failing the job.
+        run: |
+          for attempt in 1 2 3; do
+            if terraform init -backend=false; then
+              exit 0
+            fi
+            echo "terraform init failed (attempt ${attempt}/3); retrying in 15s…"
+            sleep 15
+          done
+          exit 1
 
       - name: Terraform validate
         run: terraform validate
