@@ -8,7 +8,7 @@
     "dashboard": "Dashboard",
     "articles": "Articles",
     "files": "Files",
-    "mail": "Mailbox",
+    "mail": "Mailbox (Outlook)",
     "certificates": "Certificates",
     "reputation": "Web reputation",
     "products": "Products",
@@ -21,8 +21,8 @@
     "adminSection": "Administration",
     "users": "Employee management",
     "m365": "M365 admin",
-    "mailServer": "Mail server",
-    "imapMail": "Mailboxes (IMAP)",
+    "mailServer": "Mail server (Mailcow)",
+    "imapMail": "Mailboxes (Strato)",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "shopCustomers": "Customer accounts",
@@ -1075,8 +1075,8 @@
     "removeLicense": "Remove license"
   },
   "mailServer": {
-    "title": "Mail server",
-    "subtitle": "Manage your self-hosted mail server and create email addresses.",
+    "title": "Mail server (Mailcow)",
+    "subtitle": "Your own self-hosted Mailcow mail server (Hetzner) - currently paused, not in production use. Real mailboxes currently run on Strato instead (see \"Mailboxes (Strato)\").",
     "configTitle": "Mailcow connection",
     "mockMode": "Demo mode (not connected)",
     "liveMode": "Connected",
@@ -1106,8 +1106,8 @@
     "mailboxDeleted": "Mailbox {{email}} deleted."
   },
   "imapMail": {
-    "title": "Mailboxes (IMAP)",
-    "subtitle": "Show existing mailboxes (e.g. hosted at Strato) inside the platform via IMAP.",
+    "title": "Mailboxes (Strato)",
+    "subtitle": "Read your Strato-hosted mailboxes inside the platform via IMAP - this is the mail server actually in use.",
     "createTitle": "Connect a mailbox",
     "createHint": "Enter the credentials of an existing mailbox (e.g. from Strato) - no new mailbox is created, this is read-only.",
     "label": "Label",
