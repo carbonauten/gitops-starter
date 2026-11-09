@@ -80,5 +80,11 @@
   "errors.imap_login_failed": "邮箱登录失败，请检查用户名/密码。",
   "errors.imap_folder_not_found": "在此邮箱中未找到指定的文件夹。",
   "errors.imap_search_failed": "无法加载邮件，请重试。",
+  "errors.strato_automation_not_configured": "尚未设置 Strato 客户登录信息。",
+  "errors.strato_automation_login_failed": "Strato 登录失败，请检查客户编号/密码。",
+  "errors.strato_automation_2fa_or_captcha": "Strato 要求进行自动化无法完成的验证（双因素认证/验证码），请手动创建。",
+  "errors.strato_automation_navigation_failed": "无法打开 Strato 的邮件管理页面——Strato 页面可能已更改。",
+  "errors.strato_automation_create_failed": "无法在 Strato 自动创建邮箱——Strato 页面可能已更改，请手动创建。",
+  "errors.strato_automation_unexpected_error": "Strato 自动化过程中出现意外错误，请手动创建。",
   "messages.language_updated": "语言已更新。"
 }

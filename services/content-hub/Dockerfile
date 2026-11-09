@@ -12,7 +12,10 @@ RUN npm ci
 COPY ${SERVICE_DIR}frontend/ ./
 RUN npm run build
 
-FROM python:3.11-slim
+# Pinned to Debian bookworm, not the floating "slim" tag (now trixie) -
+# Playwright's --with-deps package list below doesn't know trixie yet and
+# fails with "Package 'ttf-unifont' has no installation candidate".
+FROM python:3.11-slim-bookworm
 ARG SERVICE_DIR
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1
@@ -26,6 +29,12 @@ RUN apt-get update \
 COPY ${SERVICE_DIR}backend/requirements.txt .
 RUN pip install --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
+
+# Headless Chromium for the Strato mailbox-creation automation
+# (strato_automation_service.py) - Strato has no API for this, so an
+# IT-Master-only Playwright flow drives the actual customer web panel.
+# --with-deps pulls in the OS libraries Chromium needs on Debian slim.
+RUN playwright install --with-deps chromium
 
 COPY ${SERVICE_DIR}backend/ ./
 COPY --from=frontend /frontend/dist ./static

@@ -2,16 +2,22 @@ import { FormEvent, useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
+  clearStratoAutomationConfig,
   createImapAccount,
+  createStratoMailboxAutomated,
   deleteImapAccount,
   fetchAiStatus,
   fetchImapAccounts,
   fetchImapMessage,
   fetchImapMessages,
+  fetchStratoAutomationStatus,
+  saveStratoAutomationConfig,
+  StratoAutomationApiError,
   summarizeImapMessage,
   type ImapAccount,
   type ImapMailMessage,
   type ImapMailSummary,
+  type StratoAutomationStatus,
 } from "../api/client";
 import { EmailBodyFrame } from "../components/EmailBodyFrame";
 import { EmptyState } from "../components/EmptyState";
@@ -25,6 +31,13 @@ function formatDateTime(iso: string | null | undefined, locale: string): string 
     dateStyle: "medium",
     timeStyle: "short",
   }).format(date);
+}
+
+function generatePassword(length = 16): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#%^*";
+  const bytes = new Uint8Array(length);
+  window.crypto.getRandomValues(bytes);
+  return Array.from(bytes, (value) => chars[value % chars.length]).join("");
 }
 
 export function ImapMailPage() {
@@ -57,6 +70,18 @@ export function ImapMailPage() {
   const [summary, setSummary] = useState("");
   const [summaryError, setSummaryError] = useState("");
 
+  const [stratoStatus, setStratoStatus] = useState<StratoAutomationStatus | null>(null);
+  const [stratoBusy, setStratoBusy] = useState(false);
+  const [stratoCustomerNumber, setStratoCustomerNumber] = useState("");
+  const [stratoPassword, setStratoPassword] = useState("");
+  const [autoLocalPart, setAutoLocalPart] = useState("");
+  const [autoDomain, setAutoDomain] = useState("");
+  const [autoPassword, setAutoPassword] = useState("");
+  const [autoCreating, setAutoCreating] = useState(false);
+  const [autoError, setAutoError] = useState("");
+  const [autoScreenshot, setAutoScreenshot] = useState<string | null>(null);
+  const [autoNotice, setAutoNotice] = useState("");
+
   async function reloadAccounts() {
     setLoadingAccounts(true);
     setError("");
@@ -76,8 +101,17 @@ export function ImapMailPage() {
     }
   }
 
+  async function reloadStratoStatus() {
+    try {
+      setStratoStatus(await fetchStratoAutomationStatus());
+    } catch {
+      setStratoStatus(null);
+    }
+  }
+
   useEffect(() => {
     void reloadAccounts();
+    void reloadStratoStatus();
     void (async () => {
       try {
         setAiAvailable((await fetchAiStatus()).available);
@@ -168,6 +202,80 @@ export function ImapMailPage() {
       setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function handleSaveStratoConfig(event: FormEvent) {
+    event.preventDefault();
+    setStratoBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await saveStratoAutomationConfig({ customer_number: stratoCustomerNumber, password: stratoPassword });
+      setStratoPassword("");
+      setNotice(t("imapMail.autoConfigSaved"));
+      await reloadStratoStatus();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setStratoBusy(false);
+    }
+  }
+
+  async function handleClearStratoConfig() {
+    if (!window.confirm(t("imapMail.autoConfirmClearConfig"))) return;
+    setStratoBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await clearStratoAutomationConfig();
+      setStratoCustomerNumber("");
+      setNotice(t("imapMail.autoConfigCleared"));
+      await reloadStratoStatus();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setStratoBusy(false);
+    }
+  }
+
+  async function handleAutomatedCreate(event: FormEvent) {
+    event.preventDefault();
+    setAutoCreating(true);
+    setAutoError("");
+    setAutoScreenshot(null);
+    setAutoNotice("");
+    try {
+      const result = await createStratoMailboxAutomated({
+        local_part: autoLocalPart,
+        domain: autoDomain,
+        password: autoPassword,
+      });
+      // Automation only creates the mailbox at Strato - immediately connect
+      // it here too with the same credentials so it's usable right away.
+      await createImapAccount({
+        label: result.email,
+        host: "imap.strato.de",
+        port: 993,
+        use_ssl: true,
+        username: result.email,
+        password: autoPassword,
+        folder: "INBOX",
+      });
+      setAutoNotice(t("imapMail.autoCreateSuccess", { email: result.email }));
+      setAutoLocalPart("");
+      setAutoDomain("");
+      setAutoPassword("");
+      await reloadAccounts();
+    } catch (err) {
+      if (err instanceof StratoAutomationApiError) {
+        setAutoError(err.message);
+        setAutoScreenshot(err.screenshotBase64);
+      } else {
+        setAutoError(err instanceof Error ? err.message : t("common.error"));
+      }
+    } finally {
+      setAutoCreating(false);
     }
   }
 
@@ -269,6 +377,127 @@ export function ImapMailPage() {
             >
               {t("imapMail.openStrato")}
             </a>
+          </div>
+
+          <div className="integration-connect-block">
+            <div className="integration-connect-header">
+              <strong>{t("imapMail.autoTitle")}</strong>
+              {stratoStatus ? (
+                <span
+                  className={
+                    stratoStatus.configured ? "integration-badge integration-badge-connected" : "integration-badge"
+                  }
+                >
+                  {stratoStatus.configured ? t("imapMail.autoConfigured") : t("imapMail.autoNotConfigured")}
+                </span>
+              ) : null}
+            </div>
+            <p className="warning-text">{t("imapMail.autoWarning")}</p>
+            <p className="muted">{t("imapMail.autoHint")}</p>
+
+            {!stratoStatus?.configured ? (
+              <form className="entra-setup-form" onSubmit={(event) => void handleSaveStratoConfig(event)}>
+                <label>
+                  {t("imapMail.autoCustomerNumber")}
+                  <input
+                    value={stratoCustomerNumber}
+                    onChange={(event) => setStratoCustomerNumber(event.target.value)}
+                    required
+                    autoComplete="off"
+                  />
+                </label>
+                <label>
+                  {t("imapMail.autoCustomerPassword")}
+                  <input
+                    type="password"
+                    value={stratoPassword}
+                    onChange={(event) => setStratoPassword(event.target.value)}
+                    required
+                    autoComplete="new-password"
+                  />
+                </label>
+                <button type="submit" className="primary-button" disabled={stratoBusy}>
+                  {stratoBusy ? t("common.loading") : t("imapMail.autoSaveConfig")}
+                </button>
+              </form>
+            ) : (
+              <>
+                <div className="row-actions">
+                  <span className="muted">
+                    {t("imapMail.autoConfiguredAs", { number: stratoStatus.customer_number })}
+                  </span>
+                  <button
+                    type="button"
+                    className="ghost-button danger"
+                    disabled={stratoBusy}
+                    onClick={() => void handleClearStratoConfig()}
+                  >
+                    {t("imapMail.autoClearConfig")}
+                  </button>
+                </div>
+
+                <form className="entra-setup-form" onSubmit={(event) => void handleAutomatedCreate(event)}>
+                  <div className="row-actions">
+                    <label>
+                      {t("imapMail.label")}
+                      <input
+                        value={autoLocalPart}
+                        onChange={(event) => setAutoLocalPart(event.target.value)}
+                        placeholder="sales"
+                        required
+                        autoComplete="off"
+                      />
+                    </label>
+                    <label>
+                      {t("imapMail.domain")}
+                      <input
+                        value={autoDomain}
+                        onChange={(event) => setAutoDomain(event.target.value)}
+                        placeholder="carbonauten.com"
+                        required
+                        autoComplete="off"
+                      />
+                    </label>
+                  </div>
+                  <label>
+                    {t("imapMail.password")}
+                    <div className="row-actions">
+                      <input
+                        type="text"
+                        value={autoPassword}
+                        onChange={(event) => setAutoPassword(event.target.value)}
+                        minLength={8}
+                        required
+                        autoComplete="off"
+                      />
+                      <button type="button" className="ghost-button" onClick={() => setAutoPassword(generatePassword())}>
+                        {t("imapMail.autoGeneratePassword")}
+                      </button>
+                    </div>
+                  </label>
+                  <button type="submit" className="primary-button" disabled={autoCreating}>
+                    {autoCreating ? t("imapMail.autoCreating") : t("imapMail.autoCreateButton")}
+                  </button>
+                </form>
+              </>
+            )}
+
+            {autoNotice ? <p className="success-text">{autoNotice}</p> : null}
+            {autoError ? (
+              <div>
+                <p className="error-text">{autoError}</p>
+                {autoScreenshot ? (
+                  <details>
+                    <summary>{t("imapMail.autoScreenshotLabel")}</summary>
+                    <img
+                      src={`data:image/png;base64,${autoScreenshot}`}
+                      alt=""
+                      style={{ maxWidth: "100%", border: "1px solid var(--border, #e4e7ec)", borderRadius: 8 }}
+                    />
+                  </details>
+                ) : null}
+              </div>
+            ) : null}
           </div>
 
           <div className="integration-connect-block">

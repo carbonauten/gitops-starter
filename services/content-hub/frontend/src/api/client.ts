@@ -2433,3 +2433,83 @@ export async function summarizeImapMessage(
   );
   return payload.summary;
 }
+
+export type StratoAutomationStatus = {
+  configured: boolean;
+  customer_number: string;
+  updated_at: string | null;
+  updated_by_name: string;
+};
+
+export async function fetchStratoAutomationStatus(): Promise<StratoAutomationStatus> {
+  return request<StratoAutomationStatus>("/api/strato-automation/status");
+}
+
+export async function saveStratoAutomationConfig(payload: {
+  customer_number: string;
+  password?: string;
+}): Promise<StratoAutomationStatus> {
+  return request<StratoAutomationStatus>("/api/strato-automation/config", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function clearStratoAutomationConfig(): Promise<StratoAutomationStatus> {
+  return request<StratoAutomationStatus>("/api/strato-automation/config", { method: "DELETE" });
+}
+
+export type StratoAutomationResult = {
+  email: string;
+  local_part: string;
+  domain: string;
+};
+
+export class StratoAutomationApiError extends Error {
+  code: string;
+  screenshotBase64: string | null;
+
+  constructor(message: string, code: string, screenshotBase64: string | null) {
+    super(message);
+    this.code = code;
+    this.screenshotBase64 = screenshotBase64;
+  }
+}
+
+// Not routed through the shared request() helper: on failure this endpoint
+// returns a screenshot of the browser automation's last state alongside the
+// error, which is genuinely useful for debugging a broken selector - the
+// shared helper only keeps the error message, so it's parsed here directly.
+export async function createStratoMailboxAutomated(payload: {
+  local_part: string;
+  domain: string;
+  password: string;
+}): Promise<StratoAutomationResult> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 90000);
+  try {
+    const response = await fetch("/api/strato-automation/create-mailbox", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    const body = await response.json();
+    if (!response.ok) {
+      throw new StratoAutomationApiError(
+        body.error || "Request failed",
+        body.code || "error",
+        body.screenshot_base64 || null,
+      );
+    }
+    return (body.mailbox as StratoAutomationResult) ?? body;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("Request timed out. Please try again.");
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}

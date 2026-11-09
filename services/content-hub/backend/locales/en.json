@@ -80,5 +80,11 @@
   "errors.imap_login_failed": "Mailbox login failed. Please check username/password.",
   "errors.imap_folder_not_found": "The specified folder was not found in this mailbox.",
   "errors.imap_search_failed": "Could not load messages. Please try again.",
+  "errors.strato_automation_not_configured": "Strato customer login is not set up yet.",
+  "errors.strato_automation_login_failed": "Strato login failed. Please check the customer number/password.",
+  "errors.strato_automation_2fa_or_captcha": "Strato is asking for a confirmation (2FA/Captcha) the automation can't fill in. Please create it manually.",
+  "errors.strato_automation_navigation_failed": "Could not open Strato's mail management - the Strato page has likely changed.",
+  "errors.strato_automation_create_failed": "Could not create the mailbox at Strato automatically - the Strato page has likely changed. Please create it manually.",
+  "errors.strato_automation_unexpected_error": "Unexpected error during Strato automation. Please create it manually.",
   "messages.language_updated": "Language updated."
 }

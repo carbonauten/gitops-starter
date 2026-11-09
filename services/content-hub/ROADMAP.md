@@ -1142,4 +1142,30 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] Erklärt in einem Satz, warum das nicht direkt aus der Plattform geht und was als nächstes zu tun ist (im Strato-Panel anlegen → hier unten mit den Zugangsdaten verbinden)
 - [x] Bestehendes Verbinden-Formular umbenannt zu „Bestehendes Postfach verbinden", um die beiden Schritte klar zu trennen
 
+### Automatisches Anlegen bei Strato per Browser-Automatisierung (November 2026)
+
+**Ziel:** Echtes Anlegen eines neuen Strato-Postfachs direkt aus der Plattform heraus, trotz fehlender Strato-API. Auf expliziten Nutzerwunsch, nach klarer Abwägung der Alternativen (siehe unten) — bewusst als riskanteste der drei angebotenen Optionen gewählt.
+
+### Funktionsweise
+
+- [x] Neue Tabelle `platform_strato_settings`: IT-Master hinterlegt das **vollständige Strato-Kundenlogin** (Kundennummer + Passwort, verschlüsselt) — bewusst getrennt von allen anderen Credential-Tabellen gehalten
+- [x] `strato_automation_service.py`: steuert einen headless Chromium-Browser (Playwright) durch Login → E-Mail-Verwaltung → „Neu anlegen" auf der echten Strato-Seite
+- [x] Jeder der drei Schritte (Login, Navigation, Anlegen) einzeln mit eigenem Fehlercode und automatischem Screenshot bei Fehlschlag — Ziel: bei einem kaputten Selektor sofort sehen, welcher Schritt es war, statt blind zu debuggen
+- [x] Erfolgreiches Anlegen verbindet das neue Postfach automatisch auch per IMAP (bestehender Connect-Flow) — vollständig automatisierter Weg von „Formular ausfüllen" bis „Postfach in der Plattform lesbar"
+- [x] Neue Route `/api/strato-automation/*`, ausschließlich `require_it_master`
+- [x] Passwort-Generator-Button im Anlegen-Formular
+
+### Wichtiger Sicherheits-Hinweis
+
+- [x] **Dieses Kundenlogin hat vollen Zugriff auf das gesamte Strato-Konto** (alle Domains, Rechnungen, alle Postfächer) — ein deutlich größeres Risiko als die einzelnen Mailcow-API-Keys oder IMAP-Postfach-Passwörter an anderer Stelle in der Plattform. Nutzer wurde das vor dem Bau explizit so erklärt (inkl. Alternativen: smarteres Formular ohne neue Credentials; Reaktivierung des eigenen Mailcow-Servers mit echter API) und hat sich bewusst für diesen Weg entschieden
+- [x] Im UI mit einer deutlichen Warnung direkt über dem Konfigurationsformular versehen
+
+### Bekannte Einschränkungen
+
+- [x] **Nicht gegen einen echten Strato-Login getestet.** Die Playwright-Selektoren basieren ausschließlich auf zwei Screenshots (Login-Seite, E-Mail-Verwaltungs-Übersicht) — die tatsächliche „Neu anlegen"-Dialogstruktur wurde nie gesehen. Erwartung: die Selektoren müssen beim ersten echten Lauf angepasst werden; dafür gibt es den Screenshot-bei-Fehlschlag-Mechanismus
+- [x] Kann 2FA/Captcha nicht lösen — wird best-effort erkannt und als eigener Fehlercode gemeldet, statt zu hängen
+- [x] Bricht bei jeder Strato-UI-Änderung; kein offizieller API-Support, ggf. Graubereich bzgl. Strato-AGB (automatisierter Zugriff auf ein Kundenportal statt einer offiziellen Schnittstelle) — Nutzer bewusst informiert
+- [x] Headless Chromium über `playwright install --with-deps chromium` im Dockerfile ergänzt — vergrößert das Image spürbar und verlängert den Build; kein Einfluss auf Umgebungen ohne das Browser-Binary, da der Playwright-Import lazy erfolgt und erst beim tatsächlichen Automatisierungs-Aufruf greift
+- [x] Tests (`tests/test_strato_automation.py`) decken Config-CRUD, Berechtigungs-Gate und die Fehler-/Erfolgs-Antwortform ab (inkl. Screenshot-Weitergabe) über eine gemockte `create_mailbox_via_automation` — die eigentliche Browser-Automatisierung selbst ist nicht automatisiert testbar ohne echten Strato-Zugang
+
 ---
