@@ -812,6 +812,11 @@ a {
   font-size: 0.95rem;
 }
 
+.imap-attachment-icon {
+  margin-left: 0.35rem;
+  font-size: 0.85rem;
+}
+
 .outlook-mail-item-from,
 .outlook-mail-item-preview {
   font-size: 0.82rem;

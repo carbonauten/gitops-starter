@@ -14,6 +14,7 @@ import {
   saveStratoAutomationConfig,
   StratoAutomationApiError,
   summarizeImapMessage,
+  updateImapAccount,
   type ImapAccount,
   type ImapMailMessage,
   type ImapMailSummary,
@@ -48,6 +49,7 @@ export function ImapMailPage() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [showAccountPanel, setShowAccountPanel] = useState(false);
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
 
   const [label, setLabel] = useState("");
   const [host, setHost] = useState("");
@@ -157,16 +159,31 @@ export function ImapMailPage() {
     setError("");
     setNotice("");
     try {
-      const account = await createImapAccount({
-        label,
-        host,
-        port: Number(port) || 993,
-        use_ssl: useSsl,
-        username,
-        password,
-        folder,
-      });
-      setNotice(t("imapMail.accountCreated", { label: account.label }));
+      const account = editingAccountId
+        ? await updateImapAccount(editingAccountId, {
+            label,
+            host,
+            port: Number(port) || 993,
+            use_ssl: useSsl,
+            username,
+            password,
+            folder,
+          })
+        : await createImapAccount({
+            label,
+            host,
+            port: Number(port) || 993,
+            use_ssl: useSsl,
+            username,
+            password,
+            folder,
+          });
+      setNotice(
+        editingAccountId
+          ? t("imapMail.accountUpdated", { label: account.label })
+          : t("imapMail.accountCreated", { label: account.label }),
+      );
+      setEditingAccountId(null);
       setLabel("");
       setHost("");
       setPort("993");
@@ -184,6 +201,30 @@ export function ImapMailPage() {
     }
   }
 
+  function handleEditAccount(account: ImapAccount) {
+    setEditingAccountId(account.id);
+    setLabel(account.label);
+    setHost(account.host);
+    setPort(String(account.port));
+    setUseSsl(account.use_ssl);
+    setUsername(account.username);
+    setPassword("");
+    setFolder(account.folder);
+    setError("");
+    setNotice("");
+  }
+
+  function handleCancelEdit() {
+    setEditingAccountId(null);
+    setLabel("");
+    setHost("");
+    setPort("993");
+    setUseSsl(true);
+    setUsername("");
+    setPassword("");
+    setFolder("INBOX");
+  }
+
   async function handleDeleteAccount(accountId: string, accountLabel: string) {
     if (!window.confirm(t("imapMail.confirmDeleteAccount", { label: accountLabel }))) return;
     setBusy(true);
@@ -196,6 +237,9 @@ export function ImapMailPage() {
         setSelectedAccountId("");
         setMessages([]);
         setDetail(null);
+      }
+      if (editingAccountId === accountId) {
+        handleCancelEdit();
       }
       await reloadAccounts();
     } catch (err) {
@@ -367,6 +411,9 @@ export function ImapMailPage() {
                       </p>
                     </div>
                     <div className="list-card-actions">
+                      <button type="button" className="ghost-button" disabled={busy} onClick={() => handleEditAccount(account)}>
+                        {t("imapMail.editAccount")}
+                      </button>
                       <button
                         type="button"
                         className="ghost-button danger"
@@ -520,9 +567,9 @@ export function ImapMailPage() {
 
           <div className="integration-connect-block">
             <div className="integration-connect-header">
-              <strong>{t("imapMail.createTitle")}</strong>
+              <strong>{editingAccountId ? t("imapMail.editTitle") : t("imapMail.createTitle")}</strong>
             </div>
-            <p className="muted">{t("imapMail.createHint")}</p>
+            <p className="muted">{editingAccountId ? t("imapMail.editHint") : t("imapMail.createHint")}</p>
             <form className="entra-setup-form" onSubmit={(event) => void handleCreateAccount(event)}>
               <label>
                 {t("imapMail.label")}
@@ -577,7 +624,8 @@ export function ImapMailPage() {
                   type="password"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  required
+                  placeholder={editingAccountId ? t("imapMail.passwordKeep") : ""}
+                  required={!editingAccountId}
                   autoComplete="new-password"
                 />
               </label>
@@ -586,9 +634,20 @@ export function ImapMailPage() {
                 <input value={folder} onChange={(event) => setFolder(event.target.value)} placeholder="INBOX" />
               </label>
               <p className="muted">{t("imapMail.testHint")}</p>
-              <button type="submit" className="primary-button" disabled={busy}>
-                {busy ? t("imapMail.testing") : t("imapMail.createAccount")}
-              </button>
+              <div className="row-actions">
+                <button type="submit" className="primary-button" disabled={busy}>
+                  {busy
+                    ? t("imapMail.testing")
+                    : editingAccountId
+                      ? t("imapMail.saveAccount")
+                      : t("imapMail.createAccount")}
+                </button>
+                {editingAccountId ? (
+                  <button type="button" className="ghost-button" disabled={busy} onClick={handleCancelEdit}>
+                    {t("imapMail.cancelEdit")}
+                  </button>
+                ) : null}
+              </div>
             </form>
           </div>
         </>
@@ -667,11 +726,21 @@ export function ImapMailPage() {
                       }`}
                       onClick={() => void handleSelectMessage(message.id)}
                     >
-                      <span className="outlook-mail-item-subject">{message.subject}</span>
+                      <span className="outlook-mail-item-subject">
+                        {message.subject}
+                        {message.has_attachments ? (
+                          <span className="imap-attachment-icon" title={t("imapMail.hasAttachments")}>
+                            📎
+                          </span>
+                        ) : null}
+                      </span>
                       <span className="outlook-mail-item-from">
                         {message.from.name || message.from.email || "—"}
                         {message.received_at ? ` · ${formatDateTime(message.received_at, i18n.language)}` : ""}
                       </span>
+                      {message.preview ? (
+                        <span className="outlook-mail-item-preview muted">{message.preview}</span>
+                      ) : null}
                     </button>
                   </li>
                 ))}

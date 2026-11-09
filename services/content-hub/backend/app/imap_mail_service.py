@@ -17,6 +17,7 @@ import email
 import email.policy
 import imaplib
 import logging
+import re
 from datetime import timezone
 from email.utils import getaddresses, parseaddr, parsedate_to_datetime
 from typing import Any
@@ -27,6 +28,16 @@ from sqlalchemy.orm import Session
 from .imap_config_service import ImapCredentials, get_imap_credentials
 
 logger = logging.getLogger(__name__)
+
+# How much of the raw message to pull for the list view's preview snippet -
+# enough for headers (which come first) plus a bit of body, without
+# downloading the whole message for every row. BODYSTRUCTURE (see
+# _has_attachments) is intentionally NOT truncation-limited - it's returned
+# inline by the server regardless of this byte range, so attachment
+# detection stays reliable even though the preview text itself may cut off
+# mid-body for long messages.
+PREVIEW_FETCH_BYTES = 4000
+_TAG_PATTERN = re.compile(r"<[^>]+>")
 
 
 def _connect(creds: ImapCredentials) -> imaplib.IMAP4:
@@ -96,6 +107,34 @@ def _parse_date(raw: str) -> str | None:
     return dt.isoformat()
 
 
+def _extract_preview(msg: Any, max_chars: int = 160) -> str:
+    """Best-effort plain-text snippet for the list view. msg may be parsed
+    from a truncated byte range (see PREVIEW_FETCH_BYTES above), so a
+    multipart boundary can be cut off mid-way - the email package's default
+    policy tolerates that (collects it as a "defect" rather than raising),
+    but this is still wrapped defensively since that's never been verified
+    against a real truncated multipart message."""
+    try:
+        part = msg.get_body(preferencelist=("plain", "html"))
+        if part is None:
+            return ""
+        content = part.get_content()
+    except Exception:  # noqa: BLE001 - preview is a nice-to-have, never worth failing the request over
+        return ""
+    text = _TAG_PATTERN.sub(" ", content)
+    text = " ".join(text.split())
+    return text[:max_chars]
+
+
+def _has_attachments(meta_raw: bytes | None) -> bool:
+    """BODYSTRUCTURE is returned inline in the FETCH response line (not as a
+    literal), so this is just a substring check on the same bytes
+    imaplib.ParseFlags already scans for flags - no extra parsing needed.
+    Heuristic: virtually all IMAP servers include the literal word
+    "ATTACHMENT" as the Content-Disposition for attached parts."""
+    return bool(meta_raw) and b"ATTACHMENT" in meta_raw.upper()
+
+
 def test_connection(*, host: str, port: int, use_ssl: bool, username: str, password: str, folder: str) -> None:
     """Try an actual IMAP login + folder select without touching any stored
     account - used to fail fast with a clear error when saving new
@@ -139,24 +178,24 @@ def list_messages(db: Session, *, account_id: str, limit: int = 30, search: str 
 
         messages: list[dict[str, Any]] = []
         for uid in uids:
-            status, msg_data = conn.uid("fetch", uid, "(FLAGS BODY.PEEK[HEADER.FIELDS (SUBJECT FROM DATE)])")
+            status, msg_data = conn.uid(
+                "fetch", uid, f"(FLAGS BODYSTRUCTURE BODY.PEEK[]<0.{PREVIEW_FETCH_BYTES}>)"
+            )
             if status != "OK" or not msg_data or not isinstance(msg_data[0], tuple):
                 continue
-            meta_raw, header_raw = msg_data[0]
+            meta_raw, raw_prefix = msg_data[0]
             flags = imaplib.ParseFlags(meta_raw) if meta_raw else ()
-            header = email.message_from_bytes(header_raw, policy=email.policy.default)
+            msg = email.message_from_bytes(raw_prefix, policy=email.policy.default)
             uid_str = uid.decode() if isinstance(uid, bytes) else str(uid)
             messages.append(
                 {
                     "id": uid_str,
-                    "subject": _header_value(header.get("subject")) or "(ohne Betreff)",
-                    "from": _parse_person(_header_value(header.get("from"))),
-                    "received_at": _parse_date(_header_value(header.get("date"))),
-                    "preview": "",
+                    "subject": _header_value(msg.get("subject")) or "(ohne Betreff)",
+                    "from": _parse_person(_header_value(msg.get("from"))),
+                    "received_at": _parse_date(_header_value(msg.get("date"))),
+                    "preview": _extract_preview(msg),
                     "is_read": b"\\Seen" in flags,
-                    # Detecting attachments cheaply would need a BODYSTRUCTURE fetch per
-                    # message; left out of this first version, see ROADMAP.md.
-                    "has_attachments": False,
+                    "has_attachments": _has_attachments(meta_raw),
                 }
             )
         return messages
@@ -170,7 +209,7 @@ def get_message(db: Session, *, account_id: str, message_id: str) -> dict[str, A
     try:
         _select_folder(conn, creds.folder)
         uid = message_id.encode()
-        status, msg_data = conn.uid("fetch", uid, "(FLAGS BODY.PEEK[])")
+        status, msg_data = conn.uid("fetch", uid, "(FLAGS BODYSTRUCTURE BODY.PEEK[])")
         if status != "OK" or not msg_data or not isinstance(msg_data[0], tuple):
             raise HTTPException(status_code=404, detail="not_found")
         meta_raw, raw = msg_data[0]
@@ -195,9 +234,9 @@ def get_message(db: Session, *, account_id: str, message_id: str) -> dict[str, A
             "to": _parse_people(msg.get_all("to")),
             "cc": _parse_people(msg.get_all("cc")),
             "received_at": _parse_date(_header_value(msg.get("date"))),
-            "preview": "",
+            "preview": _extract_preview(msg),
             "is_read": b"\\Seen" in flags,
-            "has_attachments": False,
+            "has_attachments": _has_attachments(meta_raw),
             "body": body,
             "body_type": body_type,
         }
