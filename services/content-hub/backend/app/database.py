@@ -670,247 +670,51 @@ class ShopPageView(Base):
     )
 
 
-def scheduled_publish_column_type(is_sqlite: bool) -> str:
-    return "DATETIME" if is_sqlite else "TIMESTAMP WITH TIME ZONE"
+BASELINE_REVISION = "0001_baseline"
 
 
-def ensure_schema_updates(engine, is_sqlite: bool) -> None:
+def _alembic_config():
+    from alembic.config import Config as AlembicConfig
+
+    cfg = AlembicConfig()
+    cfg.set_main_option("script_location", str(Path(__file__).resolve().parent.parent / "alembic"))
+    return cfg
+
+
+def run_migrations(engine) -> None:
+    """Bring the schema up to date using Alembic.
+
+    A brand-new database gets its tables from ``create_all()`` (equivalent to running
+    every migration, but far faster -- tests spin up a fresh sqlite file per run) and
+    is then stamped at "head" since its schema already matches. A database that has
+    tables but predates Alembic (every deployment before this was introduced) is
+    stamped at the baseline revision instead, then upgraded for anything added since.
+    A database that already carries an alembic_version table just gets upgraded.
+    """
+    from alembic import command
+
+    cfg = _alembic_config()
     inspector = sa_inspect(engine)
-    if inspector.has_table("users"):
-        columns = {column["name"] for column in inspector.get_columns("users")}
-        if "department_id" not in columns:
-            with engine.begin() as connection:
-                connection.execute(text("ALTER TABLE users ADD COLUMN department_id VARCHAR(36)"))
-        if "password_hash" not in columns:
-            with engine.begin() as connection:
-                connection.execute(text("ALTER TABLE users ADD COLUMN password_hash VARCHAR(255)"))
-        if "can_manage_shop" not in columns:
-            try:
-                with engine.begin() as connection:
-                    if is_sqlite:
-                        connection.execute(text("ALTER TABLE users ADD COLUMN can_manage_shop BOOLEAN DEFAULT 0"))
-                    else:
-                        connection.execute(
-                            text("ALTER TABLE users ADD COLUMN can_manage_shop BOOLEAN NOT NULL DEFAULT false")
-                        )
-                    # Preserve access for existing content editors after rollout
-                    connection.execute(
-                        text(
-                            "UPDATE users SET can_manage_shop = true "
-                            "WHERE role IN ('it_master', 'editor', 'certificate_manager')"
-                        )
-                    )
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Could not add users.can_manage_shop: %s", exc)
-        if "role_source" not in columns:
-            try:
-                with engine.begin() as connection:
-                    connection.execute(
-                        text("ALTER TABLE users ADD COLUMN role_source VARCHAR(20) DEFAULT 'manual'")
-                    )
-                    # Existing roles were all assigned manually (or via IT_ADMIN_EMAILS) before
-                    # Entra group sync existed; keep them locked to manual so a later group sync
-                    # rollout does not silently overwrite roles nobody chose from group membership.
-                    connection.execute(text("UPDATE users SET role_source = 'manual' WHERE role_source IS NULL"))
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Could not add users.role_source: %s", exc)
-    if inspector.has_table("file_assets"):
-        columns = {column["name"] for column in inspector.get_columns("file_assets")}
-        if "folder_id" not in columns:
-            with engine.begin() as connection:
-                connection.execute(text("ALTER TABLE file_assets ADD COLUMN folder_id VARCHAR(36)"))
-        if "content" not in columns:
-            try:
-                with engine.begin() as connection:
-                    column_type = "BLOB" if is_sqlite else "BYTEA"
-                    connection.execute(text(f"ALTER TABLE file_assets ADD COLUMN content {column_type}"))
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Could not add file_assets.content: %s", exc)
-    if inspector.has_table("articles"):
-        columns = {column["name"] for column in inspector.get_columns("articles")}
-        scheduled_type = scheduled_publish_column_type(is_sqlite)
-        if "scheduled_publish_at" not in columns:
-            try:
-                with engine.begin() as connection:
-                    connection.execute(
-                        text(f"ALTER TABLE articles ADD COLUMN scheduled_publish_at {scheduled_type}")
-                    )
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Could not add articles.scheduled_publish_at: %s", exc)
-        if "review_comment" not in columns:
-            try:
-                with engine.begin() as connection:
-                    if is_sqlite:
-                        connection.execute(text("ALTER TABLE articles ADD COLUMN review_comment TEXT DEFAULT ''"))
-                    else:
-                        connection.execute(
-                            text("ALTER TABLE articles ADD COLUMN review_comment TEXT NOT NULL DEFAULT ''")
-                        )
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Could not add articles.review_comment: %s", exc)
-    if inspector.has_table("certificates"):
-        columns = {column["name"] for column in inspector.get_columns("certificates")}
-        if "renewal_approval_status" not in columns:
-            with engine.begin() as connection:
-                if is_sqlite:
-                    connection.execute(
-                        text(
-                            "ALTER TABLE certificates ADD COLUMN renewal_approval_status VARCHAR(30) DEFAULT 'none'"
-                        )
-                    )
-                else:
-                    connection.execute(
-                        text(
-                            "ALTER TABLE certificates ADD COLUMN renewal_approval_status VARCHAR(30) NOT NULL DEFAULT 'none'"
-                        )
-                    )
-        if "renewal_review_comment" not in columns:
-            with engine.begin() as connection:
-                if is_sqlite:
-                    connection.execute(
-                        text("ALTER TABLE certificates ADD COLUMN renewal_review_comment TEXT DEFAULT ''")
-                    )
-                else:
-                    connection.execute(
-                        text(
-                            "ALTER TABLE certificates ADD COLUMN renewal_review_comment TEXT NOT NULL DEFAULT ''"
-                        )
-                    )
-        for column_name, ddl_sqlite, ddl_pg in (
-            ("parent_id", "ALTER TABLE certificates ADD COLUMN parent_id VARCHAR(36)", "ALTER TABLE certificates ADD COLUMN parent_id VARCHAR(36)"),
-            ("escalate_email", "ALTER TABLE certificates ADD COLUMN escalate_email VARCHAR(200) DEFAULT ''", "ALTER TABLE certificates ADD COLUMN escalate_email VARCHAR(200) NOT NULL DEFAULT ''"),
-            ("reminder_90_sent_on", "ALTER TABLE certificates ADD COLUMN reminder_90_sent_on DATE", "ALTER TABLE certificates ADD COLUMN reminder_90_sent_on DATE"),
-            ("reminder_60_sent_on", "ALTER TABLE certificates ADD COLUMN reminder_60_sent_on DATE", "ALTER TABLE certificates ADD COLUMN reminder_60_sent_on DATE"),
-            ("reminder_30_sent_on", "ALTER TABLE certificates ADD COLUMN reminder_30_sent_on DATE", "ALTER TABLE certificates ADD COLUMN reminder_30_sent_on DATE"),
-        ):
-            if column_name not in columns:
-                try:
-                    with engine.begin() as connection:
-                        connection.execute(text(ddl_sqlite if is_sqlite else ddl_pg))
-                except Exception as exc:  # noqa: BLE001
-                    logger.warning("Could not add certificates.%s: %s", column_name, exc)
-        for column_name, ddl_sqlite, ddl_pg in (
-            (
-                "fingerprint",
-                "ALTER TABLE certificates ADD COLUMN fingerprint VARCHAR(128) DEFAULT ''",
-                "ALTER TABLE certificates ADD COLUMN fingerprint VARCHAR(128) NOT NULL DEFAULT ''",
-            ),
-            (
-                "external_source",
-                "ALTER TABLE certificates ADD COLUMN external_source VARCHAR(50) DEFAULT ''",
-                "ALTER TABLE certificates ADD COLUMN external_source VARCHAR(50) NOT NULL DEFAULT ''",
-            ),
-            (
-                "external_id",
-                "ALTER TABLE certificates ADD COLUMN external_id VARCHAR(200) DEFAULT ''",
-                "ALTER TABLE certificates ADD COLUMN external_id VARCHAR(200) NOT NULL DEFAULT ''",
-            ),
-        ):
-            if column_name not in columns:
-                try:
-                    with engine.begin() as connection:
-                        connection.execute(text(ddl_sqlite if is_sqlite else ddl_pg))
-                except Exception as exc:  # noqa: BLE001
-                    logger.warning("Could not add certificates.%s: %s", column_name, exc)
+    has_version_table = inspector.has_table("alembic_version")
+    has_existing_tables = any(inspector.has_table(table.name) for table in Base.metadata.sorted_tables)
 
-    if inspector.has_table("products"):
-        columns = {column["name"] for column in inspector.get_columns("products")}
-        for column_name, ddl_sqlite, ddl_pg in (
-            ("stock_qty", "ALTER TABLE products ADD COLUMN stock_qty INTEGER DEFAULT 0", "ALTER TABLE products ADD COLUMN stock_qty INTEGER NOT NULL DEFAULT 0"),
-            ("track_inventory", "ALTER TABLE products ADD COLUMN track_inventory BOOLEAN DEFAULT 0", "ALTER TABLE products ADD COLUMN track_inventory BOOLEAN NOT NULL DEFAULT false"),
-            ("vat_rate_bps", "ALTER TABLE products ADD COLUMN vat_rate_bps INTEGER DEFAULT 1900", "ALTER TABLE products ADD COLUMN vat_rate_bps INTEGER NOT NULL DEFAULT 1900"),
-        ):
-            if column_name not in columns:
-                try:
-                    with engine.begin() as connection:
-                        connection.execute(text(ddl_sqlite if is_sqlite else ddl_pg))
-                except Exception as exc:  # noqa: BLE001
-                    logger.warning("Could not add products.%s: %s", column_name, exc)
+    if has_version_table:
+        with engine.connect() as connection:
+            cfg.attributes["connection"] = connection
+            command.upgrade(cfg, "head")
+        return
 
-    if inspector.has_table("shop_orders"):
-        columns = {column["name"] for column in inspector.get_columns("shop_orders")}
-        for column_name, ddl_sqlite, ddl_pg in (
-            ("customer_id", "ALTER TABLE shop_orders ADD COLUMN customer_id VARCHAR(36)", "ALTER TABLE shop_orders ADD COLUMN customer_id VARCHAR(36)"),
-            ("credits_earned", "ALTER TABLE shop_orders ADD COLUMN credits_earned INTEGER DEFAULT 0", "ALTER TABLE shop_orders ADD COLUMN credits_earned INTEGER NOT NULL DEFAULT 0"),
-            (
-                "credits_awarded_at",
-                "ALTER TABLE shop_orders ADD COLUMN credits_awarded_at DATETIME",
-                "ALTER TABLE shop_orders ADD COLUMN credits_awarded_at TIMESTAMP WITH TIME ZONE",
-            ),
-            (
-                "shipping_carrier",
-                "ALTER TABLE shop_orders ADD COLUMN shipping_carrier VARCHAR(80) DEFAULT ''",
-                "ALTER TABLE shop_orders ADD COLUMN shipping_carrier VARCHAR(80) NOT NULL DEFAULT ''",
-            ),
-            (
-                "tracking_number",
-                "ALTER TABLE shop_orders ADD COLUMN tracking_number VARCHAR(120) DEFAULT ''",
-                "ALTER TABLE shop_orders ADD COLUMN tracking_number VARCHAR(120) NOT NULL DEFAULT ''",
-            ),
-            (
-                "tracking_url",
-                "ALTER TABLE shop_orders ADD COLUMN tracking_url VARCHAR(500) DEFAULT ''",
-                "ALTER TABLE shop_orders ADD COLUMN tracking_url VARCHAR(500) NOT NULL DEFAULT ''",
-            ),
-            (
-                "discount_code",
-                "ALTER TABLE shop_orders ADD COLUMN discount_code VARCHAR(50) DEFAULT ''",
-                "ALTER TABLE shop_orders ADD COLUMN discount_code VARCHAR(50) NOT NULL DEFAULT ''",
-            ),
-            (
-                "discount_cents",
-                "ALTER TABLE shop_orders ADD COLUMN discount_cents INTEGER DEFAULT 0",
-                "ALTER TABLE shop_orders ADD COLUMN discount_cents INTEGER NOT NULL DEFAULT 0",
-            ),
-        ):
-            if column_name not in columns:
-                try:
-                    with engine.begin() as connection:
-                        connection.execute(text(ddl_sqlite if is_sqlite else ddl_pg))
-                except Exception as exc:  # noqa: BLE001
-                    logger.warning("Could not add shop_orders.%s: %s", column_name, exc)
+    if has_existing_tables:
+        with engine.connect() as connection:
+            cfg.attributes["connection"] = connection
+            command.stamp(cfg, BASELINE_REVISION)
+            command.upgrade(cfg, "head")
+        return
 
-    if inspector.has_table("shop_page_views"):
-        columns = {column["name"] for column in inspector.get_columns("shop_page_views")}
-        if "ip_address" not in columns:
-            try:
-                with engine.begin() as connection:
-                    if is_sqlite:
-                        connection.execute(
-                            text("ALTER TABLE shop_page_views ADD COLUMN ip_address VARCHAR(64) DEFAULT ''")
-                        )
-                    else:
-                        connection.execute(
-                            text(
-                                "ALTER TABLE shop_page_views ADD COLUMN ip_address VARCHAR(64) NOT NULL DEFAULT ''"
-                            )
-                        )
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Could not add shop_page_views.ip_address: %s", exc)
-
-    if inspector.has_table("reputation_crawl_runs"):
-        columns = {column["name"] for column in inspector.get_columns("reputation_crawl_runs")}
-        if "stats" not in columns:
-            try:
-                with engine.begin() as connection:
-                    if is_sqlite:
-                        connection.execute(text("ALTER TABLE reputation_crawl_runs ADD COLUMN stats TEXT DEFAULT ''"))
-                    else:
-                        connection.execute(
-                            text("ALTER TABLE reputation_crawl_runs ADD COLUMN stats TEXT NOT NULL DEFAULT ''")
-                        )
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Could not add reputation_crawl_runs.stats: %s", exc)
-
-    if inspector.has_table("reputation_mentions"):
-        columns = {column["name"] for column in inspector.get_columns("reputation_mentions")}
-        if "published_at" not in columns:
-            try:
-                with engine.begin() as connection:
-                    column_type = "DATETIME" if is_sqlite else "TIMESTAMP WITH TIME ZONE"
-                    connection.execute(text(f"ALTER TABLE reputation_mentions ADD COLUMN published_at {column_type}"))
-            except Exception as exc:  # noqa: BLE001
-                logger.warning("Could not add reputation_mentions.published_at: %s", exc)
+    Base.metadata.create_all(engine)
+    with engine.connect() as connection:
+        cfg.attributes["connection"] = connection
+        command.stamp(cfg, "head")
 
 
 DEFAULT_DEPARTMENTS: tuple[tuple[str, str, int], ...] = (
@@ -955,8 +759,7 @@ def init_database(database_url: str, max_attempts: int = 10, retry_delay: float 
         try:
             with _engine.connect() as connection:
                 connection.execute(text("SELECT 1"))
-            Base.metadata.create_all(_engine)
-            ensure_schema_updates(_engine, is_sqlite)
+            run_migrations(_engine)
             _SessionLocal = sessionmaker(bind=_engine, autocommit=False, autoflush=False, future=True)
             with _SessionLocal() as db:
                 seed_default_departments(db)

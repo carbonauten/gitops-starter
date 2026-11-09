@@ -83,6 +83,7 @@ flowchart LR
 | R | 2–4 Tage | ✅ Abgeschlossen (MVP) | M365 Ask: LLM-Function-Calling |
 | S | 1–2 Tage | ✅ Abgeschlossen (MVP) | Volltext-Diff für Versionshistorie |
 | T | 2–4 Tage | ✅ Abgeschlossen (MVP) | Shop-Rabattcodes/Gutscheine |
+| U | 1–2 Tage | ✅ Abgeschlossen (MVP) | Backend-Verbesserung: Alembic-Migrationen |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -1075,6 +1076,37 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] Abgelaufene/noch nicht gültige/Limit-erreichte/Mindestbestellwert-nicht-erreichte Codes werden mit jeweils spezifischer Fehlermeldung abgelehnt
 - [x] Stornierte Bestellungen geben die Einlösung frei, der Code ist danach wieder nutzbar
 - [x] Die an Stripe gesendete Summe aller Line-Items entspricht exakt `order.total_cents`
+
+---
+
+## Sprint U — Backend-Verbesserung: Alembic-Migrationen ✅ (MVP)
+
+**Ziel:** Schema-Änderungen laufen nicht mehr über handgeschriebene `ALTER TABLE`-Guards in `ensure_schema_updates()`, sondern über echte, versionierte Alembic-Migrationen. Umgesetzt als nutzerseitig delegierte Backend-Verbesserung (siehe Diskussion zu Sprint T).
+
+### Deliverables
+
+- [x] Alembic in `backend/alembic/` eingerichtet (`env.py`, `alembic.ini`, `versions/`), `target_metadata = Base.metadata`
+- [x] Baseline-Migration `0001_baseline` per `alembic revision --autogenerate` gegen eine leere DB erzeugt — bildet den heutigen, vollständigen Modellstand ab (32 Tabellen, alle Indizes)
+- [x] Neue Funktion `run_migrations(engine)` in `database.py` ersetzt `Base.metadata.create_all() + ensure_schema_updates()` beim Start (`init_database()`):
+  - **Frische DB** (keine Tabellen vorhanden): `create_all()` bleibt der schnelle Weg (wichtig für die Testsuite, die pro Test eine neue SQLite-Datei anlegt) und wird direkt auf `head` gestempelt, da das Schema bereits dem aktuellen Stand entspricht
+  - **Bestehende Deployment-DB ohne `alembic_version`-Tabelle** (jede Installation von vor diesem Sprint): wird auf die Baseline-Revision gestempelt, danach `upgrade head` für alles, was seither neu dazukommt
+  - **DB mit vorhandener `alembic_version`-Tabelle**: einfaches `upgrade head`
+- [x] `ensure_schema_updates()` und die seit Sprint G–T angesammelten handgeschriebenen `ALTER TABLE`-Guards vollständig entfernt — künftige Schema-Änderungen werden als neue, review-bare Alembic-Revisionen committet (`alembic revision --autogenerate`)
+- [x] `alembic==1.14.0` zu `requirements.txt` ergänzt; keine Dockerfile-Änderung nötig, da `COPY backend/ ./` das neue `alembic/`-Verzeichnis automatisch mitnimmt
+- [x] 3 neue Tests in `test_database_migrations.py`: frische DB (Tabellen + Stempel auf Baseline), Idempotenz (zweiter Lauf ohne Fehler), Bestands-DB-Pfad (Tabellen existieren bereits, kein `alembic_version` → Stempeln + Upgrade)
+
+### Bekannte Einschränkungen
+
+- [x] Nur gegen SQLite getestet (Testsuite + lokale Verifikation); der Postgres-Pfad (`is_existing_tables`-Erkennung, `alembic_version`-Tabelle) nutzt dieselbe SQLAlchemy-Inspector-API und sollte identisch funktionieren, wurde aber nicht gegen eine echte Postgres-Instanz verifiziert
+- [x] Die Baseline-Migration wurde einmalig per Autogenerate erzeugt und danach nicht weiter von Hand geprüft, Zeile für Zeile — bei 32 Tabellen wurde stichprobenhaft verglichen, dass Spaltentypen/Nullable-Flags dem Verhalten von `Base.metadata.create_all()` entsprechen (identisches Ergebnis, da beide aus denselben Modell-Definitionen generiert werden)
+- [x] Kein automatischer "Drift-Check", der künftig warnt, falls jemand ein Modell ändert, aber die passende Migration vergisst — `alembic revision --autogenerate` muss weiterhin manuell nach Modelländerungen ausgeführt werden
+
+### Akzeptanzkriterien
+
+- [x] Ein frisch gestartetes Backend (leere DB) hat nach dem Start exakt das gleiche Schema wie vorher und eine `alembic_version`-Tabelle auf `head`
+- [x] Eine bestehende, über `create_all()` angelegte DB (Alt-Deployment-Simulation) wird beim ersten Start mit Alembic korrekt auf die Baseline gestempelt, ohne vorhandene Daten zu berühren oder Fehler zu werfen
+- [x] Zwei aufeinanderfolgende Starts gegen dieselbe DB sind idempotent
+- [x] Gesamte Backend-Testsuite (314/314) bleibt grün
 
 ---
 
