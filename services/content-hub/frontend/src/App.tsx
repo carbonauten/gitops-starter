@@ -25,6 +25,7 @@ import { OutlookMailPage } from "./pages/OutlookMailPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { ProductsPage } from "./pages/ProductsPage";
 import { ProductEditorPage } from "./pages/ProductEditorPage";
+import { DiscountCodesPage } from "./pages/DiscountCodesPage";
 import { OrdersPage } from "./pages/OrdersPage";
 import { ShopApp } from "./pages/ShopApp";
 import { ShopCustomersPage } from "./pages/ShopCustomersPage";
@@ -183,6 +184,14 @@ export default function App() {
         element={
           <ShopManageRoute>
             <OrdersPage />
+          </ShopManageRoute>
+        }
+      />
+      <Route
+        path="/discount-codes"
+        element={
+          <ShopManageRoute>
+            <DiscountCodesPage />
           </ShopManageRoute>
         }
       />

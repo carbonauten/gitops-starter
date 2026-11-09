@@ -207,7 +207,37 @@ class ShopCheckoutRequest(BaseModel):
     customer: ShopCheckoutCustomer
     payment_method: Literal["stripe", "invoice"] = "stripe"
     notes: str = ""
+    discount_code: str = Field(default="", max_length=50)
     website: str = ""  # honeypot — must stay empty
+    turnstile_token: str = ""
+
+
+class DiscountCodeCreate(BaseModel):
+    code: str = Field(min_length=2, max_length=50)
+    discount_type: Literal["percent", "fixed"] = "percent"
+    percent_off_bps: Optional[int] = Field(default=None, ge=1, le=10000)
+    amount_off_cents: Optional[int] = Field(default=None, ge=1)
+    min_order_cents: int = Field(default=0, ge=0)
+    max_redemptions: Optional[int] = Field(default=None, ge=1)
+    valid_from: Optional[datetime] = None
+    valid_until: Optional[datetime] = None
+
+
+class DiscountCodeUpdate(BaseModel):
+    is_active: Optional[bool] = None
+    min_order_cents: Optional[int] = Field(default=None, ge=0)
+    max_redemptions: Optional[int] = Field(default=None, ge=1)
+    clear_max_redemptions: bool = False
+    valid_from: Optional[datetime] = None
+    clear_valid_from: bool = False
+    valid_until: Optional[datetime] = None
+    clear_valid_until: bool = False
+
+
+class ApplyDiscountRequest(BaseModel):
+    code: str = Field(min_length=1, max_length=50)
+    subtotal_cents: int = Field(ge=0)
+    website: str = ""  # honeypot
     turnstile_token: str = ""
 
 

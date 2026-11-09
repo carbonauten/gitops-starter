@@ -13,6 +13,12 @@ from sqlalchemy.orm import Session
 
 from .config import Settings, get_settings
 from .database import Product, ShopOrder, ShopOrderItem
+from .discount_code_service import (
+    compute_discount_cents,
+    record_redemption,
+    release_redemption,
+    resolve_and_validate_discount,
+)
 from .email_service import send_plain_email
 from .shop_customer_service import award_co2_credits_for_order
 
@@ -75,6 +81,8 @@ def order_to_dict(order: ShopOrder, items: list[ShopOrderItem], *, include_token
         "shipping_cents": order.shipping_cents,
         "vat_cents": order.vat_cents,
         "total_cents": order.total_cents,
+        "discount_code": order.discount_code or "",
+        "discount_cents": int(order.discount_cents or 0),
         "customer_id": order.customer_id,
         "customer_email": order.customer_email,
         "customer_name": order.customer_name,
@@ -131,6 +139,7 @@ def create_checkout_order(
     payment_method: str,
     notes: str = "",
     customer_id: Optional[str] = None,
+    discount_code: str = "",
     settings: Settings | None = None,
 ) -> tuple[ShopOrder, list[ShopOrderItem], Optional[str]]:
     settings = settings or get_settings()
@@ -183,11 +192,28 @@ def create_checkout_order(
             )
         )
 
+    # Free-shipping threshold is checked against the undiscounted subtotal -
+    # a discount code reducing what's charged shouldn't also take away a
+    # free-shipping perk the cart otherwise qualified for.
     shipping = compute_shipping_cents(settings, subtotal)
     # Shipping assumed same default VAT as first item / 19%
     default_vat = resolved_lines[0][0].vat_rate_bps if resolved_lines else 1900
     vat_total += compute_vat_from_gross(shipping, default_vat or 1900)
-    total = subtotal + shipping
+
+    discount_code_row = None
+    discount_cents = 0
+    normalized_discount_code = (discount_code or "").strip().upper()
+    if normalized_discount_code:
+        discount_code_row = resolve_and_validate_discount(db, code=normalized_discount_code, subtotal_cents=subtotal)
+        discount_cents = compute_discount_cents(discount_code_row, subtotal)
+        # Prices are VAT-inclusive gross; scale the (informational) VAT total
+        # down by the same proportion the discount removes from the subtotal,
+        # so it still roughly represents "how much of the charged total is
+        # VAT" rather than overstating it once a discount is applied.
+        if subtotal > 0 and discount_cents > 0:
+            vat_total = int(round(vat_total * (subtotal - discount_cents) / subtotal))
+
+    total = subtotal - discount_cents + shipping
 
     order = ShopOrder(
         id=str(uuid4()),
@@ -211,6 +237,8 @@ def create_checkout_order(
         city=(customer.get("city") or "").strip(),
         country=((customer.get("country") or "DE").strip().upper())[:2],
         notes=(notes or "").strip(),
+        discount_code=discount_code_row.code if discount_code_row else "",
+        discount_cents=discount_cents,
     )
     if not order.address_line1 or not order.postal_code or not order.city:
         raise HTTPException(status_code=400, detail="validation")
@@ -224,6 +252,11 @@ def create_checkout_order(
     # Reserve stock for every payment method at checkout create (row-locked)
     # so concurrent carts cannot oversell before Stripe/webhook confirms.
     mark_inventory_reserved(db, order_items)
+    # Same reasoning: commit to the redemption now rather than at payment
+    # confirmation, mirroring the stock-reservation timing above. Released
+    # again if the order is later cancelled (see update_order_status).
+    if discount_code_row:
+        record_redemption(db, discount_code_row)
 
     checkout_url: Optional[str] = None
     if payment_method == "stripe":
@@ -232,6 +265,8 @@ def create_checkout_order(
         except Exception:
             order.status = "cancelled"
             restore_inventory(db, order_items)
+            if discount_code_row:
+                release_redemption(db, order.discount_code)
             db.commit()
             raise
         db.commit()
@@ -274,20 +309,54 @@ def create_stripe_checkout_session(
     cancel = f"{origin}{settings.shop_cancel_path}?cancelled=1"
 
     line_items = []
-    for item in items:
-        line_items.append(
-            {
-                "price_data": {
-                    "currency": order.currency.lower(),
-                    "unit_amount": item.unit_price_cents,
-                    "product_data": {
-                        "name": item.product_name,
-                        "metadata": {"product_id": item.product_id, "sku": item.product_sku},
+    discount_cents = int(order.discount_cents or 0)
+    if discount_cents > 0 and order.subtotal_cents > 0:
+        # Stripe Checkout line items can't carry a negative amount, and
+        # creating/maintaining a separate coupon object just to mirror a
+        # custom code would be another moving part to keep in sync. Instead,
+        # the discount is distributed across line items proportionally and
+        # each line collapses to quantity=1 with the post-discount amount,
+        # so the per-item amounts always divide exactly and the session
+        # total always equals order.total_cents - at the cost of Stripe's
+        # own checkout page no longer showing "unit price × quantity" for
+        # a discounted order.
+        remaining_discount = discount_cents
+        for index, item in enumerate(items):
+            if index == len(items) - 1:
+                item_discount = remaining_discount
+            else:
+                item_discount = (item.line_total_cents * discount_cents) // order.subtotal_cents
+                remaining_discount -= item_discount
+            new_amount = max(0, item.line_total_cents - item_discount)
+            name = f"{item.product_name} × {item.quantity}" if item.quantity > 1 else item.product_name
+            line_items.append(
+                {
+                    "price_data": {
+                        "currency": order.currency.lower(),
+                        "unit_amount": new_amount,
+                        "product_data": {
+                            "name": name,
+                            "metadata": {"product_id": item.product_id, "sku": item.product_sku},
+                        },
                     },
-                },
-                "quantity": item.quantity,
-            }
-        )
+                    "quantity": 1,
+                }
+            )
+    else:
+        for item in items:
+            line_items.append(
+                {
+                    "price_data": {
+                        "currency": order.currency.lower(),
+                        "unit_amount": item.unit_price_cents,
+                        "product_data": {
+                            "name": item.product_name,
+                            "metadata": {"product_id": item.product_id, "sku": item.product_sku},
+                        },
+                    },
+                    "quantity": item.quantity,
+                }
+            )
     if order.shipping_cents > 0:
         line_items.append(
             {
@@ -426,7 +495,12 @@ def send_order_emails(db: Session, order: ShopOrder, items: list[ShopOrderItem],
         f"Zahlung: {order.payment_method}\n\n"
         f"Positionen:\n" + "\n".join(lines) + "\n\n"
         f"Zwischensumme: {order.subtotal_cents / 100:.2f} {order.currency}\n"
-        f"Versand: {order.shipping_cents / 100:.2f} {order.currency}\n"
+        + (
+            f"Rabatt ({order.discount_code}): -{order.discount_cents / 100:.2f} {order.currency}\n"
+            if order.discount_cents
+            else ""
+        )
+        + f"Versand: {order.shipping_cents / 100:.2f} {order.currency}\n"
         f"davon MwSt: {order.vat_cents / 100:.2f} {order.currency}\n"
         f"Gesamt: {order.total_cents / 100:.2f} {order.currency}\n\n"
         f"Lieferadresse:\n{address}\n\n"
@@ -587,6 +661,8 @@ def update_order_status(
     if status == "cancelled" and previous in {"awaiting_payment", "paid", "fulfilled", "pending"}:
         # Stock is reserved at checkout create for stripe (pending) and invoice.
         restore_inventory(db, items)
+        if order.discount_code:
+            release_redemption(db, order.discount_code)
     db.commit()
     db.refresh(order)
     if status in {"paid", "fulfilled"}:

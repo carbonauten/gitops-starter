@@ -86,5 +86,11 @@
   "errors.strato_automation_navigation_failed": "无法打开 Strato 的邮件管理页面——Strato 页面可能已更改。",
   "errors.strato_automation_create_failed": "无法在 Strato 自动创建邮箱——Strato 页面可能已更改，请手动创建。",
   "errors.strato_automation_unexpected_error": "Strato 自动化过程中出现意外错误，请手动创建。",
+  "errors.discount_code_invalid": "该折扣码无效。",
+  "errors.discount_code_expired": "该折扣码已过期。",
+  "errors.discount_code_not_yet_valid": "该折扣码尚未生效。",
+  "errors.discount_code_limit_reached": "该折扣码已被兑换次数过多。",
+  "errors.discount_code_minimum_not_met": "未达到该折扣码的最低订单金额。",
+  "errors.discount_code_already_exists": "该折扣码已存在。",
   "messages.language_updated": "语言已更新。"
 }

@@ -82,6 +82,7 @@ flowchart LR
 | Q | 2–4 Tage | ✅ Abgeschlossen (MVP) | KI-Schreibassistenz im Artikel-Editor |
 | R | 2–4 Tage | ✅ Abgeschlossen (MVP) | M365 Ask: LLM-Function-Calling |
 | S | 1–2 Tage | ✅ Abgeschlossen (MVP) | Volltext-Diff für Versionshistorie |
+| T | 2–4 Tage | ✅ Abgeschlossen (MVP) | Shop-Rabattcodes/Gutscheine |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -1043,6 +1044,37 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] Eine kleine Änderung in einem langen Artikeltext zeigt nur den geänderten Ausschnitt farblich hervorgehoben, nicht den gesamten alten/neuen Text nebeneinander
 - [x] Titel-/Status-/Datumsänderungen sehen unverändert aus wie vorher (kein unnötiger Diff auf kurzen Feldern)
 - [x] Zusammenfügen der `equal`+`delete`-Segmente ergibt exakt den alten Text, `equal`+`insert` exakt den neuen Text (per Test abgesichert)
+
+---
+
+## Sprint T — Shop-Rabattcodes/Gutscheine ✅ (MVP)
+
+**Ziel:** Admin legt Rabattcodes an (Prozent oder Festbetrag, Mindestbestellwert, Gültigkeitszeitraum, Einlöse-Limit), Kunden lösen sie im Checkout ein. Nutzerwunsch „Shop-Funktionalität erweitern" nach Abschluss der formalen Shop-Backlog-Liste (Sprint G–L).
+
+### Deliverables
+
+- [x] Neues Modell `DiscountCode` (`shop_discount_codes`): Code (eindeutig, Großbuchstaben), Typ `percent`/`fixed`, `percent_off_bps`/`amount_off_cents`, `min_order_cents`, `max_redemptions`/`redemption_count`, `valid_from`/`valid_until`, `is_active`
+- [x] Admin-CRUD `/api/discount-codes` (`require_shop_access` lesend, `require_shop_editor` für Anlegen/Ändern/Löschen) — gleiches Muster wie `routes/products.py`
+- [x] Öffentlicher Live-Vorschau-Endpunkt `POST /api/shop/apply-discount` (Checkout-Formular prüft den Code gegen den aktuellen Warenkorb-Zwischenstand, ohne das Kontingent schon zu verbrauchen) — wie der Checkout-Endpunkt durch Honeypot/Rate-Limit/Turnstile geschützt, da Codes kurze erratbare Strings sind
+- [x] `create_checkout_order()` validiert den Code serverseitig erneut beim echten Checkout (nie dem Frontend-Vorschauwert vertrauen), zieht den Rabatt vom Zwischenstand ab, bevor der Versand berechnet wird — **bewusste Entscheidung:** der Gratisversand-Schwellenwert bezieht sich weiterhin auf den Zwischenstand vor Rabatt, ein Code soll keinen bereits erreichten Gratisversand wieder wegnehmen
+- [x] MwSt.-Ausweis (informativ, da Preise brutto sind) wird proportional zum Rabatt herunterskaliert, damit die Angabe weiterhin ungefähr stimmt
+- [x] Einlösung wird beim Anlegen der Bestellung gezählt (gleicher Zeitpunkt wie die Lagerbestands-Reservierung) und bei Stornierung wieder freigegeben (`release_redemption`, analog zu `restore_inventory`)
+- [x] Stripe-Checkout-Line-Items: statt eines von Stripe nicht unterstützten negativen Rabatt-Postens wird der Rabatt proportional auf die Positionen verteilt (letzte Position bekommt den Rundungsrest) und jede Position auf Menge 1 reduziert — garantiert exakte Übereinstimmung mit `order.total_cents`, per Test gegen die tatsächlich an Stripe gesendeten Beträge abgesichert
+- [x] Rabattzeile in Bestell-E-Mail und Rechnungs-PDF ergänzt
+- [x] Neue Admin-Seite „Rabattcodes" (Liste + Anlegen-Formular + Aktivieren/Deaktivieren/Löschen)
+- [x] Checkout-UI: Rabattcode-Feld in der Bestellübersicht, Live-Anwenden mit eigener Fehlermeldung (ungültig/abgelaufen/noch nicht gültig/Limit erreicht/Mindestbestellwert nicht erreicht — jeweils eigener, übersetzter Fehlercode statt einer generischen Meldung), CO₂-Credits-Vorschau nutzt jetzt den tatsächlichen (rabattierten) Gesamtbetrag
+
+### Bekannte Einschränkungen
+
+- [x] Kein Alembic in diesem Repo — neue Spalten auf `shop_orders` (`discount_code`, `discount_cents`) über das bestehende handgeschriebene `ensure_schema_updates`-Migrationsmuster ergänzt, die neue Tabelle `shop_discount_codes` entsteht automatisch über `Base.metadata.create_all()`
+- [x] SQLite gibt `DateTime(timezone=True)`-Werte beim Zurücklesen als zeitzonen-naiv zurück — beim Vergleich von `valid_from`/`valid_until` gegen die aktuelle Zeit explizit auf UTC normalisiert (sonst `TypeError` beim Vergleich, in den Tests aufgefallen und gefixt)
+
+### Akzeptanzkriterien
+
+- [x] Prozent- und Festbetrags-Codes berechnen den korrekten Rabatt; ein Festbetrag größer als der Warenkorb wird auf den Zwischenstand gedeckelt (kein negativer Betrag)
+- [x] Abgelaufene/noch nicht gültige/Limit-erreichte/Mindestbestellwert-nicht-erreichte Codes werden mit jeweils spezifischer Fehlermeldung abgelehnt
+- [x] Stornierte Bestellungen geben die Einlösung frei, der Code ist danach wieder nutzbar
+- [x] Die an Stripe gesendete Summe aller Line-Items entspricht exakt `order.total_cents`
 
 ---
 

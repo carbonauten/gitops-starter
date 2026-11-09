@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import {
+  applyDiscountCode,
   checkoutShop,
   confirmShopOrder,
   fetchShopConfig,
@@ -656,6 +657,10 @@ function ShopCheckoutPage({ config, base }: { config: ShopConfig | null; base: s
   const [error, setError] = useState("");
   const [website, setWebsite] = useState("");
   const [turnstileToken, setTurnstileToken] = useState("");
+  const [discountCodeInput, setDiscountCodeInput] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState<{ code: string; discountCents: number } | null>(null);
+  const [applyingDiscount, setApplyingDiscount] = useState(false);
+  const [discountError, setDiscountError] = useState("");
   const onTurnstileToken = useCallback((token: string) => setTurnstileToken(token), []);
   const turnstileKey = config?.bot_protection?.turnstile_site_key || "";
   const [form, setForm] = useState({
@@ -722,6 +727,7 @@ function ShopCheckoutPage({ config, base }: { config: ShopConfig | null; base: s
         customer: form,
         payment_method: paymentMethod,
         notes: form.notes,
+        discount_code: appliedDiscount?.code || "",
         website,
         turnstile_token: turnstileToken,
       });
@@ -740,16 +746,48 @@ function ShopCheckoutPage({ config, base }: { config: ShopConfig | null; base: s
     }
   }
 
+  async function handleApplyDiscount() {
+    if (!discountCodeInput.trim()) return;
+    setApplyingDiscount(true);
+    setDiscountError("");
+    try {
+      const result = await applyDiscountCode({
+        code: discountCodeInput.trim(),
+        subtotal_cents: cart.subtotalCents,
+        website,
+        turnstile_token: turnstileToken,
+      });
+      setAppliedDiscount({ code: result.code, discountCents: result.discount_cents });
+    } catch (err) {
+      setAppliedDiscount(null);
+      setDiscountError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setApplyingDiscount(false);
+    }
+  }
+
+  function handleRemoveDiscount() {
+    setAppliedDiscount(null);
+    setDiscountCodeInput("");
+    setDiscountError("");
+  }
+
   const shipping = useMemo(() => {
     const fee = config?.shipping_cents || 0;
     const freeFrom = config?.free_shipping_from_cents || 0;
+    // Free-shipping threshold is checked against the undiscounted subtotal,
+    // matching the backend (see shop_order_service.py) - a discount code
+    // shouldn't also take away a free-shipping perk the cart qualified for.
     if (freeFrom > 0 && cart.subtotalCents >= freeFrom) return 0;
     return fee;
   }, [config, cart.subtotalCents]);
 
+  const discountCents = Math.min(appliedDiscount?.discountCents || 0, cart.subtotalCents);
+  const orderTotal = cart.subtotalCents - discountCents + shipping;
+
   const creditsPreview =
     customer && config?.co2_credits_per_euro
-      ? Math.floor((cart.subtotalCents + shipping) / 100) * (config.co2_credits_per_euro || 0)
+      ? Math.floor(orderTotal / 100) * (config.co2_credits_per_euro || 0)
       : 0;
 
   return (
@@ -837,16 +875,52 @@ function ShopCheckoutPage({ config, base }: { config: ShopConfig | null; base: s
             <ShopOrderSummaryLine key={item.product_id} item={item} i18n={i18n} />
           ))}
         </div>
+
+        <div className="shop-discount-row">
+          {appliedDiscount ? (
+            <p className="shop-discount-applied">
+              {t("shop.discountApplied", { code: appliedDiscount.code })}{" "}
+              <button type="button" className="ghost-button" onClick={handleRemoveDiscount}>
+                {t("shop.discountRemove")}
+              </button>
+            </p>
+          ) : (
+            <div className="row-actions">
+              <input
+                type="text"
+                value={discountCodeInput}
+                onChange={(e) => setDiscountCodeInput(e.target.value.toUpperCase())}
+                placeholder={t("shop.discountCodePlaceholder")}
+                aria-label={t("shop.discountCodePlaceholder")}
+              />
+              <button
+                type="button"
+                className="ghost-button"
+                disabled={applyingDiscount || !discountCodeInput.trim()}
+                onClick={() => void handleApplyDiscount()}
+              >
+                {applyingDiscount ? t("common.loading") : t("shop.discountApply")}
+              </button>
+            </div>
+          )}
+          {discountError ? <p className="error-text">{discountError}</p> : null}
+        </div>
+
         <div className="shop-summary-totals">
           <p>
             {t("shop.subtotal")}: <strong>{formatMoney(cart.subtotalCents, config?.currency || "EUR", i18n.language)}</strong>
           </p>
+          {discountCents > 0 ? (
+            <p>
+              {t("shop.discount")}:{" "}
+              <strong>-{formatMoney(discountCents, config?.currency || "EUR", i18n.language)}</strong>
+            </p>
+          ) : null}
           <p>
             {t("shop.shipping")}: <strong>{formatMoney(shipping, config?.currency || "EUR", i18n.language)}</strong>
           </p>
           <p className="shop-summary-total">
-            {t("shop.total")}:{" "}
-            <strong>{formatMoney(cart.subtotalCents + shipping, config?.currency || "EUR", i18n.language)}</strong>
+            {t("shop.total")}: <strong>{formatMoney(orderTotal, config?.currency || "EUR", i18n.language)}</strong>
           </p>
         </div>
         {!customer ? (

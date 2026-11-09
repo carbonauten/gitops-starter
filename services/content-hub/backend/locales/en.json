@@ -86,5 +86,11 @@
   "errors.strato_automation_navigation_failed": "Could not open Strato's mail management - the Strato page has likely changed.",
   "errors.strato_automation_create_failed": "Could not create the mailbox at Strato automatically - the Strato page has likely changed. Please create it manually.",
   "errors.strato_automation_unexpected_error": "Unexpected error during Strato automation. Please create it manually.",
+  "errors.discount_code_invalid": "This discount code is invalid.",
+  "errors.discount_code_expired": "This discount code has expired.",
+  "errors.discount_code_not_yet_valid": "This discount code is not yet valid.",
+  "errors.discount_code_limit_reached": "This discount code has already been redeemed too many times.",
+  "errors.discount_code_minimum_not_met": "The minimum order value for this discount code was not reached.",
+  "errors.discount_code_already_exists": "This discount code already exists.",
   "messages.language_updated": "Language updated."
 }
