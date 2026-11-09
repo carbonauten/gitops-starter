@@ -12,7 +12,10 @@ RUN npm ci
 COPY ${SERVICE_DIR}frontend/ ./
 RUN npm run build
 
-FROM python:3.11-slim
+# Pinned to Debian bookworm, not the floating "slim" tag (now trixie) -
+# Playwright's --with-deps package list below doesn't know trixie yet and
+# fails with "Package 'ttf-unifont' has no installation candidate".
+FROM python:3.11-slim-bookworm
 ARG SERVICE_DIR
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1
