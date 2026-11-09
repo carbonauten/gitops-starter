@@ -2401,6 +2401,28 @@ export async function createImapAccount(payload: {
   return response.account;
 }
 
+export async function updateImapAccount(
+  accountId: string,
+  payload: {
+    label: string;
+    host: string;
+    port?: number;
+    use_ssl?: boolean;
+    username: string;
+    password?: string;
+    folder?: string;
+  },
+): Promise<ImapAccount> {
+  const response = await request<{ account: ImapAccount }>(
+    `/api/imap-mail/accounts/${encodeURIComponent(accountId)}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    },
+  );
+  return response.account;
+}
+
 export async function deleteImapAccount(accountId: string): Promise<void> {
   await request(`/api/imap-mail/accounts/${encodeURIComponent(accountId)}`, { method: "DELETE" });
 }

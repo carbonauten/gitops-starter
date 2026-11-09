@@ -1157,6 +1157,14 @@
     "testing": "正在测试连接…",
     "searchPlaceholder": "搜索主题或发件人…",
     "refresh": "刷新",
-    "unreadCount": "{{count}} 封未读"
+    "unreadCount": "{{count}} 封未读",
+    "editAccount": "编辑",
+    "editTitle": "编辑邮箱",
+    "editHint": "修改该邮箱的凭据——密码留空以保留已保存的密码。",
+    "passwordKeep": "留空以保留现有密码",
+    "saveAccount": "保存",
+    "cancelEdit": "取消",
+    "accountUpdated": "邮箱“{{label}}”已更新。",
+    "hasAttachments": "包含附件"
   }
 }

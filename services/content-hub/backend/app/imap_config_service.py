@@ -101,6 +101,40 @@ def create_imap_account(
     return _account_summary(row)
 
 
+def update_imap_account(
+    db: Session,
+    account_id: str,
+    *,
+    label: str,
+    host: str,
+    port: int,
+    use_ssl: bool,
+    username: str,
+    password: str,
+    folder: str,
+) -> dict[str, Any]:
+    row = get_imap_account_row(db, account_id)
+    label = (label or "").strip()
+    host = (host or "").strip()
+    username = (username or "").strip()
+    if not label or not host or not username:
+        raise HTTPException(status_code=400, detail="validation")
+
+    row.label = label
+    row.host = host
+    row.port = port or (993 if use_ssl else 143)
+    row.use_ssl = use_ssl
+    row.username = username
+    row.folder = (folder or "INBOX").strip() or "INBOX"
+    # Blank password on edit means "keep the stored one" - matches the
+    # Mailcow/Entra config forms' existing convention.
+    if password:
+        row.password_enc = encrypt_secret(password)
+    db.commit()
+    db.refresh(row)
+    return _account_summary(row)
+
+
 def delete_imap_account(db: Session, account_id: str) -> None:
     row = get_imap_account_row(db, account_id)
     db.delete(row)

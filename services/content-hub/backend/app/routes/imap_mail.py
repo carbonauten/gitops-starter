@@ -8,8 +8,15 @@ from ..ai_service import ai_configured, summarize_article
 from ..audit_service import log_audit
 from ..database import get_db
 from ..dependencies import require_it_master
-from ..imap_config_service import create_imap_account, delete_imap_account, list_imap_accounts
+from ..imap_config_service import (
+    create_imap_account,
+    delete_imap_account,
+    get_imap_account_row,
+    list_imap_accounts,
+    update_imap_account,
+)
 from ..imap_mail_service import get_message, list_messages, test_connection
+from ..user_integration_store import decrypt_secret
 
 router = APIRouter(prefix="/api/imap-mail", tags=["imap-mail"])
 
@@ -21,6 +28,18 @@ class ImapAccountCreate(BaseModel):
     use_ssl: bool = Field(default=True)
     username: str = Field(..., min_length=1, max_length=300)
     password: str = Field(..., min_length=1, max_length=300)
+    folder: str = Field(default="INBOX", max_length=200)
+
+
+class ImapAccountUpdate(BaseModel):
+    label: str = Field(..., min_length=1, max_length=200)
+    host: str = Field(..., min_length=1, max_length=300)
+    port: int = Field(default=993, ge=1, le=65535)
+    use_ssl: bool = Field(default=True)
+    username: str = Field(..., min_length=1, max_length=300)
+    # Blank keeps the stored password - same convention as the create form
+    # being the only place a password is required.
+    password: str = Field(default="", max_length=300)
     folder: str = Field(default="INBOX", max_length=200)
 
 
@@ -64,6 +83,40 @@ def post_account(
         actor=user,
     )
     log_audit(db, entity_type="imap_mail_account", entity_id=account["id"], action="created", actor=user)
+    return {"account": account}
+
+
+@router.put("/accounts/{account_id}")
+def put_account(
+    account_id: str,
+    payload: ImapAccountUpdate,
+    db: Session = Depends(get_db),
+    user: dict = Depends(require_it_master),
+) -> dict:
+    existing = get_imap_account_row(db, account_id)
+    # Same fail-fast test as on create, using the new password if one was
+    # given, otherwise the still-encrypted stored one (blank means "keep").
+    effective_password = payload.password or decrypt_secret(existing.password_enc or "")
+    test_connection(
+        host=payload.host,
+        port=payload.port,
+        use_ssl=payload.use_ssl,
+        username=payload.username,
+        password=effective_password,
+        folder=payload.folder,
+    )
+    account = update_imap_account(
+        db,
+        account_id,
+        label=payload.label,
+        host=payload.host,
+        port=payload.port,
+        use_ssl=payload.use_ssl,
+        username=payload.username,
+        password=payload.password,
+        folder=payload.folder,
+    )
+    log_audit(db, entity_type="imap_mail_account", entity_id=account_id, action="updated", actor=user)
     return {"account": account}
 
 

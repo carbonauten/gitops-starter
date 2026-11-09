@@ -17,12 +17,18 @@ def _build_raw_message() -> bytes:
 class FakeImapConnection:
     """Standalone fake, not a real imaplib.IMAP4 - patching imaplib.IMAP4_SSL
     directly would require a real TCP handshake. We patch the module's own
-    _connect() helper instead, same approach as the Mailcow httpx fake."""
+    _connect() helper instead, same approach as the Mailcow httpx fake.
 
-    def __init__(self, uids: list[bytes], header_raw: bytes, full_raw: bytes):
+    Both the list and detail fetches now request BODY.PEEK[] (optionally
+    byte-ranged) plus BODYSTRUCTURE, so a single full_raw response serves
+    both - include_bodystructure lets a test simulate a message with an
+    attachment, since real servers put the word ATTACHMENT inline in the
+    same response line imaplib.ParseFlags already scans for flags."""
+
+    def __init__(self, uids: list[bytes], full_raw: bytes, has_attachment: bool = False):
         self.uids = uids
-        self.header_raw = header_raw
         self.full_raw = full_raw
+        self.has_attachment = has_attachment
         self.search_calls: list[tuple] = []
 
     def select(self, folder, readonly=True):
@@ -33,11 +39,17 @@ class FakeImapConnection:
             self.search_calls.append(args)
             return "OK", [b" ".join(self.uids)]
         if command == "fetch":
-            uid, spec = args[0], args[1]
-            if "HEADER.FIELDS" in spec:
-                meta = f"{uid.decode()} (FLAGS (\\Seen) BODY[HEADER.FIELDS (SUBJECT FROM DATE)] {{{len(self.header_raw)}}}".encode()
-                return "OK", [(meta, self.header_raw), b")"]
-            meta = f"{uid.decode()} (FLAGS (\\Seen) BODY[] {{{len(self.full_raw)}}}".encode()
+            uid = args[0]
+            bodystructure = (
+                '(("APPLICATION" "PDF" ("NAME" "invoice.pdf") NIL NIL "BASE64" 4096 NIL '
+                '("ATTACHMENT" ("FILENAME" "invoice.pdf")) NIL))'
+                if self.has_attachment
+                else '("TEXT" "PLAIN" ("CHARSET" "utf-8") NIL NIL "7BIT" 123 5)'
+            )
+            meta = (
+                f"{uid.decode()} (FLAGS (\\Seen) BODYSTRUCTURE {bodystructure} "
+                f"BODY[] {{{len(self.full_raw)}}}"
+            ).encode()
             return "OK", [(meta, self.full_raw), b")"]
         raise AssertionError(f"unexpected uid command: {command}")
 
@@ -51,7 +63,7 @@ class FakeImapConnection:
 def _create_account(it_auth_client) -> dict:
     # Creating an account now tests the connection before saving, so even a
     # "just create it" call needs a working fake IMAP connection patched in.
-    with patch("app.imap_mail_service._connect", return_value=FakeImapConnection(uids=[], header_raw=b"", full_raw=b"")):
+    with patch("app.imap_mail_service._connect", return_value=FakeImapConnection(uids=[], full_raw=b"")):
         response = it_auth_client.post(
             "/api/imap-mail/accounts",
             json={
@@ -105,13 +117,8 @@ def test_create_account_rejects_missing_password(it_auth_client):
 
 def test_list_and_get_messages_via_fake_imap(it_auth_client):
     account = _create_account(it_auth_client)
-    header_raw = (
-        b"Subject: Hallo Welt\r\n"
-        b"From: Sender <sender@test.de>\r\n"
-        b"Date: Mon, 01 Jan 2024 10:00:00 +0000\r\n\r\n"
-    )
     full_raw = _build_raw_message()
-    fake_conn = FakeImapConnection(uids=[b"1"], header_raw=header_raw, full_raw=full_raw)
+    fake_conn = FakeImapConnection(uids=[b"1"], full_raw=full_raw)
 
     with patch("app.imap_mail_service._connect", return_value=fake_conn):
         listing = it_auth_client.get(f"/api/imap-mail/accounts/{account['id']}/messages")
@@ -121,6 +128,8 @@ def test_list_and_get_messages_via_fake_imap(it_auth_client):
         assert messages[0]["subject"] == "Hallo Welt"
         assert messages[0]["from"]["email"] == "sender@test.de"
         assert messages[0]["is_read"] is True
+        assert messages[0]["preview"] == "Hallo, das ist der Text."
+        assert messages[0]["has_attachments"] is False
 
         detail = it_auth_client.get(f"/api/imap-mail/accounts/{account['id']}/messages/1")
         assert detail.status_code == 200
@@ -128,6 +137,20 @@ def test_list_and_get_messages_via_fake_imap(it_auth_client):
         assert message["subject"] == "Hallo Welt"
         assert message["body_type"] == "text"
         assert "Hallo, das ist der Text." in message["body"]
+        assert message["preview"] == "Hallo, das ist der Text."
+        assert message["has_attachments"] is False
+
+    it_auth_client.delete(f"/api/imap-mail/accounts/{account['id']}")
+
+
+def test_list_messages_detects_attachment_from_bodystructure(it_auth_client):
+    account = _create_account(it_auth_client)
+    fake_conn = FakeImapConnection(uids=[b"1"], full_raw=_build_raw_message(), has_attachment=True)
+
+    with patch("app.imap_mail_service._connect", return_value=fake_conn):
+        listing = it_auth_client.get(f"/api/imap-mail/accounts/{account['id']}/messages")
+    assert listing.status_code == 200
+    assert listing.json()["messages"][0]["has_attachments"] is True
 
     it_auth_client.delete(f"/api/imap-mail/accounts/{account['id']}")
 
@@ -169,7 +192,7 @@ def test_create_account_rejects_bad_credentials_without_saving(it_auth_client):
 
 def test_list_messages_forwards_search_term_to_imap(it_auth_client):
     account = _create_account(it_auth_client)
-    fake_conn = FakeImapConnection(uids=[b"1"], header_raw=b"Subject: X\r\n\r\n", full_raw=b"")
+    fake_conn = FakeImapConnection(uids=[b"1"], full_raw=b"")
 
     with patch("app.imap_mail_service._connect", return_value=fake_conn):
         response = it_auth_client.get(
@@ -182,5 +205,60 @@ def test_list_messages_forwards_search_term_to_imap(it_auth_client):
     assert "SUBJECT" in criteria
     assert '"Rechnung"' in criteria
     assert "FROM" in criteria
+
+    it_auth_client.delete(f"/api/imap-mail/accounts/{account['id']}")
+
+
+def test_update_account_changes_fields_and_tests_connection(it_auth_client):
+    account = _create_account(it_auth_client)
+
+    with patch(
+        "app.imap_mail_service._connect", return_value=FakeImapConnection(uids=[], full_raw=b"")
+    ) as mock_connect:
+        response = it_auth_client.put(
+            f"/api/imap-mail/accounts/{account['id']}",
+            json={
+                "label": "Info (Strato) renamed",
+                "host": "imap.strato.de",
+                "port": 993,
+                "use_ssl": True,
+                "username": "info@carbonauten.com",
+                "password": "",
+                "folder": "Archive",
+            },
+        )
+    assert response.status_code == 200
+    updated = response.json()["account"]
+    assert updated["label"] == "Info (Strato) renamed"
+    assert updated["folder"] == "Archive"
+    assert mock_connect.called  # the blank password still triggers a fail-fast test
+
+    it_auth_client.delete(f"/api/imap-mail/accounts/{account['id']}")
+
+
+def test_update_account_rejects_bad_new_password_without_saving(it_auth_client):
+    account = _create_account(it_auth_client)
+    from fastapi import HTTPException
+
+    with patch(
+        "app.imap_mail_service._connect",
+        side_effect=HTTPException(status_code=502, detail="imap_login_failed"),
+    ):
+        response = it_auth_client.put(
+            f"/api/imap-mail/accounts/{account['id']}",
+            json={
+                "label": "Info (Strato)",
+                "host": "imap.strato.de",
+                "port": 993,
+                "use_ssl": True,
+                "username": "info@carbonauten.com",
+                "password": "a-new-wrong-password",
+                "folder": "INBOX",
+            },
+        )
+    assert response.status_code == 502
+
+    unchanged = it_auth_client.get("/api/imap-mail/accounts").json()["accounts"]
+    assert any(entry["label"] == "Info (Strato)" for entry in unchanged)
 
     it_auth_client.delete(f"/api/imap-mail/accounts/{account['id']}")

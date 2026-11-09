@@ -1157,6 +1157,14 @@
     "testing": "Testing connection…",
     "searchPlaceholder": "Search subject or sender…",
     "refresh": "Refresh",
-    "unreadCount": "{{count}} unread"
+    "unreadCount": "{{count}} unread",
+    "editAccount": "Edit",
+    "editTitle": "Edit mailbox",
+    "editHint": "Change this mailbox's credentials - leave the password blank to keep the stored one.",
+    "passwordKeep": "Leave blank to keep the existing password",
+    "saveAccount": "Save",
+    "cancelEdit": "Cancel",
+    "accountUpdated": "Mailbox \"{{label}}\" updated.",
+    "hasAttachments": "Has attachment"
   }
 }

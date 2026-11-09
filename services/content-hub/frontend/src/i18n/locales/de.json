@@ -1157,6 +1157,14 @@
     "testing": "Verbindung wird geprüft…",
     "searchPlaceholder": "Betreff oder Absender durchsuchen…",
     "refresh": "Aktualisieren",
-    "unreadCount": "{{count}} ungelesen"
+    "unreadCount": "{{count}} ungelesen",
+    "editAccount": "Bearbeiten",
+    "editTitle": "Postfach bearbeiten",
+    "editHint": "Zugangsdaten dieses Postfachs ändern — Passwort leer lassen, um das gespeicherte zu behalten.",
+    "passwordKeep": "Leer lassen, um bestehendes Passwort zu behalten",
+    "saveAccount": "Speichern",
+    "cancelEdit": "Abbrechen",
+    "accountUpdated": "Postfach „{{label}}“ aktualisiert.",
+    "hasAttachments": "Enthält Anhang"
   }
 }
