@@ -8,6 +8,7 @@ import {
   restoreContentVersion,
   type ContentRevision,
   type VersionChange,
+  type VersionDiffSegment,
 } from "../api/client";
 
 type VersionHistoryPanelProps = {
@@ -15,6 +16,18 @@ type VersionHistoryPanelProps = {
   entityId: string;
   onRestored?: () => void;
 };
+
+function WordDiffView({ segments }: { segments: VersionDiffSegment[] }) {
+  return (
+    <pre className="version-diff-fulltext">
+      {segments.map((segment, index) => (
+        <span key={index} className={`version-diff-segment version-diff-segment-${segment.op}`}>
+          {segment.text}
+        </span>
+      ))}
+    </pre>
+  );
+}
 
 export function VersionHistoryPanel({ entityType, entityId, onRestored }: VersionHistoryPanelProps) {
   const { t } = useTranslation();
@@ -169,18 +182,27 @@ export function VersionHistoryPanel({ entityType, entityId, onRestored }: Versio
                   {changes.map((change) => (
                     <div key={change.field} className="version-diff-item">
                       <strong>{t(`versions.fields.${change.field}`, { defaultValue: change.field })}</strong>
-                      {change.from !== null ? (
-                        <div className="version-diff-from">
-                          <span className="muted">{t("versions.before")}</span>
-                          <pre>{formatValue(change.from)}</pre>
+                      {change.diff ? (
+                        <div className="version-diff-fulltext-wrapper">
+                          <span className="muted">{t("versions.fulltextDiff")}</span>
+                          <WordDiffView segments={change.diff} />
                         </div>
-                      ) : null}
-                      <div className="version-diff-to">
-                        <span className="muted">
-                          {change.from !== null ? t("versions.after") : t("versions.value")}
-                        </span>
-                        <pre>{formatValue(change.to)}</pre>
-                      </div>
+                      ) : (
+                        <>
+                          {change.from !== null ? (
+                            <div className="version-diff-from">
+                              <span className="muted">{t("versions.before")}</span>
+                              <pre>{formatValue(change.from)}</pre>
+                            </div>
+                          ) : null}
+                          <div className="version-diff-to">
+                            <span className="muted">
+                              {change.from !== null ? t("versions.after") : t("versions.value")}
+                            </span>
+                            <pre>{formatValue(change.to)}</pre>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>

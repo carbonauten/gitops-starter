@@ -33,6 +33,72 @@ def test_compare_article_version_with_current(auth_client):
     assert "content" in fields
 
 
+def test_compare_article_content_includes_word_level_diff(auth_client):
+    created = auth_client.post(
+        "/api/articles",
+        json={"title": "Diff me", "content": "<p>The quick brown fox jumps.</p>"},
+    )
+    article_id = created.json()["article"]["id"]
+    auth_client.patch(
+        f"/api/articles/{article_id}",
+        json={"content": "<p>The quick red fox jumps high.</p>"},
+    )
+
+    compare = auth_client.get(f"/api/versions/article/{article_id}/compare?from_version=1")
+    assert compare.status_code == 200
+    content_change = next(c for c in compare.json()["changes"] if c["field"] == "content")
+    assert "diff" in content_change
+
+    segments = content_change["diff"]
+    ops = {segment["op"] for segment in segments}
+    assert "delete" in ops
+    assert "insert" in ops
+    assert "equal" in ops
+    # Reassembling "before" from equal+delete segments and "after" from
+    # equal+insert segments must reproduce the original strings exactly.
+    before = "".join(s["text"] for s in segments if s["op"] in ("equal", "delete"))
+    after = "".join(s["text"] for s in segments if s["op"] in ("equal", "insert"))
+    assert before == "<p>The quick brown fox jumps.</p>"
+    assert after == "<p>The quick red fox jumps high.</p>"
+
+
+def test_compare_certificate_notes_includes_word_level_diff(auth_client):
+    created = auth_client.post(
+        "/api/certificates",
+        json={
+            "name": "Diff Cert",
+            "category": "compliance",
+            "issuer": "TÜV",
+            "valid_from": "2025-01-01",
+            "valid_to": "2026-01-01",
+            "responsible_name": "QA",
+            "responsible_email": "qa@example.com",
+            "notes": "Initial notes about the audit",
+        },
+    )
+    certificate_id = created.json()["certificate"]["id"]
+    auth_client.patch(
+        f"/api/certificates/{certificate_id}",
+        json={"notes": "Updated notes about the external audit"},
+    )
+
+    compare = auth_client.get(f"/api/versions/certificate/{certificate_id}/compare?from_version=1")
+    assert compare.status_code == 200
+    notes_change = next(c for c in compare.json()["changes"] if c["field"] == "notes")
+    assert "diff" in notes_change
+    assert any(segment["op"] == "insert" and "external" in segment["text"] for segment in notes_change["diff"])
+
+
+def test_compare_does_not_full_diff_non_text_fields(auth_client):
+    created = auth_client.post("/api/articles", json={"title": "A", "content": "<p>x</p>"})
+    article_id = created.json()["article"]["id"]
+    auth_client.patch(f"/api/articles/{article_id}", json={"title": "B"})
+
+    compare = auth_client.get(f"/api/versions/article/{article_id}/compare?from_version=1")
+    title_change = next(c for c in compare.json()["changes"] if c["field"] == "title")
+    assert "diff" not in title_change
+
+
 def test_certificate_update_creates_revision(auth_client):
     created = auth_client.post(
         "/api/certificates",

@@ -875,6 +875,7 @@
     "before": "Vorher",
     "after": "Nachher",
     "value": "Wert",
+    "fulltextDiff": "Änderungen (entfernt / hinzugefügt)",
     "fields": {
       "title": "Titel",
       "content": "Inhalt",
