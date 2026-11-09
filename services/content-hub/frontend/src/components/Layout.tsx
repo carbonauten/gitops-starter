@@ -6,6 +6,7 @@ import { fetchDashboardStats } from "../api/client";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { SearchBar } from "./SearchBar";
 import { BrandLogo } from "./BrandLogo";
+import { ThemeToggle } from "./ThemeToggle";
 import { PwaInstallBanner } from "./PwaInstallBanner";
 import { useAuth } from "../hooks/useAuth";
 import { usePermissions } from "../hooks/usePermissions";
@@ -64,6 +65,7 @@ export function TopBar({ onMenuToggle }: { onMenuToggle: () => void }) {
         <SearchBar />
       </div>
       <div className="topbar-actions">
+        <ThemeToggle />
         <LanguageSwitch />
         {user ? (
           <div className="user-chip">

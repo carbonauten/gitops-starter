@@ -134,23 +134,23 @@ export function ShopConsentBanner({ privacyHref }: { privacyHref: string }) {
               </span>
             </label>
             <div className="shop-cmp-actions">
-              <button type="button" className="primary-button" onClick={saveCustom}>
+              <button type="button" className="shop-btn shop-btn-primary" onClick={saveCustom}>
                 {t("shop.cmp.save")}
               </button>
-              <button type="button" className="ghost-button" onClick={() => setCustomize(false)}>
+              <button type="button" className="shop-btn shop-btn-ghost" onClick={() => setCustomize(false)}>
                 {t("common.close")}
               </button>
             </div>
           </div>
         ) : (
           <div className="shop-cmp-actions">
-            <button type="button" className="primary-button" onClick={acceptAll}>
+            <button type="button" className="shop-btn shop-btn-primary" onClick={acceptAll}>
               {t("shop.cmp.acceptAll")}
             </button>
-            <button type="button" className="ghost-button" onClick={acceptEssential}>
+            <button type="button" className="shop-btn shop-btn-ghost" onClick={acceptEssential}>
               {t("shop.cmp.essentialOnly")}
             </button>
-            <button type="button" className="ghost-button" onClick={() => setCustomize(true)}>
+            <button type="button" className="shop-btn shop-btn-ghost" onClick={() => setCustomize(true)}>
               {t("shop.cmp.customize")}
             </button>
           </div>

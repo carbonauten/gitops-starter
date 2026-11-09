@@ -9,6 +9,16 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Carbonauten" />
     <title>Unified Carbonauten Platform</title>
+    <script>
+      (function () {
+        try {
+          var stored = window.localStorage.getItem("ch-theme");
+          if (stored === "dark" || stored === "light") {
+            document.documentElement.dataset.theme = stored;
+          }
+        } catch (e) {}
+      })();
+    </script>
     <link rel="icon" type="image/png" href="/logo.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />

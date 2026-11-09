@@ -84,6 +84,7 @@ flowchart LR
 | S | 1–2 Tage | ✅ Abgeschlossen (MVP) | Volltext-Diff für Versionshistorie |
 | T | 2–4 Tage | ✅ Abgeschlossen (MVP) | Shop-Rabattcodes/Gutscheine |
 | U | 1–2 Tage | ✅ Abgeschlossen (MVP) | Backend-Verbesserung: Alembic-Migrationen |
+| V | 1–2 Tage | ✅ Abgeschlossen (MVP) | Design-Verbesserung: Dark Mode (Admin) + Shop-Markenkonsistenz |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -1107,6 +1108,40 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] Eine bestehende, über `create_all()` angelegte DB (Alt-Deployment-Simulation) wird beim ersten Start mit Alembic korrekt auf die Baseline gestempelt, ohne vorhandene Daten zu berühren oder Fehler zu werfen
 - [x] Zwei aufeinanderfolgende Starts gegen dieselbe DB sind idempotent
 - [x] Gesamte Backend-Testsuite (314/314) bleibt grün
+
+---
+
+## Sprint V — Design-Verbesserung: Dark Mode (Admin) + Shop-Markenkonsistenz ✅ (MVP)
+
+**Ziel:** Nutzerwunsch „Design verbessern" nach Sprint U, konkretisiert auf zwei Bereiche: Dark Mode für die interne Admin-Oberfläche (bisher nur hell) und Behebung von Markenbrüchen im Shop-Storefront (bisher eigenes dunkles Grün-Branding, aber mit durchrutschenden Admin-Farben an einzelnen Stellen).
+
+### Deliverables
+
+**Admin Dark Mode:**
+- [x] `:root`-Token-System um `--bg-subtle`, `--surface-rgb` erweitert; Dark-Variante über `@media (prefers-color-scheme: dark)` (nur wenn kein manueller Override gesetzt ist) **und** `:root[data-theme="dark"]` für den manuellen Toggle
+- [x] 122 hartcodierte Hex-Farben im Admin-Teil von `styles.css` auf die bestehenden bzw. neu eingeführten Tokens umgestellt (`#fff`/`white`/`#ffffff` → `var(--surface)`, `rgba(255,255,255,X)` → `rgba(var(--surface-rgb),X)`, mehrere inkonsistente Grauton-Varianten → `var(--surface-muted)`/`var(--text-muted)`), außerdem zwei tote `var(--muted, …)`/`var(--accent, …)`-Fallbacks auf nie definierte Custom Properties entfernt
+- [x] `useTheme`-Hook (`light`/`dark`/`system`, `localStorage`-persistiert) + `ThemeToggle`-Button in der TopBar, zyklisch schaltbar; Inline-Script in `index.html` setzt `data-theme` synchron vor dem ersten Paint, um ein kurzes Aufblitzen des falschen Themes zu vermeiden
+- [x] `color-scheme: dark` im Dark-Root sorgt dafür, dass auch native Formularelemente (Datums-Picker etc.) automatisch mitziehen
+- [x] Bewusst nicht angefasst: die farbigen Status-Badges (Erfolg/Fehler/Warnung, z. B. `#ecfdf3`/`#027a48`) — das sind in sich geschlossene zweifarbige Pillen mit eigenem Hintergrund, die unabhängig vom Seiten-Theme lesbar bleiben; eine vollständige Token-Umstellung aller Badge-Varianten war für dieses MVP nicht im Scope
+
+**Shop-Markenkonsistenz:**
+- [x] `ShopConsentBanner.tsx` (Cookie-Banner) nutzte die generischen Admin-Klassen `primary-button`/`ghost-button` (blau) statt `shop-btn shop-btn-primary`/`shop-btn-ghost` (Marken-Grün) — behoben
+- [x] Gleicher Fehler in den Rabattcode-Buttons im Checkout (`ShopApp.tsx`, aus Sprint T) — behoben
+- [x] `.shop-shell .empty-state`/`.loading-state` überschrieb bisher nur die Textfarbe, nicht den Hintergrund — dadurch erschien die „Coming soon"-Karte auf der Shop-Startseite als weiße Box im sonst dunklen Theme; jetzt mit dem gleichen dunklen Oberflächenton wie `.shop-shell .list-card`
+- [x] Rabattcode-Eingabefeld im Checkout war unstyled (Browser-Default, weiß) — jetzt mit dem dunklen Shop-Eingabefeld-Stil
+
+### Bekannte Einschränkungen
+
+- [x] Nur visuell per Playwright-Screenshot gegen Dashboard, Produkte, Rabattcodes-Seite und Shop-Startseite/Checkout verifiziert — nicht jede der 27 Admin-Seiten einzeln geprüft
+- [x] Die Konsolidierung der Status-Badge-Farben (Erfolg/Fehler/Warnung/Info) auf echte Semantik-Tokens ist nicht Teil dieses Sprints; die Badges funktionieren in beiden Themes, sind aber weiterhin über leicht inkonsistente Einzelwerte verteilt
+- [x] Zwei vorbestehende, nicht mit diesem Sprint zusammenhängende `tsc --noEmit`-Fehler (`EmailBodyFrame.tsx`, `FilesPage.tsx`, beide `lib`-Target-bedingt) bleiben bestehen — der eigentliche Build (`vite build`, das von CI genutzt wird) ist davon nicht betroffen
+
+### Akzeptanzkriterien
+
+- [x] Admin-Oberfläche lässt sich über den TopBar-Toggle zwischen Hell/Dunkel/System umschalten, Auswahl bleibt nach Reload erhalten
+- [x] Dashboard, Produkte- und Rabattcode-Seiten zeigen im Dark Mode durchgängig dunkle Hintergründe ohne weiße „Flecken"
+- [x] Shop-Cookie-Banner und Checkout-Rabattcode-UI verwenden die Marken-Grün-Farbe statt des Admin-Blaus
+- [x] `npm run build` läuft fehlerfrei durch
 
 ---
 

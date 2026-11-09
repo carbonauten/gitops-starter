@@ -880,7 +880,7 @@ function ShopCheckoutPage({ config, base }: { config: ShopConfig | null; base: s
           {appliedDiscount ? (
             <p className="shop-discount-applied">
               {t("shop.discountApplied", { code: appliedDiscount.code })}{" "}
-              <button type="button" className="ghost-button" onClick={handleRemoveDiscount}>
+              <button type="button" className="shop-btn shop-btn-ghost" onClick={handleRemoveDiscount}>
                 {t("shop.discountRemove")}
               </button>
             </p>
@@ -895,7 +895,7 @@ function ShopCheckoutPage({ config, base }: { config: ShopConfig | null; base: s
               />
               <button
                 type="button"
-                className="ghost-button"
+                className="shop-btn shop-btn-ghost"
                 disabled={applyingDiscount || !discountCodeInput.trim()}
                 onClick={() => void handleApplyDiscount()}
               >
