@@ -258,6 +258,21 @@ export function ImapMailPage() {
 
           <div className="integration-connect-block">
             <div className="integration-connect-header">
+              <strong>{t("imapMail.newMailboxTitle")}</strong>
+            </div>
+            <p className="muted">{t("imapMail.newMailboxHint")}</p>
+            <a
+              className="ghost-button link-button"
+              href="https://www.strato.de/login"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t("imapMail.openStrato")}
+            </a>
+          </div>
+
+          <div className="integration-connect-block">
+            <div className="integration-connect-header">
               <strong>{t("imapMail.createTitle")}</strong>
             </div>
             <p className="muted">{t("imapMail.createHint")}</p>

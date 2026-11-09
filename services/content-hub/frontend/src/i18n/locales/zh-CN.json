@@ -1108,7 +1108,10 @@
   "imapMail": {
     "title": "邮箱（Strato）",
     "subtitle": "通过 IMAP 在平台内查看 Strato 上托管的邮箱——这是目前实际使用的邮件服务器。",
-    "createTitle": "连接邮箱",
+    "newMailboxTitle": "创建新邮箱",
+    "newMailboxHint": "Strato 没有提供相应接口——新邮箱需要在 Strato 客户登录后台创建（邮件 → 邮件管理 → 新建）。创建后，在下方使用其凭据连接。",
+    "openStrato": "打开 Strato 登录 ↗",
+    "createTitle": "连接现有邮箱",
     "createHint": "输入现有邮箱的凭据（例如 Strato）——不会创建新邮箱，仅用于读取。",
     "label": "名称",
     "host": "IMAP 主机",
