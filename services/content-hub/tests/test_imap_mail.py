@@ -14,6 +14,17 @@ def _build_raw_message() -> bytes:
     return msg.as_bytes()
 
 
+def _build_raw_message_with_attachment() -> bytes:
+    msg = EmailMessage()
+    msg["Subject"] = "Mit Anhang"
+    msg["From"] = "Sender <sender@test.de>"
+    msg["To"] = "empfaenger@test.de"
+    msg["Date"] = "Mon, 01 Jan 2024 10:00:00 +0000"
+    msg.set_content("Siehe Anhang.")
+    msg.add_attachment(b"%PDF-1.4 fake pdf bytes", maintype="application", subtype="pdf", filename="invoice.pdf")
+    return msg.as_bytes()
+
+
 class FakeImapConnection:
     """Standalone fake, not a real imaplib.IMAP4 - patching imaplib.IMAP4_SSL
     directly would require a real TCP handshake. We patch the module's own
@@ -23,16 +34,29 @@ class FakeImapConnection:
     byte-ranged) plus BODYSTRUCTURE, so a single full_raw response serves
     both - include_bodystructure lets a test simulate a message with an
     attachment, since real servers put the word ATTACHMENT inline in the
-    same response line imaplib.ParseFlags already scans for flags."""
+    same response line imaplib.ParseFlags already scans for flags. Actual
+    attachment detection/download (get_message/get_attachment) now goes
+    through email.message.EmailMessage.iter_attachments() on the real
+    parsed message instead, so full_raw itself needs a genuine multipart
+    message for those tests - see _build_raw_message_with_attachment()."""
 
     def __init__(self, uids: list[bytes], full_raw: bytes, has_attachment: bool = False):
         self.uids = uids
         self.full_raw = full_raw
         self.has_attachment = has_attachment
         self.search_calls: list[tuple] = []
+        self.select_calls: list[str] = []
 
     def select(self, folder, readonly=True):
+        self.select_calls.append(folder)
         return "OK", [b"1"]
+
+    def list(self, directory='""', pattern="*"):
+        return "OK", [
+            b'(\\HasNoChildren) "/" "INBOX"',
+            b'(\\HasNoChildren) "/" "Sent"',
+            b'(\\Noselect \\HasChildren) "/" "[Gmail]"',
+        ]
 
     def uid(self, command, *args):
         if command == "search":
@@ -151,6 +175,100 @@ def test_list_messages_detects_attachment_from_bodystructure(it_auth_client):
         listing = it_auth_client.get(f"/api/imap-mail/accounts/{account['id']}/messages")
     assert listing.status_code == 200
     assert listing.json()["messages"][0]["has_attachments"] is True
+
+    it_auth_client.delete(f"/api/imap-mail/accounts/{account['id']}")
+
+
+def test_decode_imap_utf7_handles_non_ascii_folder_names():
+    from app.imap_mail_service import _decode_imap_utf7
+
+    # Verified against a from-scratch modified-UTF-7 encoder (RFC 3501),
+    # not just plausible-looking - "Ä" (U+00C4) base64-encodes to "AMQ".
+    assert _decode_imap_utf7("Rechnungen/&AMQ--Ordner") == "Rechnungen/Ä-Ordner"
+    assert _decode_imap_utf7("INBOX") == "INBOX"
+    assert _decode_imap_utf7("Sent") == "Sent"
+
+
+def test_parse_list_response_marks_noselect_folders():
+    from app.imap_mail_service import _parse_list_response
+
+    assert _parse_list_response(b'(\\HasNoChildren) "/" "INBOX"') == {"name": "INBOX", "selectable": True}
+    assert _parse_list_response(b'(\\Noselect \\HasChildren) "/" "[Gmail]"') == {
+        "name": "[Gmail]",
+        "selectable": False,
+    }
+    assert _parse_list_response(b"not a list response") is None
+
+
+def test_list_folders(it_auth_client):
+    account = _create_account(it_auth_client)
+    fake_conn = FakeImapConnection(uids=[], full_raw=b"")
+
+    with patch("app.imap_mail_service._connect", return_value=fake_conn):
+        response = it_auth_client.get(f"/api/imap-mail/accounts/{account['id']}/folders")
+    assert response.status_code == 200
+    folders = response.json()["folders"]
+    names = {f["name"]: f["selectable"] for f in folders}
+    assert names == {"INBOX": True, "Sent": True, "[Gmail]": False}
+
+    it_auth_client.delete(f"/api/imap-mail/accounts/{account['id']}")
+
+
+def test_list_messages_uses_requested_folder(it_auth_client):
+    account = _create_account(it_auth_client)
+    fake_conn = FakeImapConnection(uids=[b"1"], full_raw=_build_raw_message())
+
+    with patch("app.imap_mail_service._connect", return_value=fake_conn):
+        response = it_auth_client.get(
+            f"/api/imap-mail/accounts/{account['id']}/messages", params={"folder": "Sent"}
+        )
+    assert response.status_code == 200
+    assert fake_conn.select_calls[-1] == "Sent"
+
+    it_auth_client.delete(f"/api/imap-mail/accounts/{account['id']}")
+
+
+def test_get_message_includes_real_attachments(it_auth_client):
+    account = _create_account(it_auth_client)
+    fake_conn = FakeImapConnection(uids=[b"1"], full_raw=_build_raw_message_with_attachment())
+
+    with patch("app.imap_mail_service._connect", return_value=fake_conn):
+        detail = it_auth_client.get(f"/api/imap-mail/accounts/{account['id']}/messages/1")
+    assert detail.status_code == 200
+    message = detail.json()["message"]
+    assert message["has_attachments"] is True
+    assert len(message["attachments"]) == 1
+    assert message["attachments"][0]["filename"] == "invoice.pdf"
+    assert message["attachments"][0]["content_type"] == "application/pdf"
+
+    it_auth_client.delete(f"/api/imap-mail/accounts/{account['id']}")
+
+
+def test_download_attachment_returns_file_content(it_auth_client):
+    account = _create_account(it_auth_client)
+    fake_conn = FakeImapConnection(uids=[b"1"], full_raw=_build_raw_message_with_attachment())
+
+    with patch("app.imap_mail_service._connect", return_value=fake_conn):
+        response = it_auth_client.get(
+            f"/api/imap-mail/accounts/{account['id']}/messages/1/attachments/0"
+        )
+    assert response.status_code == 200
+    assert response.content == b"%PDF-1.4 fake pdf bytes"
+    assert response.headers["content-type"] == "application/pdf"
+    assert "invoice.pdf" in response.headers["content-disposition"]
+
+    it_auth_client.delete(f"/api/imap-mail/accounts/{account['id']}")
+
+
+def test_download_attachment_invalid_index_404(it_auth_client):
+    account = _create_account(it_auth_client)
+    fake_conn = FakeImapConnection(uids=[b"1"], full_raw=_build_raw_message_with_attachment())
+
+    with patch("app.imap_mail_service._connect", return_value=fake_conn):
+        response = it_auth_client.get(
+            f"/api/imap-mail/accounts/{account['id']}/messages/1/attachments/5"
+        )
+    assert response.status_code == 404
 
     it_auth_client.delete(f"/api/imap-mail/accounts/{account['id']}")
 

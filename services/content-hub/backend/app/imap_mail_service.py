@@ -13,6 +13,7 @@ verify against your real account before relying on it in production.
 
 from __future__ import annotations
 
+import base64
 import email
 import email.policy
 import imaplib
@@ -157,6 +158,77 @@ def test_connection(*, host: str, port: int, use_ssl: bool, username: str, passw
         _disconnect(conn)
 
 
+_LIST_RESPONSE_PATTERN = re.compile(rb'^\((?P<flags>[^)]*)\)\s+"(?P<delim>[^"]*)"\s+(?P<name>.+)$')
+
+
+def _decode_imap_utf7(name: str) -> str:
+    """RFC 3501 "modified UTF-7" folder-name decoding (comma instead of slash
+    in the base64 alphabet, no padding). Only matters for folder names with
+    non-ASCII characters - plain names like INBOX/Sent/Trash pass through
+    the fast path below untouched. Never verified against a real server;
+    falls back to the raw name on any decoding error."""
+    if "&" not in name:
+        return name
+    try:
+        result: list[str] = []
+        i = 0
+        while i < len(name):
+            char = name[i]
+            if char == "&":
+                end = name.find("-", i + 1)
+                if end == -1:
+                    result.append(name[i:])
+                    break
+                segment = name[i + 1 : end]
+                if segment == "":
+                    result.append("&")
+                else:
+                    b64 = segment.replace(",", "/")
+                    padded = b64 + "=" * (-len(b64) % 4)
+                    result.append(base64.b64decode(padded).decode("utf-16-be"))
+                i = end + 1
+            else:
+                result.append(char)
+                i += 1
+        return "".join(result)
+    except Exception:  # noqa: BLE001 - a folder name is never worth failing the request over
+        return name
+
+
+def _parse_list_response(raw: bytes) -> dict[str, Any] | None:
+    match = _LIST_RESPONSE_PATTERN.match(raw)
+    if not match:
+        return None
+    flags_raw = match.group("flags").upper()
+    name_raw = match.group("name").strip()
+    if name_raw.startswith(b'"') and name_raw.endswith(b'"'):
+        name_raw = name_raw[1:-1]
+    name = _decode_imap_utf7(name_raw.decode("utf-8", errors="replace"))
+    return {
+        "name": name,
+        "selectable": b"\\NOSELECT" not in flags_raw,
+    }
+
+
+def list_folders(db: Session, *, account_id: str) -> list[dict[str, Any]]:
+    creds = get_imap_credentials(db, account_id)
+    conn = _connect(creds)
+    try:
+        status, data = conn.list()
+        if status != "OK":
+            raise HTTPException(status_code=502, detail="imap_search_failed")
+        folders: list[dict[str, Any]] = []
+        for raw in data or []:
+            if not raw:
+                continue
+            parsed = _parse_list_response(raw if isinstance(raw, bytes) else bytes(raw))
+            if parsed:
+                folders.append(parsed)
+        return folders
+    finally:
+        _disconnect(conn)
+
+
 def _search_criteria(search: str) -> tuple[str, ...]:
     query = (search or "").strip().replace('"', "").replace("\\", "")
     if not query:
@@ -164,11 +236,13 @@ def _search_criteria(search: str) -> tuple[str, ...]:
     return ("OR", "SUBJECT", f'"{query}"', "FROM", f'"{query}"')
 
 
-def list_messages(db: Session, *, account_id: str, limit: int = 30, search: str = "") -> list[dict[str, Any]]:
+def list_messages(
+    db: Session, *, account_id: str, limit: int = 30, search: str = "", folder: str | None = None
+) -> list[dict[str, Any]]:
     creds = get_imap_credentials(db, account_id)
     conn = _connect(creds)
     try:
-        _select_folder(conn, creds.folder)
+        _select_folder(conn, folder or creds.folder)
         status, data = conn.uid("search", None, *_search_criteria(search))
         if status != "OK":
             raise HTTPException(status_code=502, detail="imap_search_failed")
@@ -203,13 +277,43 @@ def list_messages(db: Session, *, account_id: str, limit: int = 30, search: str 
         _disconnect(conn)
 
 
-def get_message(db: Session, *, account_id: str, message_id: str) -> dict[str, Any]:
+def _list_attachments(msg: Any) -> list[dict[str, Any]]:
+    """Built on email.message.EmailMessage.iter_attachments() rather than a
+    hand-rolled BODYSTRUCTURE parser - the stdlib already knows how to find
+    attachment parts and decode their transfer encoding (base64/quoted-
+    printable), which would otherwise have to be reimplemented. The index
+    into this list (not a MIME part number) is what identifies an
+    attachment for download, since it's re-derived the same way every time
+    from the same deterministic message parse."""
+    attachments: list[dict[str, Any]] = []
+    try:
+        parts = list(msg.iter_attachments())
+    except Exception:  # noqa: BLE001 - a malformed MIME tree shouldn't break the whole message view
+        return attachments
+    for index, part in enumerate(parts):
+        try:
+            content = part.get_content()
+            size = len(content) if isinstance(content, (bytes, str)) else 0
+        except Exception:  # noqa: BLE001
+            size = 0
+        attachments.append(
+            {
+                "index": index,
+                "filename": part.get_filename() or f"attachment-{index + 1}",
+                "content_type": part.get_content_type(),
+                "size": size,
+            }
+        )
+    return attachments
+
+
+def get_message(db: Session, *, account_id: str, message_id: str, folder: str | None = None) -> dict[str, Any]:
     creds = get_imap_credentials(db, account_id)
     conn = _connect(creds)
     try:
-        _select_folder(conn, creds.folder)
+        _select_folder(conn, folder or creds.folder)
         uid = message_id.encode()
-        status, msg_data = conn.uid("fetch", uid, "(FLAGS BODYSTRUCTURE BODY.PEEK[])")
+        status, msg_data = conn.uid("fetch", uid, "(FLAGS BODY.PEEK[])")
         if status != "OK" or not msg_data or not isinstance(msg_data[0], tuple):
             raise HTTPException(status_code=404, detail="not_found")
         meta_raw, raw = msg_data[0]
@@ -227,6 +331,8 @@ def get_message(db: Session, *, account_id: str, message_id: str) -> dict[str, A
             if plain_part is not None:
                 body = plain_part.get_content()
 
+        attachments = _list_attachments(msg)
+
         return {
             "id": message_id,
             "subject": _header_value(msg.get("subject")) or "(ohne Betreff)",
@@ -236,9 +342,40 @@ def get_message(db: Session, *, account_id: str, message_id: str) -> dict[str, A
             "received_at": _parse_date(_header_value(msg.get("date"))),
             "preview": _extract_preview(msg),
             "is_read": b"\\Seen" in flags,
-            "has_attachments": _has_attachments(meta_raw),
+            "has_attachments": bool(attachments),
+            "attachments": attachments,
             "body": body,
             "body_type": body_type,
         }
+    finally:
+        _disconnect(conn)
+
+
+def get_attachment(
+    db: Session, *, account_id: str, message_id: str, attachment_index: int, folder: str | None = None
+) -> tuple[bytes, str, str]:
+    """Re-fetches the full message and re-derives the same attachment list
+    as get_message() - iter_attachments() order is deterministic for a
+    given parse, so the index from a prior get_message() call still points
+    at the right part."""
+    creds = get_imap_credentials(db, account_id)
+    conn = _connect(creds)
+    try:
+        _select_folder(conn, folder or creds.folder)
+        uid = message_id.encode()
+        status, msg_data = conn.uid("fetch", uid, "(BODY.PEEK[])")
+        if status != "OK" or not msg_data or not isinstance(msg_data[0], tuple):
+            raise HTTPException(status_code=404, detail="not_found")
+        _, raw = msg_data[0]
+        msg = email.message_from_bytes(raw, policy=email.policy.default)
+        parts = list(msg.iter_attachments())
+        if attachment_index < 0 or attachment_index >= len(parts):
+            raise HTTPException(status_code=404, detail="not_found")
+        part = parts[attachment_index]
+        content = part.get_content()
+        if isinstance(content, str):
+            content = content.encode("utf-8")
+        filename = part.get_filename() or f"attachment-{attachment_index + 1}"
+        return content, filename, part.get_content_type()
     finally:
         _disconnect(conn)

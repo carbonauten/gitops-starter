@@ -1155,6 +1155,7 @@
     "accountDeleted": "邮箱“{{label}}”已断开。",
     "empty": "尚未连接任何邮箱。",
     "selectAccount": "邮箱",
+    "selectFolder": "文件夹",
     "noMessages": "未找到邮件。",
     "selectHint": "从列表中选择一封邮件。",
     "manageAccounts": "管理邮箱",

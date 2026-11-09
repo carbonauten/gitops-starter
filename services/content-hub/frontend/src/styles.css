@@ -817,6 +817,17 @@ a {
   font-size: 0.85rem;
 }
 
+.imap-attachment-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.imap-attachment-chip {
+  font-size: 0.85rem;
+}
+
 .outlook-mail-item-from,
 .outlook-mail-item-preview {
   font-size: 0.82rem;
