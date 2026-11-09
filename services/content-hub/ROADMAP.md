@@ -1134,4 +1134,12 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] Seitentitel/-untertitel entsprechend angepasst; „Mail-Server (Mailcow)" nennt jetzt explizit, dass dieser Aufbau aktuell pausiert/nicht produktiv ist und verweist auf „Postfächer (Strato)" als den tatsächlich genutzten Weg
 - [x] DE/EN/中文 synchron aktualisiert
 
+### Direktlink zum Neuanlegen eines Strato-Postfachs (November 2026)
+
+**Problem:** Nutzer wollten ein neues Postfach direkt aus der Plattform heraus anlegen können — technisch nicht möglich, da Strato keine API dafür anbietet (recherchiert, auch kein inoffizieller Weg gefunden — nur das Web-Formular im Kundenlogin). Statt den Wunsch zu ignorieren, wird der manuelle Weg so kurz wie möglich gemacht.
+
+- [x] Neuer Block „Neues Postfach anlegen" oberhalb des Verbinden-Formulars auf der Postfächer-(Strato)-Seite, mit Button „Strato-Login öffnen ↗" (verlinkt auf `strato.de/login`, öffnet in neuem Tab)
+- [x] Erklärt in einem Satz, warum das nicht direkt aus der Plattform geht und was als nächstes zu tun ist (im Strato-Panel anlegen → hier unten mit den Zugangsdaten verbinden)
+- [x] Bestehendes Verbinden-Formular umbenannt zu „Bestehendes Postfach verbinden", um die beiden Schritte klar zu trennen
+
 ---

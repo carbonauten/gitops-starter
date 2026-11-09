@@ -1108,7 +1108,10 @@
   "imapMail": {
     "title": "Postfächer (Strato)",
     "subtitle": "Die bei Strato gehosteten E-Mail-Postfächer per IMAP in der Plattform lesen — das ist der aktuell genutzte Mailserver.",
-    "createTitle": "Postfach verbinden",
+    "newMailboxTitle": "Neues Postfach anlegen",
+    "newMailboxHint": "Strato bietet dafür keine Schnittstelle — neue Postfächer werden im Strato-Kundenlogin angelegt (E-Mail → E-Mail-Verwaltung → Neu anlegen). Danach hier unten mit den Zugangsdaten verbinden.",
+    "openStrato": "Strato-Login öffnen ↗",
+    "createTitle": "Bestehendes Postfach verbinden",
     "createHint": "Zugangsdaten eines bestehenden Postfachs eintragen (z. B. von Strato) — es wird kein neues Postfach angelegt, nur gelesen.",
     "label": "Bezeichnung",
     "host": "IMAP-Host",

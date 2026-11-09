@@ -1108,7 +1108,10 @@
   "imapMail": {
     "title": "Mailboxes (Strato)",
     "subtitle": "Read your Strato-hosted mailboxes inside the platform via IMAP - this is the mail server actually in use.",
-    "createTitle": "Connect a mailbox",
+    "newMailboxTitle": "Create a new mailbox",
+    "newMailboxHint": "Strato has no API for this - new mailboxes are created in the Strato customer login (Mail → Mail management → Create new). Then connect it below with its credentials.",
+    "openStrato": "Open Strato login ↗",
+    "createTitle": "Connect an existing mailbox",
     "createHint": "Enter the credentials of an existing mailbox (e.g. from Strato) - no new mailbox is created, this is read-only.",
     "label": "Label",
     "host": "IMAP host",
