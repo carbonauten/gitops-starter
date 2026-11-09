@@ -1130,6 +1130,7 @@
     "autoCreateButton": "自动创建",
     "autoCreating": "正在 Strato 创建中…（最长可能需要 1-2 分钟）",
     "autoCreateSuccess": "邮箱 {{email}} 已在 Strato 创建并连接。",
+    "autoCreatedButConnectFailed": "邮箱 {{email}} 已在 Strato 创建，但自动连接失败（{{error}}）。该邮箱可能还需要一两分钟才能通过 IMAP 访问——请改用下方的“连接现有邮箱”（字段已预填）。请勿再次点击“自动创建”，该邮箱已经存在。",
     "autoScreenshotLabel": "查看最后一步自动化操作的截图",
     "createTitle": "连接现有邮箱",
     "createHint": "输入现有邮箱的凭据（例如 Strato）——不会创建新邮箱，仅用于读取。",

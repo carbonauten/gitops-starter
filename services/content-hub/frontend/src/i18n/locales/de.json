@@ -1130,6 +1130,7 @@
     "autoCreateButton": "Automatisch anlegen",
     "autoCreating": "Wird bei Strato angelegt … (kann bis zu 1-2 Minuten dauern)",
     "autoCreateSuccess": "Postfach {{email}} wurde bei Strato angelegt und verbunden.",
+    "autoCreatedButConnectFailed": "Postfach {{email}} wurde bei Strato angelegt, die automatische Verbindung ist aber fehlgeschlagen ({{error}}). Ggf. braucht das Postfach noch ein bis zwei Minuten, bis es per IMAP erreichbar ist — bitte unten im Formular „Bestehendes Postfach verbinden“ erneut versuchen (Felder sind schon vorausgefüllt). Nicht nochmal „Automatisch anlegen“ ausführen, das Postfach existiert bereits.",
     "autoScreenshotLabel": "Screenshot des letzten Automatisierungsschritts anzeigen",
     "createTitle": "Bestehendes Postfach verbinden",
     "createHint": "Zugangsdaten eines bestehenden Postfachs eintragen (z. B. von Strato) — es wird kein neues Postfach angelegt, nur gelesen.",

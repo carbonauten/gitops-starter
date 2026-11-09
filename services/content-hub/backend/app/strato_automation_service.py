@@ -139,8 +139,14 @@ async def create_mailbox_via_automation(
     from playwright.async_api import async_playwright
 
     async with async_playwright() as pw:
-        browser = await pw.chromium.launch(headless=True)
+        browser = None
         try:
+            # Launching Chromium/creating the context/page can itself fail
+            # (missing browser binary, OOM, ...) - that's arguably the most
+            # likely real-world failure mode of this whole feature, so it
+            # must land in StratoAutomationError exactly like the three named
+            # steps below, not bypass it as a raw, untranslated 500.
+            browser = await pw.chromium.launch(headless=True)
             context = await browser.new_context(locale="de-DE")
             page = await context.new_page()
             await _run_step(page, STEP_LOGIN, _login(page, creds))
@@ -150,7 +156,13 @@ async def create_mailbox_via_automation(
                 STEP_CREATE,
                 _create_mailbox(page, local_part=local, domain=target_domain, password=password),
             )
+        except StratoAutomationError:
+            raise
+        except Exception as exc:  # noqa: BLE001 - see _run_step's docstring; same rationale applies to setup
+            logger.exception("Unexpected error setting up the Strato automation browser")
+            raise StratoAutomationError(STEP_UNEXPECTED, None) from exc
         finally:
-            await browser.close()
+            if browser is not None:
+                await browser.close()
 
     return {"email": f"{local}@{target_domain}", "local_part": local, "domain": target_domain}
