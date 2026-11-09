@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 from unittest.mock import patch
 
-from app.strato_automation_service import StratoAutomationError
+import pytest
+
+from app.strato_automation_service import STEP_UNEXPECTED, StratoAutomationError, create_mailbox_via_automation
 
 
 def test_editor_cannot_access_strato_automation(auth_client):
@@ -60,6 +63,55 @@ def test_create_mailbox_surfaces_automation_error_with_screenshot(it_auth_client
     payload = response.json()
     assert payload["code"] == "strato_automation_login_failed"
     assert payload["screenshot_base64"] == "ZmFrZS1zY3JlZW5zaG90"
+
+    it_auth_client.delete("/api/strato-automation/config")
+
+
+def test_create_mailbox_wraps_browser_launch_failure(it_auth_client):
+    # Regression test: a failure launching/setting up the browser itself
+    # (missing Chromium binary, OOM, ...) must still come out as a
+    # StratoAutomationError, not an unhandled exception that bypasses the
+    # route's translated-error handling entirely.
+    it_auth_client.put(
+        "/api/strato-automation/config",
+        json={"customer_number": "74845696", "password": "test-strato-password"},
+    )
+
+    class FakeChromium:
+        @staticmethod
+        async def launch(headless=True):
+            raise RuntimeError("Executable doesn't exist (simulated)")
+
+    class FakePw:
+        chromium = FakeChromium()
+
+    class FakePlaywrightContextManager:
+        async def __aenter__(self):
+            return FakePw()
+
+        async def __aexit__(self, *exc_info):
+            return False
+
+    def fake_async_playwright():
+        return FakePlaywrightContextManager()
+
+    from app.database import _SessionLocal
+
+    db = _SessionLocal()
+    try:
+        with patch("playwright.async_api.async_playwright", fake_async_playwright):
+            with pytest.raises(StratoAutomationError) as exc_info:
+                asyncio.run(
+                    create_mailbox_via_automation(
+                        db,
+                        local_part="sales",
+                        domain="carbonauten.com",
+                        password="a-strong-password-1",
+                    )
+                )
+        assert exc_info.value.code == STEP_UNEXPECTED
+    finally:
+        db.close()
 
     it_auth_client.delete("/api/strato-automation/config")
 

@@ -253,20 +253,38 @@ export function ImapMailPage() {
       });
       // Automation only creates the mailbox at Strato - immediately connect
       // it here too with the same credentials so it's usable right away.
-      await createImapAccount({
-        label: result.email,
-        host: "imap.strato.de",
-        port: 993,
-        use_ssl: true,
-        username: result.email,
-        password: autoPassword,
-        folder: "INBOX",
-      });
-      setAutoNotice(t("imapMail.autoCreateSuccess", { email: result.email }));
-      setAutoLocalPart("");
-      setAutoDomain("");
-      setAutoPassword("");
-      await reloadAccounts();
+      // This second step can fail independently of the first (e.g. a
+      // brand-new mailbox not yet reachable over IMAP for a minute or two),
+      // so it gets its own try/catch: a failure here must say the mailbox
+      // already exists at Strato, not look like the whole thing failed -
+      // otherwise the obvious next move (retrying "Automatisch anlegen")
+      // would hit Strato with an address that's already taken.
+      try {
+        await createImapAccount({
+          label: result.email,
+          host: "imap.strato.de",
+          port: 993,
+          use_ssl: true,
+          username: result.email,
+          password: autoPassword,
+          folder: "INBOX",
+        });
+        setAutoNotice(t("imapMail.autoCreateSuccess", { email: result.email }));
+        setAutoLocalPart("");
+        setAutoDomain("");
+        setAutoPassword("");
+        await reloadAccounts();
+      } catch (connectErr) {
+        setAutoError(
+          t("imapMail.autoCreatedButConnectFailed", {
+            email: result.email,
+            error: connectErr instanceof Error ? connectErr.message : t("common.error"),
+          }),
+        );
+        setLabel(result.email);
+        setUsername(result.email);
+        setPassword(autoPassword);
+      }
     } catch (err) {
       if (err instanceof StratoAutomationApiError) {
         setAutoError(err.message);

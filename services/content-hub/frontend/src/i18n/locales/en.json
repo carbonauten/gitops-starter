@@ -1130,6 +1130,7 @@
     "autoCreateButton": "Create automatically",
     "autoCreating": "Creating at Strato… (can take up to 1-2 minutes)",
     "autoCreateSuccess": "Mailbox {{email}} was created at Strato and connected.",
+    "autoCreatedButConnectFailed": "Mailbox {{email}} was created at Strato, but connecting it automatically failed ({{error}}). It may take a minute or two to become reachable over IMAP - please try \"Connect an existing mailbox\" below instead (fields are pre-filled). Don't run \"Create automatically\" again, that mailbox already exists.",
     "autoScreenshotLabel": "Show screenshot of the last automation step",
     "createTitle": "Connect an existing mailbox",
     "createHint": "Enter the credentials of an existing mailbox (e.g. from Strato) - no new mailbox is created, this is read-only.",
