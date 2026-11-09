@@ -9,15 +9,18 @@ import {
   draftImapMailReply,
   fetchAiStatus,
   fetchImapAccounts,
+  fetchImapFolders,
   fetchImapMessage,
   fetchImapMessages,
   fetchStratoAutomationStatus,
+  imapAttachmentDownloadUrl,
   saveStratoAutomationConfig,
   StratoAutomationApiError,
   summarizeImapMessage,
   translateImapMailMessage,
   updateImapAccount,
   type ImapAccount,
+  type ImapFolder,
   type ImapMailMessage,
   type ImapMailSummary,
   type ImapMailTranslation,
@@ -63,6 +66,8 @@ export function ImapMailPage() {
   const [folder, setFolder] = useState("INBOX");
 
   const [selectedAccountId, setSelectedAccountId] = useState("");
+  const [folders, setFolders] = useState<ImapFolder[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState("");
   const [messages, setMessages] = useState<ImapMailSummary[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [query, setQuery] = useState("");
@@ -139,7 +144,7 @@ export function ImapMailPage() {
   }, []);
 
   const loadMessages = useCallback(
-    async (accountId: string, search = "") => {
+    async (accountId: string, search = "", folderOverride = "") => {
       if (!accountId) {
         setMessages([]);
         return;
@@ -147,7 +152,7 @@ export function ImapMailPage() {
       setLoadingMessages(true);
       setMailError("");
       try {
-        setMessages(await fetchImapMessages(accountId, { top: 30, q: search }));
+        setMessages(await fetchImapMessages(accountId, { top: 30, q: search, folder: folderOverride }));
       } catch (err) {
         setMailError(err instanceof Error ? err.message : t("common.error"));
         setMessages([]);
@@ -159,13 +164,30 @@ export function ImapMailPage() {
   );
 
   useEffect(() => {
+    setSelectedFolder("");
+    setFolders([]);
+    if (!selectedAccountId) return;
+    // Pre-select the account's configured default folder once the list
+    // loads, so the dropdown doesn't silently show "whatever the server
+    // listed first" while selectedFolder (sent to the API) stays "".
+    const account = accounts.find((entry) => entry.id === selectedAccountId);
+    void fetchImapFolders(selectedAccountId)
+      .then((list) => {
+        setFolders(list);
+        setSelectedFolder(account?.folder || "INBOX");
+      })
+      .catch(() => setFolders([]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedAccountId]);
+
+  useEffect(() => {
     setSelectedMessageId("");
     setDetail(null);
     setSummary("");
     setSummaryError("");
     setQuery("");
-    void loadMessages(selectedAccountId);
-  }, [selectedAccountId, loadMessages]);
+    void loadMessages(selectedAccountId, "", selectedFolder);
+  }, [selectedAccountId, selectedFolder, loadMessages]);
 
   async function handleCreateAccount(event: FormEvent) {
     event.preventDefault();
@@ -368,7 +390,7 @@ export function ImapMailPage() {
     setTranslation(null);
     setTranslateError("");
     try {
-      setDetail(await fetchImapMessage(selectedAccountId, messageId));
+      setDetail(await fetchImapMessage(selectedAccountId, messageId, selectedFolder));
     } catch (err) {
       setMailError(err instanceof Error ? err.message : t("common.error"));
     }
@@ -383,7 +405,7 @@ export function ImapMailPage() {
     setSummarizing(true);
     setSummaryError("");
     try {
-      setSummary(await summarizeImapMessage(selectedAccountId, selectedMessageId, currentUiLanguage()));
+      setSummary(await summarizeImapMessage(selectedAccountId, selectedMessageId, currentUiLanguage(), selectedFolder));
     } catch (err) {
       setSummaryError(err instanceof Error ? err.message : t("common.error"));
     } finally {
@@ -401,6 +423,7 @@ export function ImapMailPage() {
         await draftImapMailReply(selectedAccountId, selectedMessageId, {
           instructions: replyInstructions,
           language: currentUiLanguage(),
+          folder: selectedFolder,
         }),
       );
     } catch (err) {
@@ -425,7 +448,9 @@ export function ImapMailPage() {
     setTranslating(true);
     setTranslateError("");
     try {
-      setTranslation(await translateImapMailMessage(selectedAccountId, selectedMessageId, translateLanguage));
+      setTranslation(
+        await translateImapMailMessage(selectedAccountId, selectedMessageId, translateLanguage, selectedFolder),
+      );
     } catch (err) {
       setTranslateError(err instanceof Error ? err.message : t("common.error"));
     } finally {
@@ -741,12 +766,24 @@ export function ImapMailPage() {
                   ))}
                 </select>
               </label>
+              {folders.length > 0 ? (
+                <label style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                  {t("imapMail.selectFolder")}
+                  <select value={selectedFolder} onChange={(event) => setSelectedFolder(event.target.value)}>
+                    {folders.map((item) => (
+                      <option key={item.name} value={item.name} disabled={!item.selectable}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              ) : null}
             </div>
             <form
               className="outlook-mail-search"
               onSubmit={(event) => {
                 event.preventDefault();
-                void loadMessages(selectedAccountId, query);
+                void loadMessages(selectedAccountId, query, selectedFolder);
               }}
             >
               <input
@@ -764,7 +801,7 @@ export function ImapMailPage() {
                 className="ghost-button"
                 disabled={loadingMessages}
                 title={t("imapMail.refresh")}
-                onClick={() => void loadMessages(selectedAccountId, query)}
+                onClick={() => void loadMessages(selectedAccountId, query, selectedFolder)}
               >
                 ⟳
               </button>
@@ -885,6 +922,28 @@ export function ImapMailPage() {
                     <div className="ai-summary-box">
                       <strong>{t("mail.aiTranslationTitle", { language: translateLanguage.toUpperCase() })}</strong>
                       <EmailBodyFrame body={translation.body} bodyType={translation.body_type} />
+                    </div>
+                  ) : null}
+
+                  {detail.attachments.length > 0 ? (
+                    <div className="imap-attachment-list">
+                      {detail.attachments.map((attachment) => (
+                        <a
+                          key={attachment.index}
+                          className="ghost-button link-button imap-attachment-chip"
+                          href={imapAttachmentDownloadUrl(
+                            selectedAccountId,
+                            selectedMessageId,
+                            attachment.index,
+                            selectedFolder,
+                          )}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          📎 {attachment.filename}
+                          {attachment.size > 0 ? ` (${Math.max(1, Math.round(attachment.size / 1024))} KB)` : ""}
+                        </a>
+                      ))}
                     </div>
                   ) : null}
 

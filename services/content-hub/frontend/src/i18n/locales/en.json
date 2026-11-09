@@ -1155,6 +1155,7 @@
     "accountDeleted": "Mailbox \"{{label}}\" disconnected.",
     "empty": "No mailbox connected yet.",
     "selectAccount": "Mailbox",
+    "selectFolder": "Folder",
     "noMessages": "No messages found.",
     "selectHint": "Select a message from the list.",
     "manageAccounts": "Manage mailboxes",

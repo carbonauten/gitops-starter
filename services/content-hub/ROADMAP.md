@@ -1220,3 +1220,24 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] Tests: beide Routen gegen „KI nicht konfiguriert" (503) und Erfolgsfall (gemockte `ai_service`-Funktionen + Fake-IMAP für den zugrundeliegenden Nachrichtenabruf) abgesichert
 
 ---
+
+## Postfächer (Strato): Ordner-Wechsel + Anhang-Download (November 2026)
+
+**Ziel:** Auf Nutzerwunsch zwei weitere Verfeinerungen — bisher war jedes Postfach fest auf seinen beim Anlegen gespeicherten Ordner (meist INBOX) beschränkt, und Anhänge wurden zwar erkannt, aber nicht nutzbar gemacht.
+
+### Ordner-Wechsel
+
+- [x] Neue Route `GET /accounts/{id}/folders` nutzt `conn.list()` (IMAP `LIST`-Kommando) — eigener Response-Parser für die `(flags) "delim" name`-Zeilen plus eine selbst geschriebene Dekodierung von „modified UTF-7" (RFC 3501) für nicht-ASCII-Ordnernamen (z. B. Umlaute) — keine Standardbibliotheksfunktion dafür vorhanden, der normale Python-`utf-7`-Codec passt nicht exakt (Komma statt Schrägstrich im Alphabet)
+- [x] `folder`-Parameter durch alle Nachrichten-Routen durchgereicht (Liste, Detail, Zusammenfassen, Antwortentwurf, Übersetzen) — **wichtig für Korrektheit:** IMAP-UIDs sind nur innerhalb des zuletzt `SELECT`eten Ordners gültig, daher muss jede nachfolgende Aktion zu einer Nachricht denselben Ordner wie die Listenansicht verwenden, sonst würde die falsche Nachricht (oder gar keine) getroffen
+- [x] Frontend: Ordner-Dropdown neben der Postfach-Auswahl, vorbelegt mit dem beim Anlegen hinterlegten Standardordner; nicht auswählbare Ordner (`\Noselect`, z. B. reine Strukturknoten wie `[Gmail]`) sind im Dropdown deaktiviert statt versteckt
+- [x] Tests für den UTF-7-Decoder gegen einen eigens geschriebenen, unabhängigen Encoder verifiziert (nicht nur „sieht plausibel aus") sowie für den LIST-Zeilen-Parser und die Ordner-Weitergabe an `select()`
+
+### Anhang-Download
+
+- [x] Ursprünglich geplanter Ansatz (eigener `BODYSTRUCTURE`-S-Expression-Parser + gezielter Teil-Fetch) verworfen zugunsten von `email.message.EmailMessage.iter_attachments()` aus der Standardbibliothek — die Detailansicht lädt ohnehin schon die komplette Nachricht (`BODY.PEEK[]`, nicht gekürzt), `iter_attachments()` erkennt Anhänge zuverlässig und entschlüsselt Base64/Quoted-Printable automatisch, ganz ohne Parser aus eigener Hand
+- [x] `has_attachments` in der Detailansicht nutzt jetzt die echte Anhangsliste statt der `BODYSTRUCTURE`-Substring-Heuristik (die weiterhin für die Listenansicht gilt, da dort nur ein gekürzter Byte-Bereich geladen wird)
+- [x] Neue Route `GET /accounts/{id}/messages/{id}/attachments/{index}` liefert die dekodierten Rohbytes mit passendem `Content-Type` und `Content-Disposition: attachment` — Index statt MIME-Teilnummer als Identifikator, da `iter_attachments()` bei gleichem Nachrichten-Parse deterministisch dieselbe Reihenfolge liefert
+- [x] Frontend zeigt Anhänge als anklickbare Chips (📎 Dateiname + Größe) oberhalb des Nachrichtentexts
+- [x] Tests mit einer echten, über `EmailMessage.add_attachment()` gebauten Testnachricht (nicht nur einer `BODYSTRUCTURE`-Textzeile) — Download-Inhalt, Content-Type und 404 bei ungültigem Index abgesichert
+
+---

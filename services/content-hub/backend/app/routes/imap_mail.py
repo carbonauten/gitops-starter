@@ -15,7 +15,7 @@ from ..imap_config_service import (
     list_imap_accounts,
     update_imap_account,
 )
-from ..imap_mail_service import get_message, list_messages, test_connection
+from ..imap_mail_service import get_attachment, get_message, list_folders, list_messages, test_connection
 from ..user_integration_store import decrypt_secret
 
 router = APIRouter(prefix="/api/imap-mail", tags=["imap-mail"])
@@ -45,15 +45,18 @@ class ImapAccountUpdate(BaseModel):
 
 class ImapSummarizeRequest(BaseModel):
     language: str = Field(default="de", max_length=10)
+    folder: str = Field(default="", max_length=200)
 
 
 class ImapDraftReplyRequest(BaseModel):
     instructions: str = Field(default="", max_length=2000)
     language: str = Field(default="de", max_length=10)
+    folder: str = Field(default="", max_length=200)
 
 
 class ImapTranslateRequest(BaseModel):
     target_language: str = Field(..., max_length=10)
+    folder: str = Field(default="", max_length=200)
 
 
 @router.get("/accounts")
@@ -140,25 +143,60 @@ def delete_account_route(
     return Response(status_code=204)
 
 
+@router.get("/accounts/{account_id}/folders")
+def get_folders_route(
+    account_id: str,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_it_master),
+) -> dict:
+    return {"folders": list_folders(db, account_id=account_id)}
+
+
 @router.get("/accounts/{account_id}/messages")
 def get_messages_route(
     account_id: str,
     top: int = 30,
     q: str = "",
+    folder: str = "",
     db: Session = Depends(get_db),
     _user: dict = Depends(require_it_master),
 ) -> dict:
-    return {"messages": list_messages(db, account_id=account_id, limit=top, search=q)}
+    return {"messages": list_messages(db, account_id=account_id, limit=top, search=q, folder=folder or None)}
 
 
 @router.get("/accounts/{account_id}/messages/{message_id}")
 def get_message_route(
     account_id: str,
     message_id: str,
+    folder: str = "",
     db: Session = Depends(get_db),
     _user: dict = Depends(require_it_master),
 ) -> dict:
-    return {"message": get_message(db, account_id=account_id, message_id=message_id)}
+    return {"message": get_message(db, account_id=account_id, message_id=message_id, folder=folder or None)}
+
+
+@router.get("/accounts/{account_id}/messages/{message_id}/attachments/{attachment_index}")
+def get_attachment_route(
+    account_id: str,
+    message_id: str,
+    attachment_index: int,
+    folder: str = "",
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_it_master),
+) -> Response:
+    content, filename, content_type = get_attachment(
+        db,
+        account_id=account_id,
+        message_id=message_id,
+        attachment_index=attachment_index,
+        folder=folder or None,
+    )
+    safe_filename = filename.replace('"', "").replace("\r", "").replace("\n", "")
+    return Response(
+        content=content,
+        media_type=content_type or "application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="{safe_filename}"'},
+    )
 
 
 @router.post("/accounts/{account_id}/messages/{message_id}/summarize")
@@ -171,7 +209,7 @@ def summarize_message_route(
 ) -> dict:
     if not ai_configured():
         raise HTTPException(status_code=503, detail="ai_not_configured")
-    message = get_message(db, account_id=account_id, message_id=message_id)
+    message = get_message(db, account_id=account_id, message_id=message_id, folder=payload.folder or None)
     summary = summarize_article(
         title=str(message.get("subject") or ""),
         content=str(message.get("body") or ""),
@@ -192,7 +230,7 @@ def draft_reply_route(
 ) -> dict:
     if not ai_configured():
         raise HTTPException(status_code=503, detail="ai_not_configured")
-    message = get_message(db, account_id=account_id, message_id=message_id)
+    message = get_message(db, account_id=account_id, message_id=message_id, folder=payload.folder or None)
     reply = draft_email_reply(
         subject=str(message.get("subject") or ""),
         body=str(message.get("body") or ""),
@@ -215,7 +253,7 @@ def translate_message_route(
 ) -> dict:
     if not ai_configured():
         raise HTTPException(status_code=503, detail="ai_not_configured")
-    message = get_message(db, account_id=account_id, message_id=message_id)
+    message = get_message(db, account_id=account_id, message_id=message_id, folder=payload.folder or None)
     translated = translate_email_body(
         body=str(message.get("body") or ""),
         body_type=str(message.get("body_type") or "text"),

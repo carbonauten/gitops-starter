@@ -2373,12 +2373,47 @@ export type ImapMailSummary = {
   has_attachments: boolean;
 };
 
+export type ImapAttachment = {
+  index: number;
+  filename: string;
+  content_type: string;
+  size: number;
+};
+
 export type ImapMailMessage = ImapMailSummary & {
   to: ImapMailPerson[];
   cc: ImapMailPerson[];
   body: string;
   body_type: "html" | "text";
+  attachments: ImapAttachment[];
 };
+
+export type ImapFolder = {
+  name: string;
+  selectable: boolean;
+};
+
+export async function fetchImapFolders(accountId: string): Promise<ImapFolder[]> {
+  const payload = await request<{ folders: ImapFolder[] }>(
+    `/api/imap-mail/accounts/${encodeURIComponent(accountId)}/folders`,
+  );
+  return payload.folders;
+}
+
+export function imapAttachmentDownloadUrl(
+  accountId: string,
+  messageId: string,
+  attachmentIndex: number,
+  folder?: string,
+): string {
+  const params = new URLSearchParams();
+  if (folder) params.set("folder", folder);
+  const query = params.toString();
+  return (
+    `/api/imap-mail/accounts/${encodeURIComponent(accountId)}/messages/${encodeURIComponent(messageId)}` +
+    `/attachments/${attachmentIndex}${query ? `?${query}` : ""}`
+  );
+}
 
 export async function fetchImapAccounts(): Promise<ImapAccount[]> {
   const payload = await request<{ accounts: ImapAccount[] }>("/api/imap-mail/accounts");
@@ -2429,19 +2464,27 @@ export async function deleteImapAccount(accountId: string): Promise<void> {
 
 export async function fetchImapMessages(
   accountId: string,
-  options?: { top?: number; q?: string },
+  options?: { top?: number; q?: string; folder?: string },
 ): Promise<ImapMailSummary[]> {
   const params = new URLSearchParams({ top: String(options?.top || 30) });
   if (options?.q?.trim()) params.set("q", options.q.trim());
+  if (options?.folder) params.set("folder", options.folder);
   const payload = await request<{ messages: ImapMailSummary[] }>(
     `/api/imap-mail/accounts/${encodeURIComponent(accountId)}/messages?${params}`,
   );
   return payload.messages;
 }
 
-export async function fetchImapMessage(accountId: string, messageId: string): Promise<ImapMailMessage> {
+export async function fetchImapMessage(
+  accountId: string,
+  messageId: string,
+  folder?: string,
+): Promise<ImapMailMessage> {
+  const params = new URLSearchParams();
+  if (folder) params.set("folder", folder);
+  const query = params.toString();
   const payload = await request<{ message: ImapMailMessage }>(
-    `/api/imap-mail/accounts/${encodeURIComponent(accountId)}/messages/${encodeURIComponent(messageId)}`,
+    `/api/imap-mail/accounts/${encodeURIComponent(accountId)}/messages/${encodeURIComponent(messageId)}${query ? `?${query}` : ""}`,
   );
   return payload.message;
 }
@@ -2450,12 +2493,13 @@ export async function summarizeImapMessage(
   accountId: string,
   messageId: string,
   language: "de" | "en" | "zh-CN" = "de",
+  folder?: string,
 ): Promise<string> {
   const payload = await request<{ summary: string }>(
     `/api/imap-mail/accounts/${encodeURIComponent(accountId)}/messages/${encodeURIComponent(messageId)}/summarize`,
     {
       method: "POST",
-      body: JSON.stringify({ language }),
+      body: JSON.stringify({ language, folder: folder || "" }),
     },
     45000,
   );
@@ -2465,7 +2509,7 @@ export async function summarizeImapMessage(
 export async function draftImapMailReply(
   accountId: string,
   messageId: string,
-  options: { instructions?: string; language?: "de" | "en" | "zh-CN" },
+  options: { instructions?: string; language?: "de" | "en" | "zh-CN"; folder?: string },
 ): Promise<string> {
   const payload = await request<{ reply: string }>(
     `/api/imap-mail/accounts/${encodeURIComponent(accountId)}/messages/${encodeURIComponent(messageId)}/draft-reply`,
@@ -2474,6 +2518,7 @@ export async function draftImapMailReply(
       body: JSON.stringify({
         instructions: options.instructions || "",
         language: options.language || "de",
+        folder: options.folder || "",
       }),
     },
     45000,
@@ -2490,12 +2535,13 @@ export async function translateImapMailMessage(
   accountId: string,
   messageId: string,
   targetLanguage: "de" | "en" | "zh-CN",
+  folder?: string,
 ): Promise<ImapMailTranslation> {
   const payload = await request<{ translation: ImapMailTranslation }>(
     `/api/imap-mail/accounts/${encodeURIComponent(accountId)}/messages/${encodeURIComponent(messageId)}/translate`,
     {
       method: "POST",
-      body: JSON.stringify({ target_language: targetLanguage }),
+      body: JSON.stringify({ target_language: targetLanguage, folder: folder || "" }),
     },
     45000,
   );
