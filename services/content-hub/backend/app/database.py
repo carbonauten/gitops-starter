@@ -475,6 +475,32 @@ class ShopCreditLedger(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class DiscountCode(Base):
+    """Admin-managed shop discount/coupon code, redeemed at checkout."""
+
+    __tablename__ = "shop_discount_codes"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    code: Mapped[str] = mapped_column(String(50), unique=True, index=True)  # stored uppercase
+    discount_type: Mapped[str] = mapped_column(String(20), default="percent")  # percent|fixed
+    percent_off_bps: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # 1000 = 10.00%
+    amount_off_cents: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    min_order_cents: Mapped[int] = mapped_column(Integer, default=0)
+    max_redemptions: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # None = unlimited
+    redemption_count: Mapped[int] = mapped_column(Integer, default=0)
+    valid_from: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    valid_until: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_by_id: Mapped[str] = mapped_column(String(100), default="")
+    created_by_name: Mapped[str] = mapped_column(String(200), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
 class ShopOrder(Base):
     __tablename__ = "shop_orders"
 
@@ -499,6 +525,8 @@ class ShopOrder(Base):
     city: Mapped[str] = mapped_column(String(120), default="")
     country: Mapped[str] = mapped_column(String(2), default="DE")
     notes: Mapped[str] = mapped_column(Text, default="")
+    discount_code: Mapped[str] = mapped_column(String(50), default="")
+    discount_cents: Mapped[int] = mapped_column(Integer, default=0)
     credits_earned: Mapped[int] = mapped_column(Integer, default=0)
     credits_awarded_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     stripe_session_id: Mapped[str] = mapped_column(String(200), default="")
@@ -823,6 +851,16 @@ def ensure_schema_updates(engine, is_sqlite: bool) -> None:
                 "tracking_url",
                 "ALTER TABLE shop_orders ADD COLUMN tracking_url VARCHAR(500) DEFAULT ''",
                 "ALTER TABLE shop_orders ADD COLUMN tracking_url VARCHAR(500) NOT NULL DEFAULT ''",
+            ),
+            (
+                "discount_code",
+                "ALTER TABLE shop_orders ADD COLUMN discount_code VARCHAR(50) DEFAULT ''",
+                "ALTER TABLE shop_orders ADD COLUMN discount_code VARCHAR(50) NOT NULL DEFAULT ''",
+            ),
+            (
+                "discount_cents",
+                "ALTER TABLE shop_orders ADD COLUMN discount_cents INTEGER DEFAULT 0",
+                "ALTER TABLE shop_orders ADD COLUMN discount_cents INTEGER NOT NULL DEFAULT 0",
             ),
         ):
             if column_name not in columns:

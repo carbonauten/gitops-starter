@@ -120,6 +120,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
   const shop: NavItem[] = canManageShop
     ? [
         { to: "/products", label: t("nav.products"), icon: "◈" },
+        { to: "/discount-codes", label: t("nav.discountCodes"), icon: "%" },
         { to: "/orders", label: t("nav.orders"), icon: "☰" },
         { to: "/shop-returns", label: t("nav.shopReturns"), icon: "↩" },
         { to: "/shop-customers", label: t("nav.shopCustomers"), icon: "☺" },

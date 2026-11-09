@@ -391,6 +391,8 @@ export type ShopOrder = {
   shipping_cents: number;
   vat_cents: number;
   total_cents: number;
+  discount_code?: string;
+  discount_cents?: number;
   customer_id?: string | null;
   customer_email: string;
   customer_name: string;
@@ -1349,6 +1351,77 @@ export async function deleteProduct(id: string): Promise<void> {
   await request<void>(`/api/products/${id}`, { method: "DELETE" });
 }
 
+export type DiscountCode = {
+  id: string;
+  code: string;
+  discount_type: "percent" | "fixed";
+  percent_off_bps: number | null;
+  amount_off_cents: number | null;
+  min_order_cents: number;
+  max_redemptions: number | null;
+  redemption_count: number;
+  valid_from: string | null;
+  valid_until: string | null;
+  is_active: boolean;
+  created_by_name: string;
+  created_at: string | null;
+};
+
+export async function fetchDiscountCodes(): Promise<DiscountCode[]> {
+  const payload = await request<{ discount_codes: DiscountCode[] }>("/api/discount-codes");
+  return payload.discount_codes;
+}
+
+export async function createDiscountCode(data: {
+  code: string;
+  discount_type: "percent" | "fixed";
+  percent_off_bps?: number;
+  amount_off_cents?: number;
+  min_order_cents?: number;
+  max_redemptions?: number;
+  valid_from?: string | null;
+  valid_until?: string | null;
+}): Promise<DiscountCode> {
+  const payload = await request<{ discount_code: DiscountCode }>("/api/discount-codes", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+  return payload.discount_code;
+}
+
+export async function updateDiscountCode(
+  id: string,
+  data: { is_active?: boolean },
+): Promise<DiscountCode> {
+  const payload = await request<{ discount_code: DiscountCode }>(`/api/discount-codes/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+  return payload.discount_code;
+}
+
+export async function deleteDiscountCode(id: string): Promise<void> {
+  await request<void>(`/api/discount-codes/${id}`, { method: "DELETE" });
+}
+
+export type AppliedDiscount = {
+  code: string;
+  discount_type: "percent" | "fixed";
+  discount_cents: number;
+};
+
+export async function applyDiscountCode(data: {
+  code: string;
+  subtotal_cents: number;
+  website?: string;
+  turnstile_token?: string;
+}): Promise<AppliedDiscount> {
+  return request<AppliedDiscount>("/api/shop/apply-discount", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 export async function fetchShopConfig(): Promise<ShopConfig> {
   return request<ShopConfig>("/api/shop/config");
 }
@@ -1378,6 +1451,7 @@ export async function checkoutShop(data: {
   };
   payment_method: "stripe" | "invoice";
   notes?: string;
+  discount_code?: string;
   website?: string;
   turnstile_token?: string;
 }): Promise<{ order: ShopOrder; checkout_url: string | null }> {

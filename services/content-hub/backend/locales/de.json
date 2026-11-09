@@ -86,5 +86,11 @@
   "errors.strato_automation_navigation_failed": "Konnte die E-Mail-Verwaltung bei Strato nicht öffnen — die Strato-Seite hat sich vermutlich geändert.",
   "errors.strato_automation_create_failed": "Postfach konnte bei Strato nicht automatisch angelegt werden — die Strato-Seite hat sich vermutlich geändert. Bitte manuell anlegen.",
   "errors.strato_automation_unexpected_error": "Unerwarteter Fehler bei der Strato-Automatisierung. Bitte manuell anlegen.",
+  "errors.discount_code_invalid": "Dieser Rabattcode ist ungültig.",
+  "errors.discount_code_expired": "Dieser Rabattcode ist abgelaufen.",
+  "errors.discount_code_not_yet_valid": "Dieser Rabattcode ist noch nicht gültig.",
+  "errors.discount_code_limit_reached": "Dieser Rabattcode wurde bereits zu oft eingelöst.",
+  "errors.discount_code_minimum_not_met": "Der Mindestbestellwert für diesen Rabattcode wurde nicht erreicht.",
+  "errors.discount_code_already_exists": "Dieser Rabattcode existiert bereits.",
   "messages.language_updated": "Sprache wurde aktualisiert."
 }

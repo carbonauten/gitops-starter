@@ -152,6 +152,10 @@ def build_invoice_pdf(
 
     totals = [
         ["Zwischensumme (brutto)", _money(order.subtotal_cents, order.currency)],
+    ]
+    if order.discount_cents:
+        totals.append([f"Rabatt ({order.discount_code})", f"-{_money(order.discount_cents, order.currency)}"])
+    totals += [
         ["Versand", _money(order.shipping_cents, order.currency)],
         ["davon MwSt", _money(order.vat_cents, order.currency)],
         ["Gesamt", _money(order.total_cents, order.currency)],

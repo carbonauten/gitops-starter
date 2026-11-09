@@ -15,8 +15,9 @@ from sqlalchemy.orm import Session
 from ..config import get_settings
 from ..database import FileAsset, get_db
 from ..dependencies import require_it_master
+from ..discount_code_service import compute_discount_cents, resolve_and_validate_discount
 from ..product_service import get_product_by_slug, list_products, to_public_dict
-from ..schemas import ShopCheckoutRequest, ShopPageViewRequest, ShopProductPublic
+from ..schemas import ApplyDiscountRequest, ShopCheckoutRequest, ShopPageViewRequest, ShopProductPublic
 from ..shop_analytics_service import monitoring_summary, record_page_view
 from ..shop_bot_protection import client_ip, protect_shop_action
 from ..shop_invoice_service import build_invoice_pdf, invoice_filename
@@ -163,10 +164,39 @@ def shop_checkout(
         payment_method=payload.payment_method,
         notes=payload.notes,
         customer_id=shop_customer["id"] if shop_customer else None,
+        discount_code=payload.discount_code,
     )
     return {
         "order": order_to_dict(order, items, include_token=True),
         "checkout_url": checkout_url,
+    }
+
+
+@router.post("/apply-discount")
+def shop_apply_discount(
+    payload: ApplyDiscountRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+) -> dict:
+    """Live preview for the checkout form - validates a code against the
+    current cart subtotal and returns the would-be discount, without
+    reserving a redemption (that happens for real at /checkout). Codes are
+    short, guessable strings, so this goes through the same bot protection
+    as checkout rather than being left wide open to brute-forcing."""
+    settings = get_settings()
+    protect_shop_action(
+        request,
+        bucket="shop_apply_discount",
+        honeypot=payload.website,
+        turnstile_token=payload.turnstile_token,
+        limit=settings.shop_bot_rate_limit,
+    )
+    code = resolve_and_validate_discount(db, code=payload.code, subtotal_cents=payload.subtotal_cents)
+    discount_cents = compute_discount_cents(code, payload.subtotal_cents)
+    return {
+        "code": code.code,
+        "discount_type": code.discount_type,
+        "discount_cents": discount_cents,
     }
 
 
