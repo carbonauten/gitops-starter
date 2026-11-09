@@ -80,5 +80,11 @@
   "errors.imap_login_failed": "Anmeldung am Postfach fehlgeschlagen. Bitte Benutzername/Passwort prüfen.",
   "errors.imap_folder_not_found": "Der angegebene Ordner wurde im Postfach nicht gefunden.",
   "errors.imap_search_failed": "Nachrichten konnten nicht abgerufen werden. Bitte erneut versuchen.",
+  "errors.strato_automation_not_configured": "Strato-Kundenlogin ist noch nicht hinterlegt.",
+  "errors.strato_automation_login_failed": "Login bei Strato fehlgeschlagen. Bitte Kundennummer/Passwort prüfen.",
+  "errors.strato_automation_2fa_or_captcha": "Strato verlangt eine Bestätigung (2FA/Captcha), die die Automatisierung nicht ausfüllen kann. Bitte manuell anlegen.",
+  "errors.strato_automation_navigation_failed": "Konnte die E-Mail-Verwaltung bei Strato nicht öffnen — die Strato-Seite hat sich vermutlich geändert.",
+  "errors.strato_automation_create_failed": "Postfach konnte bei Strato nicht automatisch angelegt werden — die Strato-Seite hat sich vermutlich geändert. Bitte manuell anlegen.",
+  "errors.strato_automation_unexpected_error": "Unerwarteter Fehler bei der Strato-Automatisierung. Bitte manuell anlegen.",
   "messages.language_updated": "Sprache wurde aktualisiert."
 }

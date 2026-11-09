@@ -27,6 +27,12 @@ COPY ${SERVICE_DIR}backend/requirements.txt .
 RUN pip install --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
+# Headless Chromium for the Strato mailbox-creation automation
+# (strato_automation_service.py) - Strato has no API for this, so an
+# IT-Master-only Playwright flow drives the actual customer web panel.
+# --with-deps pulls in the OS libraries Chromium needs on Debian slim.
+RUN playwright install --with-deps chromium
+
 COPY ${SERVICE_DIR}backend/ ./
 COPY --from=frontend /frontend/dist ./static
 COPY ${SERVICE_DIR}deploy/nginx.conf.template /etc/nginx/nginx.conf.template

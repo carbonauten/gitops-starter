@@ -196,6 +196,31 @@ class PlatformMailcowSettings(Base):
     )
 
 
+class PlatformStratoSettings(Base):
+    """IT-Master-stored Strato customer-login credentials, used only to drive
+    the browser-automation mailbox-creation flow (strato_automation_service.py).
+
+    Unlike the Mailcow/Entra API configs, this is a full account login
+    (domains, billing, every mailbox) rather than a scoped API key - storing
+    it is a materially bigger blast radius if the encryption key or DB were
+    ever compromised. Encrypted at rest via the same mechanism as other
+    stored secrets; kept in its own table so it's easy to audit/clear
+    independently of everything else."""
+
+    __tablename__ = "platform_strato_settings"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: "default")
+    customer_number: Mapped[str] = mapped_column(String(100), default="")
+    password_enc: Mapped[str] = mapped_column(Text, default="")
+    updated_by_id: Mapped[str] = mapped_column(String(100), default="")
+    updated_by_name: Mapped[str] = mapped_column(String(200), default="")
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+
 class IntegrationConnection(Base):
     __tablename__ = "integration_connections"
 
