@@ -6,6 +6,7 @@ import {
   createImapAccount,
   createStratoMailboxAutomated,
   deleteImapAccount,
+  draftImapMailReply,
   fetchAiStatus,
   fetchImapAccounts,
   fetchImapMessage,
@@ -14,10 +15,12 @@ import {
   saveStratoAutomationConfig,
   StratoAutomationApiError,
   summarizeImapMessage,
+  translateImapMailMessage,
   updateImapAccount,
   type ImapAccount,
   type ImapMailMessage,
   type ImapMailSummary,
+  type ImapMailTranslation,
   type StratoAutomationStatus,
 } from "../api/client";
 import { EmailBodyFrame } from "../components/EmailBodyFrame";
@@ -71,6 +74,17 @@ export function ImapMailPage() {
   const [summarizing, setSummarizing] = useState(false);
   const [summary, setSummary] = useState("");
   const [summaryError, setSummaryError] = useState("");
+
+  const [replyInstructions, setReplyInstructions] = useState("");
+  const [drafting, setDrafting] = useState(false);
+  const [replyDraft, setReplyDraft] = useState("");
+  const [replyError, setReplyError] = useState("");
+  const [replyCopied, setReplyCopied] = useState(false);
+
+  const [translateLanguage, setTranslateLanguage] = useState<"de" | "en" | "zh-CN">("en");
+  const [translating, setTranslating] = useState(false);
+  const [translation, setTranslation] = useState<ImapMailTranslation | null>(null);
+  const [translateError, setTranslateError] = useState("");
 
   const [stratoStatus, setStratoStatus] = useState<StratoAutomationStatus | null>(null);
   const [stratoBusy, setStratoBusy] = useState(false);
@@ -347,6 +361,12 @@ export function ImapMailPage() {
     setMailError("");
     setSummary("");
     setSummaryError("");
+    setReplyDraft("");
+    setReplyError("");
+    setReplyInstructions("");
+    setReplyCopied(false);
+    setTranslation(null);
+    setTranslateError("");
     try {
       setDetail(await fetchImapMessage(selectedAccountId, messageId));
     } catch (err) {
@@ -354,20 +374,62 @@ export function ImapMailPage() {
     }
   }
 
+  function currentUiLanguage(): "de" | "en" | "zh-CN" {
+    return (["de", "en", "zh-CN"].includes(i18n.language) ? i18n.language : "de") as "de" | "en" | "zh-CN";
+  }
+
   async function handleSummarize() {
     if (!selectedAccountId || !selectedMessageId) return;
     setSummarizing(true);
     setSummaryError("");
     try {
-      const uiLanguage = (["de", "en", "zh-CN"].includes(i18n.language) ? i18n.language : "de") as
-        | "de"
-        | "en"
-        | "zh-CN";
-      setSummary(await summarizeImapMessage(selectedAccountId, selectedMessageId, uiLanguage));
+      setSummary(await summarizeImapMessage(selectedAccountId, selectedMessageId, currentUiLanguage()));
     } catch (err) {
       setSummaryError(err instanceof Error ? err.message : t("common.error"));
     } finally {
       setSummarizing(false);
+    }
+  }
+
+  async function handleDraftReply() {
+    if (!selectedAccountId || !selectedMessageId) return;
+    setDrafting(true);
+    setReplyError("");
+    setReplyCopied(false);
+    try {
+      setReplyDraft(
+        await draftImapMailReply(selectedAccountId, selectedMessageId, {
+          instructions: replyInstructions,
+          language: currentUiLanguage(),
+        }),
+      );
+    } catch (err) {
+      setReplyError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setDrafting(false);
+    }
+  }
+
+  async function handleCopyReply() {
+    try {
+      await navigator.clipboard.writeText(replyDraft);
+      setReplyCopied(true);
+    } catch {
+      // Clipboard access can be blocked by the browser - the draft is still
+      // visible to select/copy manually, so this is a silent no-op.
+    }
+  }
+
+  async function handleTranslate() {
+    if (!selectedAccountId || !selectedMessageId) return;
+    setTranslating(true);
+    setTranslateError("");
+    try {
+      setTranslation(await translateImapMailMessage(selectedAccountId, selectedMessageId, translateLanguage));
+    } catch (err) {
+      setTranslateError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setTranslating(false);
     }
   }
 
@@ -779,6 +841,53 @@ export function ImapMailPage() {
                       <pre>{summary}</pre>
                     </div>
                   ) : null}
+
+                  {aiAvailable ? (
+                    <div className="row-actions imap-ai-actions">
+                      <input
+                        type="text"
+                        value={replyInstructions}
+                        onChange={(event) => setReplyInstructions(event.target.value)}
+                        placeholder={t("mail.replyInstructionsPlaceholder")}
+                      />
+                      <button type="button" className="ghost-button" disabled={drafting} onClick={() => void handleDraftReply()}>
+                        {drafting ? t("common.loading") : t("mail.aiDraftReply")}
+                      </button>
+                      <select
+                        value={translateLanguage}
+                        onChange={(event) => setTranslateLanguage(event.target.value as "de" | "en" | "zh-CN")}
+                      >
+                        <option value="de">DE</option>
+                        <option value="en">EN</option>
+                        <option value="zh-CN">中文</option>
+                      </select>
+                      <button type="button" className="ghost-button" disabled={translating} onClick={() => void handleTranslate()}>
+                        {translating ? t("common.loading") : t("mail.aiTranslate")}
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {replyError ? <p className="error-text">{replyError}</p> : null}
+                  {replyDraft ? (
+                    <div className="ai-summary-box">
+                      <div className="row-actions" style={{ justifyContent: "space-between" }}>
+                        <strong>{t("mail.aiReplyTitle")}</strong>
+                        <button type="button" className="ghost-button" onClick={() => void handleCopyReply()}>
+                          {replyCopied ? t("mail.copied") : t("mail.copy")}
+                        </button>
+                      </div>
+                      <pre>{replyDraft}</pre>
+                    </div>
+                  ) : null}
+
+                  {translateError ? <p className="error-text">{translateError}</p> : null}
+                  {translation ? (
+                    <div className="ai-summary-box">
+                      <strong>{t("mail.aiTranslationTitle", { language: translateLanguage.toUpperCase() })}</strong>
+                      <EmailBodyFrame body={translation.body} bodyType={translation.body_type} />
+                    </div>
+                  ) : null}
+
                   <EmailBodyFrame body={detail.body} bodyType={detail.body_type} />
                 </>
               )}

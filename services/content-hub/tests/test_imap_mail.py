@@ -165,6 +165,66 @@ def test_summarize_requires_ai_configured(it_auth_client):
     it_auth_client.delete(f"/api/imap-mail/accounts/{account['id']}")
 
 
+def test_draft_reply_requires_ai_configured(it_auth_client):
+    account = _create_account(it_auth_client)
+    response = it_auth_client.post(
+        f"/api/imap-mail/accounts/{account['id']}/messages/1/draft-reply",
+        json={"instructions": "", "language": "de"},
+    )
+    assert response.status_code == 503
+    it_auth_client.delete(f"/api/imap-mail/accounts/{account['id']}")
+
+
+def test_translate_message_requires_ai_configured(it_auth_client):
+    account = _create_account(it_auth_client)
+    response = it_auth_client.post(
+        f"/api/imap-mail/accounts/{account['id']}/messages/1/translate",
+        json={"target_language": "en"},
+    )
+    assert response.status_code == 503
+    it_auth_client.delete(f"/api/imap-mail/accounts/{account['id']}")
+
+
+def test_draft_reply_success(it_auth_client):
+    account = _create_account(it_auth_client)
+    fake_conn = FakeImapConnection(uids=[b"1"], full_raw=_build_raw_message())
+
+    with (
+        patch("app.routes.imap_mail.ai_configured", return_value=True),
+        patch("app.routes.imap_mail.draft_email_reply", return_value="Vielen Dank fuer Ihre Nachricht."),
+        patch("app.imap_mail_service._connect", return_value=fake_conn),
+    ):
+        response = it_auth_client.post(
+            f"/api/imap-mail/accounts/{account['id']}/messages/1/draft-reply",
+            json={"instructions": "kurz und freundlich", "language": "de"},
+        )
+    assert response.status_code == 200
+    assert response.json()["reply"] == "Vielen Dank fuer Ihre Nachricht."
+
+    it_auth_client.delete(f"/api/imap-mail/accounts/{account['id']}")
+
+
+def test_translate_message_success(it_auth_client):
+    account = _create_account(it_auth_client)
+    fake_conn = FakeImapConnection(uids=[b"1"], full_raw=_build_raw_message())
+
+    with (
+        patch("app.routes.imap_mail.ai_configured", return_value=True),
+        patch("app.routes.imap_mail.translate_email_body", return_value="Thank you for your message."),
+        patch("app.imap_mail_service._connect", return_value=fake_conn),
+    ):
+        response = it_auth_client.post(
+            f"/api/imap-mail/accounts/{account['id']}/messages/1/translate",
+            json={"target_language": "en"},
+        )
+    assert response.status_code == 200
+    translation = response.json()["translation"]
+    assert translation["body"] == "Thank you for your message."
+    assert translation["body_type"] == "text"
+
+    it_auth_client.delete(f"/api/imap-mail/accounts/{account['id']}")
+
+
 def test_create_account_rejects_bad_credentials_without_saving(it_auth_client):
     from fastapi import HTTPException
 

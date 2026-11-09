@@ -2462,6 +2462,46 @@ export async function summarizeImapMessage(
   return payload.summary;
 }
 
+export async function draftImapMailReply(
+  accountId: string,
+  messageId: string,
+  options: { instructions?: string; language?: "de" | "en" | "zh-CN" },
+): Promise<string> {
+  const payload = await request<{ reply: string }>(
+    `/api/imap-mail/accounts/${encodeURIComponent(accountId)}/messages/${encodeURIComponent(messageId)}/draft-reply`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        instructions: options.instructions || "",
+        language: options.language || "de",
+      }),
+    },
+    45000,
+  );
+  return payload.reply;
+}
+
+export type ImapMailTranslation = {
+  body: string;
+  body_type: "html" | "text";
+};
+
+export async function translateImapMailMessage(
+  accountId: string,
+  messageId: string,
+  targetLanguage: "de" | "en" | "zh-CN",
+): Promise<ImapMailTranslation> {
+  const payload = await request<{ translation: ImapMailTranslation }>(
+    `/api/imap-mail/accounts/${encodeURIComponent(accountId)}/messages/${encodeURIComponent(messageId)}/translate`,
+    {
+      method: "POST",
+      body: JSON.stringify({ target_language: targetLanguage }),
+    },
+    45000,
+  );
+  return payload.translation;
+}
+
 export type StratoAutomationStatus = {
   configured: boolean;
   customer_number: string;

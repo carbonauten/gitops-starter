@@ -1209,4 +1209,14 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] **Postfach bearbeiten statt Löschen+Neuanlegen:** neue `PUT /api/imap-mail/accounts/{id}`-Route + `update_imap_account()` — gleiches „Passwort leer lassen, um bestehendes zu behalten"-Muster wie bei Mailcow/Entra-Configs, inkl. Verbindungstest vor dem Speichern (mit neuem Passwort falls angegeben, sonst dem bestehenden entschlüsselten). Frontend nutzt das bestehende Verbinden-Formular auch für die Bearbeitung (ein `editingAccountId`-State schaltet zwischen Anlegen/Speichern um, inkl. Abbrechen-Button)
 - [x] Tests erweitert: Vorschautext-Inhalt, Anhang-Erkennung (mit/ohne `ATTACHMENT` in der simulierten `BODYSTRUCTURE`), Bearbeiten mit und ohne neues Passwort, Verbindungstest-Fehlschlag beim Bearbeiten speichert nichts
 
+### Postfächer (Strato): KI-Antwortvorschlag + Übersetzen (November 2026)
+
+**Ziel:** Über die bereits vorhandene KI-Zusammenfassung hinaus zwei weitere KI-Funktionen für die Nachrichtenansicht, auf Nutzerwunsch — beide bauen auf der bestehenden `ai_service.py`-Infrastruktur auf (gleiches Muster wie Artikel-Übersetzung/-Umschreibung aus Sprint A/Q).
+
+- [x] `draft_email_reply()`: formuliert aus Betreff, Nachrichtentext (HTML-Tags entfernt) und optionalen Freitext-Hinweisen einen Antwortentwurf in Klartext — erfindet bewusst keine Fakten/Zusagen/Daten, die nicht in der Original-Mail oder den Hinweisen stehen
+- [x] `translate_email_body()`: übersetzt den Nachrichtentext in eine Zielsprache, bei HTML-Mails bleibt die Struktur erhalten (gleiches Vorgehen wie bei der Artikel-Übersetzung)
+- [x] Neue Routen `POST /accounts/{id}/messages/{id}/draft-reply` und `.../translate`, beide hinter `ai_configured()`-Check (503 wenn keine KI konfiguriert) — nutzen bestehende, bereits übersetzte Fehlercodes (`ai_draft_failed`, `ai_translation_failed`)
+- [x] UI: Freitext-Hinweisfeld + „KI-Antwort vorschlagen"-Button (Ergebnis mit Kopieren-Button), Sprachauswahl + „Übersetzen"-Button (Ergebnis wird zusätzlich zum Original angezeigt, nicht ersetzt) — direkt neben der bestehenden KI-Zusammenfassung in der Nachrichtenansicht
+- [x] Tests: beide Routen gegen „KI nicht konfiguriert" (503) und Erfolgsfall (gemockte `ai_service`-Funktionen + Fake-IMAP für den zugrundeliegenden Nachrichtenabruf) abgesichert
+
 ---

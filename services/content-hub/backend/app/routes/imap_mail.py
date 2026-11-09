@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from ..ai_service import ai_configured, summarize_article
+from ..ai_service import ai_configured, draft_email_reply, summarize_article, translate_email_body
 from ..audit_service import log_audit
 from ..database import get_db
 from ..dependencies import require_it_master
@@ -45,6 +45,15 @@ class ImapAccountUpdate(BaseModel):
 
 class ImapSummarizeRequest(BaseModel):
     language: str = Field(default="de", max_length=10)
+
+
+class ImapDraftReplyRequest(BaseModel):
+    instructions: str = Field(default="", max_length=2000)
+    language: str = Field(default="de", max_length=10)
+
+
+class ImapTranslateRequest(BaseModel):
+    target_language: str = Field(..., max_length=10)
 
 
 @router.get("/accounts")
@@ -171,3 +180,47 @@ def summarize_message_route(
     if not summary:
         raise HTTPException(status_code=502, detail="ai_summary_failed")
     return {"summary": summary}
+
+
+@router.post("/accounts/{account_id}/messages/{message_id}/draft-reply")
+def draft_reply_route(
+    account_id: str,
+    message_id: str,
+    payload: ImapDraftReplyRequest,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_it_master),
+) -> dict:
+    if not ai_configured():
+        raise HTTPException(status_code=503, detail="ai_not_configured")
+    message = get_message(db, account_id=account_id, message_id=message_id)
+    reply = draft_email_reply(
+        subject=str(message.get("subject") or ""),
+        body=str(message.get("body") or ""),
+        sender_name=str((message.get("from") or {}).get("name") or ""),
+        instructions=payload.instructions,
+        language=payload.language,
+    )
+    if not reply:
+        raise HTTPException(status_code=502, detail="ai_draft_failed")
+    return {"reply": reply}
+
+
+@router.post("/accounts/{account_id}/messages/{message_id}/translate")
+def translate_message_route(
+    account_id: str,
+    message_id: str,
+    payload: ImapTranslateRequest,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(require_it_master),
+) -> dict:
+    if not ai_configured():
+        raise HTTPException(status_code=503, detail="ai_not_configured")
+    message = get_message(db, account_id=account_id, message_id=message_id)
+    translated = translate_email_body(
+        body=str(message.get("body") or ""),
+        body_type=str(message.get("body_type") or "text"),
+        target_language=payload.target_language,
+    )
+    if not translated:
+        raise HTTPException(status_code=502, detail="ai_translation_failed")
+    return {"translation": {"body": translated, "body_type": message.get("body_type") or "text"}}

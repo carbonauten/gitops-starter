@@ -298,6 +298,68 @@ def summarize_article(
     )
 
 
+def draft_email_reply(
+    *,
+    subject: str,
+    body: str,
+    sender_name: str = "",
+    instructions: str = "",
+    language: str = "de",
+) -> str | None:
+    """Plain-text reply draft to a mailbox message (Postfächer/IMAP and
+    Outlook mail viewers both hand in plain text - HTML bodies are already
+    tag-stripped by the caller)."""
+    lang_name = LANG_NAMES.get(language, language)
+    plain = re.sub(r"<[^>]+>", " ", body or "")
+    plain = " ".join(plain.split())
+    system = (
+        "You draft professional email replies for a Carbonauten employee. "
+        f"Write in plain text (no HTML, no markdown), in {lang_name}. "
+        "Be concise and polite. Do not invent facts, commitments, prices, dates, "
+        "or promises that are not present in the original email or the instructions. "
+        "No greeting placeholder guesswork beyond a generic opener - the employee will adjust names/signature."
+    )
+    sender_hint = f" from {sender_name}" if sender_name.strip() else ""
+    instruction_hint = f"\n\nInstructions for the reply: {instructions.strip()}" if instructions.strip() else ""
+    user = (
+        f"Original email{sender_hint}.\nSubject: {subject}\n\n{plain[:6000]}"
+        f"{instruction_hint}\n\nWrite a reply."
+    )
+    return _chat_completion(
+        [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        max_tokens=600,
+    )
+
+
+def translate_email_body(
+    *,
+    body: str,
+    body_type: str,
+    target_language: str,
+) -> str | None:
+    target = LANG_NAMES.get(target_language, target_language)
+    if body_type == "html":
+        system = (
+            "You translate email content. Preserve HTML structure and tags exactly. "
+            "Translate visible text only. Return only the translated HTML, no commentary."
+        )
+    else:
+        system = (
+            "You translate email content. Return only the translated plain text, no commentary."
+        )
+    user = f"Translate the following email body into {target}:\n\n{body[:8000]}"
+    return _chat_completion(
+        [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        max_tokens=2000,
+    )
+
+
 REWRITE_TONES = {
     "professional": "clear, professional internal corporate tone",
     "concise": "shorter and more concise; cut fluff while keeping facts",

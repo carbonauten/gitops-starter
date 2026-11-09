@@ -1391,6 +1391,15 @@ a {
   align-items: center;
 }
 
+.imap-ai-actions {
+  margin: 0.5rem 0;
+}
+
+.imap-ai-actions input[type="text"] {
+  flex: 1;
+  min-width: 12rem;
+}
+
 .toolbar,
 .template-row,
 .form-actions,
