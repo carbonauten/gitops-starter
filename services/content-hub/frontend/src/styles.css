@@ -929,6 +929,37 @@ a {
   font-size: 0.92rem;
 }
 
+.version-diff-fulltext-wrapper {
+  margin-top: 0.35rem;
+}
+
+.version-diff-fulltext {
+  margin: 0.35rem 0 0;
+  padding: 0.6rem 0.75rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  max-height: 24rem;
+  overflow: auto;
+}
+
+.version-diff-segment-insert {
+  background: #dcfce7;
+  color: #166534;
+  text-decoration: none;
+}
+
+.version-diff-segment-delete {
+  background: #fee2e2;
+  color: #991b1b;
+  text-decoration: line-through;
+}
+
 .publish-status-pending {
   color: #a16207;
 }

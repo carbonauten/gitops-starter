@@ -81,6 +81,7 @@ flowchart LR
 | P | 2–4 Tage | ✅ Abgeschlossen (MVP) | Semantische Suche (Embeddings) |
 | Q | 2–4 Tage | ✅ Abgeschlossen (MVP) | KI-Schreibassistenz im Artikel-Editor |
 | R | 2–4 Tage | ✅ Abgeschlossen (MVP) | M365 Ask: LLM-Function-Calling |
+| S | 1–2 Tage | ✅ Abgeschlossen (MVP) | Volltext-Diff für Versionshistorie |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -304,7 +305,7 @@ flowchart LR
 - [x] API: `/api/versions/{article|certificate}/{id}`, Compare, Revision-Detail
 - [x] UI: Versionshistorie im Artikel- und Zertifikat-Editor
 - [x] Feldweise Diff gegen aktuelle Version
-- [ ] Volltext-Diff / Wiederherstellen alter Version — Backlog
+- [x] Volltext-Diff / Wiederherstellen alter Version — ✅ Sprint S (Wiederherstellen war schon hier fertig; Volltext-Diff kam in Sprint S)
 
 ### Akzeptanzkriterien (MVP)
 
@@ -647,6 +648,7 @@ flowchart LR
 | Semantische Suche | Embeddings für Ask Carbonauten | ~~Hoch~~ ✅ Sprint P |
 | KI-Schreibassistenz | Ton/Stil umschreiben + Entwurf aus Stichpunkten | ~~Mittel~~ ✅ Sprint Q |
 | M365 Function Calling | Ask Carbonauten Tools statt Regex-Intents | ~~Hoch~~ ✅ Sprint R |
+| Volltext-Diff | Wort-Diff statt nur Vorher/Nachher bei Versionen | ~~Niedrig~~ ✅ Sprint S |
 
 ---
 
@@ -1019,6 +1021,28 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] Natürliche Formulierung wie „Zeig mir Mike im M365 Verzeichnis“ triggert `list_m365_users` per Tool-Call
 - [x] „Weise … Business Premium zu“ löst SKU per Name auf und weist die Lizenz zu
 - [x] Ohne KI-Keys bleibt das bisherige Regex-Verhalten erhalten
+
+---
+
+## Sprint S — Volltext-Diff für Versionshistorie ✅ (MVP)
+
+**Ziel:** Letzter offener Punkt aus Sprint 7 — bei langen Textfeldern (Artikel-Inhalt, Zertifikat-Notizen) nicht mehr nur „alter Wert / neuer Wert" nebeneinander zeigen, sondern einen echten Wort-Diff mit hervorgehobenen Einfügungen/Löschungen.
+
+### Deliverables
+
+- [x] `version_service.word_diff()`: tokenisiert Text (Wörter/HTML-Tags/Whitespace getrennt) und nutzt Pythons `difflib.SequenceMatcher` für Wort-Ebene-Diff-Segmente (`equal`/`insert`/`delete`) — keine neue Abhängigkeit
+- [x] `diff_snapshots()` berechnet den Volltext-Diff nur für definierte Felder (`FULL_DIFF_FIELDS`: Artikel-`content`, Zertifikat-`notes`/`renewal_review_comment`) — alle anderen Felder (Titel, Status, Datumsfelder, …) bleiben beim bisherigen einfachen Vorher/Nachher
+- [x] Sicherheitsgrenze `FULL_DIFF_MAX_CHARS` (20.000 Zeichen): oberhalb dessen wird kein Diff berechnet (Performance/Lesbarkeit), stattdessen der bisherige einfache Vorher/Nachher-Fallback
+- [x] `/api/versions/{type}/{id}/compare` liefert pro geändertem Feld optional ein `diff`-Array mit den Segmenten
+- [x] Frontend: `VersionHistoryPanel` rendert Felder mit `diff` als zusammenhängenden Text mit rot durchgestrichenen (gelöscht) bzw. grün hinterlegten (eingefügt) Abschnitten statt zweier getrennter Textblöcke
+- [x] Da Artikel-Inhalt TipTap-HTML ist, diffed der Tokenizer HTML-Tags als eigene Einheiten (nicht zeichenweise) — Formatierungsänderungen (z. B. ein neues `<strong>`) erscheinen als eigener Einfüge-/Lösch-Block statt als Buchstabensalat
+- [x] Tests: Wort-Diff-Korrektheit (Rekonstruktion von Vorher/Nachher aus den Segmenten), dass Nicht-Text-Felder weiterhin keinen `diff` bekommen, für Artikel- und Zertifikatsfelder
+
+### Akzeptanzkriterien
+
+- [x] Eine kleine Änderung in einem langen Artikeltext zeigt nur den geänderten Ausschnitt farblich hervorgehoben, nicht den gesamten alten/neuen Text nebeneinander
+- [x] Titel-/Status-/Datumsänderungen sehen unverändert aus wie vorher (kein unnötiger Diff auf kurzen Feldern)
+- [x] Zusammenfügen der `equal`+`delete`-Segmente ergibt exakt den alten Text, `equal`+`insert` exakt den neuen Text (per Test abgesichert)
 
 ---
 

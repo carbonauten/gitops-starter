@@ -2167,10 +2167,16 @@ export type ContentRevision = {
   snapshot?: Record<string, unknown>;
 };
 
+export type VersionDiffSegment = {
+  op: "equal" | "insert" | "delete";
+  text: string;
+};
+
 export type VersionChange = {
   field: string;
   from: unknown;
   to: unknown;
+  diff?: VersionDiffSegment[];
 };
 
 export type VersionCompareResult = {

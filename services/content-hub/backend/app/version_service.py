@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import difflib
 import json
+import re
 from datetime import date, datetime
 from typing import Any, Optional
 
@@ -9,6 +11,44 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .database import Article, Certificate, ContentRevision
+
+# Fields long/free-form enough that a whole-field before/after isn't useful -
+# these get a real word-level diff instead (see _word_diff below).
+FULL_DIFF_FIELDS: dict[str, set[str]] = {
+    "article": {"content"},
+    "certificate": {"notes", "renewal_review_comment"},
+}
+
+# Above this length, computing a word-level diff gets slow and the result
+# unreadable anyway - fall back to the plain truncated before/after.
+FULL_DIFF_MAX_CHARS = 20000
+
+_TOKEN_PATTERN = re.compile(r"\s+|<[^>]+>|[^\s<]+")
+
+
+def _tokenize(text: str) -> list[str]:
+    """Split into words/HTML tags/whitespace, keeping delimiters, so the
+    diff segments can be rejoined into readable text (including article
+    content, which is TipTap-authored HTML, not plain prose)."""
+    return _TOKEN_PATTERN.findall(text or "")
+
+
+def word_diff(before: str, after: str) -> list[dict[str, str]]:
+    before_tokens = _tokenize(before or "")
+    after_tokens = _tokenize(after or "")
+    matcher = difflib.SequenceMatcher(a=before_tokens, b=after_tokens, autojunk=False)
+    segments: list[dict[str, str]] = []
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "equal":
+            segments.append({"op": "equal", "text": "".join(before_tokens[i1:i2])})
+        elif tag == "delete":
+            segments.append({"op": "delete", "text": "".join(before_tokens[i1:i2])})
+        elif tag == "insert":
+            segments.append({"op": "insert", "text": "".join(after_tokens[j1:j2])})
+        elif tag == "replace":
+            segments.append({"op": "delete", "text": "".join(before_tokens[i1:i2])})
+            segments.append({"op": "insert", "text": "".join(after_tokens[j1:j2])})
+    return segments
 
 
 def _serialize_value(value: Any) -> Any:
@@ -124,13 +164,21 @@ def _load_snapshot(revision: ContentRevision) -> dict[str, Any]:
         return {}
 
 
-def diff_snapshots(before: dict[str, Any], after: dict[str, Any]) -> list[dict[str, Any]]:
+def diff_snapshots(entity_type: str, before: dict[str, Any], after: dict[str, Any]) -> list[dict[str, Any]]:
     changes: list[dict[str, Any]] = []
+    full_diff_fields = FULL_DIFF_FIELDS.get(entity_type, set())
     for field in sorted(set(before) | set(after)):
         old_value = before.get(field)
         new_value = after.get(field)
-        if old_value != new_value:
-            changes.append({"field": field, "from": old_value, "to": new_value})
+        if old_value == new_value:
+            continue
+        change: dict[str, Any] = {"field": field, "from": old_value, "to": new_value}
+        if field in full_diff_fields and (isinstance(old_value, str) or isinstance(new_value, str)):
+            old_text = old_value if isinstance(old_value, str) else ""
+            new_text = new_value if isinstance(new_value, str) else ""
+            if len(old_text) <= FULL_DIFF_MAX_CHARS and len(new_text) <= FULL_DIFF_MAX_CHARS:
+                change["diff"] = word_diff(old_text, new_text)
+        changes.append(change)
     return changes
 
 
@@ -186,7 +234,7 @@ def compare_versions(
         "entity_id": entity_id,
         "from_version": from_version,
         "to_version": to_label,
-        "changes": diff_snapshots(from_snapshot, to_snapshot),
+        "changes": diff_snapshots(entity_type, from_snapshot, to_snapshot),
     }
 
 
