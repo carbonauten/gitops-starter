@@ -630,6 +630,12 @@ export function ImapMailPage() {
                       />
                     </label>
                     <p className="muted">{t("imapMail.autoKnownDomainsHint")}</p>
+                    <p className="muted">
+                      {t("imapMail.autoDomainRegistrationNote")}{" "}
+                      <a href="https://www.strato.de/login" target="_blank" rel="noreferrer">
+                        {t("imapMail.openStrato")}
+                      </a>
+                    </p>
                     {domainsError ? <p className="error-text">{domainsError}</p> : null}
                     <div className="row-actions">
                       <button type="submit" className="primary-button" disabled={domainsBusy}>
@@ -646,24 +652,32 @@ export function ImapMailPage() {
                     </div>
                   </form>
                 ) : (
-                  <div className="row-actions">
-                    <span className="muted">
-                      {stratoStatus.domains.length > 0
-                        ? t("imapMail.autoKnownDomainsList", { domains: stratoStatus.domains.join(", ") })
-                        : t("imapMail.autoKnownDomainsNone")}
-                    </span>
-                    <button
-                      type="button"
-                      className="ghost-button"
-                      onClick={() => {
-                        setDomainsInput(stratoStatus.domains_raw);
-                        setDomainsError("");
-                        setEditingDomains(true);
-                      }}
-                    >
-                      {t("imapMail.autoKnownDomainsEdit")}
-                    </button>
-                  </div>
+                  <>
+                    <div className="row-actions">
+                      <span className="muted">
+                        {stratoStatus.domains.length > 0
+                          ? t("imapMail.autoKnownDomainsList", { domains: stratoStatus.domains.join(", ") })
+                          : t("imapMail.autoKnownDomainsNone")}
+                      </span>
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        onClick={() => {
+                          setDomainsInput(stratoStatus.domains_raw);
+                          setDomainsError("");
+                          setEditingDomains(true);
+                        }}
+                      >
+                        {t("imapMail.autoKnownDomainsEdit")}
+                      </button>
+                    </div>
+                    <p className="muted">
+                      {t("imapMail.autoDomainRegistrationNote")}{" "}
+                      <a href="https://www.strato.de/login" target="_blank" rel="noreferrer">
+                        {t("imapMail.openStrato")}
+                      </a>
+                    </p>
+                  </>
                 )}
               </>
             )}
@@ -678,7 +692,7 @@ export function ImapMailPage() {
               <form className="entra-setup-form" onSubmit={(event) => void handleAutomatedCreate(event)}>
                 <div className="row-actions">
                   <label>
-                    {t("imapMail.label")}
+                    {t("imapMail.autoLocalPartLabel")}
                     <input
                       value={autoLocalPart}
                       onChange={(event) => setAutoLocalPart(event.target.value)}
@@ -706,6 +720,9 @@ export function ImapMailPage() {
                     ) : null}
                   </label>
                 </div>
+                {autoLocalPart && autoDomain ? (
+                  <p className="muted">{t("imapMail.autoCreatePreview", { email: `${autoLocalPart}@${autoDomain}` })}</p>
+                ) : null}
                 <label>
                   {t("imapMail.password")}
                   <div className="row-actions">
