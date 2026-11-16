@@ -86,6 +86,7 @@ flowchart LR
 | U | 1–2 Tage | ✅ Abgeschlossen (MVP) | Backend-Verbesserung: Alembic-Migrationen |
 | V | 1–2 Tage | ✅ Abgeschlossen (MVP) | Design-Verbesserung: Dark Mode (Admin) + Shop-Markenkonsistenz |
 | W | <1 Tag | ✅ Abgeschlossen (MVP) | Design-Verbesserung: Alert-Banner & Karten auf Integrations-Seiten |
+| X | <1 Tag | ✅ Abgeschlossen (MVP) | Strato-Domain als Auswahl statt Freitext |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -1165,6 +1166,29 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 
 - [x] Die Strato-Sicherheitswarnung auf `/imap-mail` ist als klar abgegrenztes Banner erkennbar, nicht mehr als reiner Fließtext
 - [x] Die Karten auf `/imap-mail`, `/mail-server` und `/discount-codes` heben sich sichtbar vom Seitenhintergrund ab, in Hell- und Dunkel-Theme
+- [x] `npm run build` läuft fehlerfrei durch
+
+---
+
+## Sprint X — Strato-Domain als Auswahl statt Freitext ✅ (MVP)
+
+**Ziel:** Nutzer-Feedback auf einem Live-Screenshot von `/imap-mail`: Im Formular „Automatisch anlegen" musste die Domain frei eingetippt werden — Wunsch war, sie stattdessen auswählen zu können.
+
+### Deliverables
+
+- [x] Domain-Feld im Auto-Provisioning-Formular um ein `<datalist>` ergänzt, dessen Optionen aus den bereits verbundenen IMAP-Postfächern abgeleitet werden (`username`-Teil nach dem `@`, dedupliziert, sortiert) — rein im Frontend berechnet, keine neuen Backend-Endpunkte nötig, da `fetchImapAccounts()` beim Laden der Seite ohnehin schon alle Konten inkl. `username` lädt
+- [x] **Bewusst keine neue Browser-Automation gebaut**, die die echte Domain-Liste live von Strato abfragt (obwohl `strato_automation_service.py` beim eigentlichen Anlegen bereits ein Domain-`<select>` auf der Strato-Seite bedient) — dieser gesamte Automatisierungscode ist laut eigenem Kommentar „noch nie gegen einen echten Strato-Account getestet"; eine zweite ungetestete Scraping-Funktion hätte nur mehr fragile Angriffsfläche geschaffen für einen Teil, der rein im Frontend und ohne jedes Risiko lösbar war
+- [x] Feld bleibt ein normales Texteingabefeld (kein hartes `<select>`) — funktioniert unverändert wie vorher, wenn noch gar keine Postfächer verbunden sind (keine Sackgasse), zeigt aber den Auswahlpfeil/die Vorschlagsliste, sobald mindestens eine Domain bekannt ist
+
+### Bekannte Einschränkungen
+
+- [x] Die Vorschlagsliste kennt nur Domains, die bereits über ein verbundenes IMAP-Postfach in der Plattform sichtbar sind — eine Domain, die im Strato-Account existiert, aber noch nie dort verbunden wurde, erscheint nicht automatisch; sie lässt sich aber weiterhin frei eintippen
+- [x] Verifiziert per Playwright: zwei Test-Postfächer mit unterschiedlichen Domains angelegt, per DOM-Abfrage bestätigt, dass `#strato-known-domains` exakt beide Domains enthält
+
+### Akzeptanzkriterien
+
+- [x] Mit mindestens einem verbundenen Postfach zeigt das Domain-Feld dessen Domain(s) als native Auswahlvorschläge
+- [x] Ohne verbundene Postfächer verhält sich das Feld exakt wie vorher (reiner Freitext, kein Blocker)
 - [x] `npm run build` läuft fehlerfrei durch
 
 ---

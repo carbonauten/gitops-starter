@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import {
@@ -56,6 +56,13 @@ export function ImapMailPage() {
   const [notice, setNotice] = useState("");
   const [showAccountPanel, setShowAccountPanel] = useState(false);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+
+  const knownDomains = useMemo(() => {
+    const domains = accounts
+      .map((account) => account.username.split("@")[1]?.toLowerCase())
+      .filter((domain): domain is string => Boolean(domain));
+    return Array.from(new Set(domains)).sort();
+  }, [accounts]);
 
   const [label, setLabel] = useState("");
   const [host, setHost] = useState("");
@@ -608,7 +615,15 @@ export function ImapMailPage() {
                         placeholder="carbonauten.com"
                         required
                         autoComplete="off"
+                        list={knownDomains.length > 0 ? "strato-known-domains" : undefined}
                       />
+                      {knownDomains.length > 0 ? (
+                        <datalist id="strato-known-domains">
+                          {knownDomains.map((domain) => (
+                            <option key={domain} value={domain} />
+                          ))}
+                        </datalist>
+                      ) : null}
                     </label>
                   </div>
                   <label>
