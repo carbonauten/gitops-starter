@@ -87,6 +87,7 @@ flowchart LR
 | V | 1–2 Tage | ✅ Abgeschlossen (MVP) | Design-Verbesserung: Dark Mode (Admin) + Shop-Markenkonsistenz |
 | W | <1 Tag | ✅ Abgeschlossen (MVP) | Design-Verbesserung: Alert-Banner & Karten auf Integrations-Seiten |
 | X | <1 Tag | ✅ Abgeschlossen (MVP) | Strato-Domain als Auswahl statt Freitext |
+| Y | <1 Tag | ✅ Abgeschlossen (MVP) | Strato-Domain-Liste manuell konfigurierbar |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -1190,6 +1191,31 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] Mit mindestens einem verbundenen Postfach zeigt das Domain-Feld dessen Domain(s) als native Auswahlvorschläge
 - [x] Ohne verbundene Postfächer verhält sich das Feld exakt wie vorher (reiner Freitext, kein Blocker)
 - [x] `npm run build` läuft fehlerfrei durch
+
+---
+
+## Sprint Y — Strato-Domain-Liste manuell konfigurierbar ✅ (MVP)
+
+**Ziel:** Nutzer-Feedback direkt nach Sprint X: Die aus verbundenen Postfächern abgeleitete Vorschlagsliste reicht nicht — eine Domain, auf der noch nie ein Postfach verbunden wurde (der eigentliche Anwendungsfall beim Anlegen eines *neuen* Postfachs auf einer anderen Domain), taucht dort nie auf.
+
+### Deliverables
+
+- [x] `PlatformStratoSettings` um Spalte `domains` (Text, komma-/zeilenumbruch-getrennt) erweitert — erste Schema-Änderung seit der Alembic-Umstellung in Sprint U, als echte Migration (`d2c5f9535dcd`) statt eines neuen `ensure_schema_updates`-Patches; `server_default=''` gesetzt, da die Tabelle in bestehenden Deployments schon eine Zeile haben kann
+- [x] `strato_config_service.py`: `_parse_domains()` normalisiert (Trennzeichen-Mix, Groß-/Kleinschreibung, Duplikate), `strato_status()` liefert sowohl die geparste Liste (`domains`) als auch den rohen gespeicherten Text (`domains_raw`, zum Vorbefüllen des Bearbeiten-Formulars) — neue Funktion `save_strato_domains()`, eigener Endpunkt `PUT /api/strato-automation/domains` (separat vom Credential-Save-Formular, damit die Domain-Liste geändert werden kann, ohne Kundennummer/Passwort erneut einzugeben)
+- [x] Frontend: Zeile „Known domains: … [Edit]" unterhalb der gespeicherten Strato-Kundennummer; das Domain-Feld im Auto-Provisioning-Formular (Sprint X) kombiniert jetzt beide Quellen — bereits verbundene Postfach-Domains **und** die hier manuell eingetragenen
+- [x] **Bewusst weiterhin keine Live-Strato-Automation** zum Scrapen der echten Domain-Liste — gleiche Begründung wie in Sprint X, verstärkt durch das jetzt vorliegende Nutzer-Feedback: eine manuell gepflegte Liste ist der richtige Mittelweg zwischen „Freitext ohne jede Hilfe" und „eine zweite ungetestete Browser-Automation"
+- [x] Bestehende Migrationstests (`test_database_migrations.py`) korrigiert: sie verglichen bisher hart gegen `BASELINE_REVISION`, was durch die zweite Migration nicht mehr stimmt; außerdem simulierte der „Datenbank von vor Alembic"-Test versehentlich eine Datenbank, die die neue Spalte schon hätte (da `Base.metadata.create_all()` immer den aktuellen Modellstand erzeugt) — jetzt wird die Baseline-Migration gezielt einzeln ausgeführt und die Versionstabelle danach gelöscht, um den historischen Zustand korrekt nachzubilden
+- [x] 2 neue Tests in `test_strato_automation.py` (Normalisierung gemischter Trennzeichen/Duplikate, „nicht konfiguriert"-Fehlerfall)
+
+### Bekannte Einschränkungen
+
+- [x] Rein manuell gepflegt — wer eine neue Domain bei Strato registriert, muss sie hier einmal eintragen, bevor sie als Vorschlag erscheint
+- [x] Nur gegen SQLite getestet (wie die gesamte Alembic-Umstellung aus Sprint U)
+
+### Akzeptanzkriterien
+
+- [x] Eine manuell eingetragene Domain erscheint als Auswahlvorschlag im Domain-Feld, auch ohne dass je ein Postfach darauf verbunden wurde
+- [x] Gesamte Backend-Testsuite (316/316) bleibt grün, `npm run build` läuft fehlerfrei durch
 
 ---
 

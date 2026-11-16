@@ -2625,6 +2625,8 @@ export async function translateImapMailMessage(
 export type StratoAutomationStatus = {
   configured: boolean;
   customer_number: string;
+  domains: string[];
+  domains_raw: string;
   updated_at: string | null;
   updated_by_name: string;
 };
@@ -2640,6 +2642,13 @@ export async function saveStratoAutomationConfig(payload: {
   return request<StratoAutomationStatus>("/api/strato-automation/config", {
     method: "PUT",
     body: JSON.stringify(payload),
+  });
+}
+
+export async function saveStratoKnownDomains(domains: string): Promise<StratoAutomationStatus> {
+  return request<StratoAutomationStatus>("/api/strato-automation/domains", {
+    method: "PUT",
+    body: JSON.stringify({ domains }),
   });
 }
 

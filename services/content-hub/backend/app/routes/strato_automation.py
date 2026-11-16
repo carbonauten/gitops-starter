@@ -10,7 +10,12 @@ from ..database import get_db
 from ..dependencies import require_it_master
 from ..i18n import translate
 from ..strato_automation_service import StratoAutomationError, create_mailbox_via_automation
-from ..strato_config_service import clear_stored_strato_config, save_strato_config, strato_status
+from ..strato_config_service import (
+    clear_stored_strato_config,
+    save_strato_config,
+    save_strato_domains,
+    strato_status,
+)
 
 router = APIRouter(prefix="/api/strato-automation", tags=["strato-automation"])
 
@@ -18,6 +23,10 @@ router = APIRouter(prefix="/api/strato-automation", tags=["strato-automation"])
 class StratoConfigSave(BaseModel):
     customer_number: str = Field(..., min_length=1, max_length=100)
     password: str = Field(default="", max_length=300)
+
+
+class StratoDomainsSave(BaseModel):
+    domains: str = Field(default="", max_length=2000)
 
 
 class StratoCreateMailboxRequest(BaseModel):
@@ -42,6 +51,17 @@ def put_config(
 ) -> dict:
     status = save_strato_config(db, customer_number=payload.customer_number, password=payload.password, actor=user)
     log_audit(db, entity_type="strato_automation", entity_id="config", action="updated", actor=user)
+    return status
+
+
+@router.put("/domains")
+def put_domains(
+    payload: StratoDomainsSave,
+    db: Session = Depends(get_db),
+    user: dict = Depends(require_it_master),
+) -> dict:
+    status = save_strato_domains(db, domains=payload.domains, actor=user)
+    log_audit(db, entity_type="strato_automation", entity_id="domains", action="updated", actor=user)
     return status
 
 
