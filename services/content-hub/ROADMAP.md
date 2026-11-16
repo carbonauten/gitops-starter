@@ -89,6 +89,7 @@ flowchart LR
 | X | <1 Tag | ✅ Abgeschlossen (MVP) | Strato-Domain als Auswahl statt Freitext |
 | Y | <1 Tag | ✅ Abgeschlossen (MVP) | Strato-Domain-Liste manuell konfigurierbar |
 | Z | <1 Tag | ✅ Abgeschlossen (MVP) | Klarere Struktur: eigene Karte für „Neue E-Mail-Adresse anlegen" |
+| AA | <1 Tag | ✅ Abgeschlossen (MVP) | Domain-Registrierungs-Hinweis + Feld-Klarheit beim E-Mail-Anlegen |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -1236,6 +1237,26 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] Das Formular zum Anlegen einer neuen E-Mail-Adresse hat eine eigene, eindeutige Überschrift, getrennt von der Strato-Konfiguration
 - [x] Aus dem Hinweistext wird klar, dass das Domain-Feld jede beliebige Domain akzeptiert, nicht nur die in der Vorschlagsliste
 - [x] `npm run build` läuft fehlerfrei durch (reine Frontend-Änderung, kein Backend berührt)
+
+---
+
+## Sprint AA — Domain-Registrierungs-Hinweis + Feld-Klarheit beim E-Mail-Anlegen ✅ (MVP)
+
+**Ziel:** Nutzer-Feedback nach Sprint Z blieb bestehen („immer noch nicht gut"). Gezielt nachgefragt statt weiter zu raten — zwei konkrete, unterschiedliche Ursachen bestätigt:
+1. „Neue Domain erstellen" meinte tatsächlich: eine komplett neue Domain bei Strato registrieren — das ist und bleibt kein Feature dieser App, das muss direkt bei Strato passieren.
+2. Beim Formular „Neue E-Mail-Adresse anlegen" ging es ausschließlich um Formular-Klarheit, nicht um einen tatsächlichen Fehlschlag der Automation (noch nicht ausprobiert).
+
+### Deliverables
+
+- [x] Hinweis „Eine komplett neue Domain registrieren geht nicht über diese Seite — das macht nur Strato selbst" mit Link zum Strato-Login, direkt bei „Bekannte Domains" platziert (sowohl in der Zusammenfassungs- als auch in der Bearbeiten-Ansicht sichtbar, nicht erst nach Klick auf „Bearbeiten")
+- [x] Feld-Label-Bug behoben: Das Postfachname-Feld im Automatisch-anlegen-Formular nutzte denselben Übersetzungsschlüssel („Bezeichnung"/„Label") wie das Anzeigename-Feld im „Bestehendes Postfach verbinden"-Formular weiter unten — zwei unterschiedliche Bedeutungen (Lokalteil der neuen E-Mail-Adresse vs. freier Anzeigename) unter demselben Wort. Neuer, eigener Schlüssel „Postfachname (der Teil vor dem @)"
+- [x] Live-Vorschau der entstehenden Adresse („Ergebnis: sales@carbonauten.com") direkt unter den Eingabefeldern, aktualisiert sich beim Tippen
+
+### Akzeptanzkriterien
+
+- [x] Beim Ausfüllen von Postfachname und Domain erscheint sofort die resultierende vollständige E-Mail-Adresse
+- [x] Der Hinweis zur Domain-Registrierung ist sichtbar, ohne erst auf „Bearbeiten" klicken zu müssen
+- [x] `npm run build` läuft fehlerfrei durch
 
 ---
 
