@@ -34,6 +34,33 @@ def test_save_and_clear_strato_config(it_auth_client):
     assert cleared.json()["configured"] is False
 
 
+def test_save_and_parse_known_domains(it_auth_client):
+    it_auth_client.put(
+        "/api/strato-automation/config",
+        json={"customer_number": "74845696", "password": "test-strato-password"},
+    )
+
+    saved = it_auth_client.put(
+        "/api/strato-automation/domains",
+        json={"domains": "carbonauten.com, Fuckco2.shop\ncarbonauten.com"},
+    )
+    assert saved.status_code == 200
+    payload = saved.json()
+    # mixed separators, mixed case and a duplicate all normalize correctly
+    assert payload["domains"] == ["carbonauten.com", "fuckco2.shop"]
+    assert payload["domains_raw"] == "carbonauten.com, Fuckco2.shop\ncarbonauten.com"
+
+    status = it_auth_client.get("/api/strato-automation/status")
+    assert status.json()["domains"] == ["carbonauten.com", "fuckco2.shop"]
+
+    it_auth_client.delete("/api/strato-automation/config")
+
+
+def test_save_domains_requires_config_first(it_auth_client):
+    response = it_auth_client.put("/api/strato-automation/domains", json={"domains": "carbonauten.com"})
+    assert response.status_code == 400
+
+
 def test_create_mailbox_requires_config_first(it_auth_client):
     # No patching here - the real service function's "not configured" check
     # runs before any Playwright import, so this exercises the real code path

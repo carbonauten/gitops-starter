@@ -212,6 +212,12 @@ class PlatformStratoSettings(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: "default")
     customer_number: Mapped[str] = mapped_column(String(100), default="")
     password_enc: Mapped[str] = mapped_column(Text, default="")
+    # Comma/newline-separated domains the IT-Master knows exist on this Strato
+    # account. Strato has no API to list them, and the browser-automation
+    # flow above is explicitly untested against a live account, so this is a
+    # manually maintained hint for the domain picker rather than anything
+    # scraped live - see strato_config_service.py.
+    domains: Mapped[str] = mapped_column(Text, default="")
     updated_by_id: Mapped[str] = mapped_column(String(100), default="")
     updated_by_name: Mapped[str] = mapped_column(String(200), default="")
     updated_at: Mapped[datetime] = mapped_column(

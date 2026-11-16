@@ -15,6 +15,7 @@ import {
   fetchStratoAutomationStatus,
   imapAttachmentDownloadUrl,
   saveStratoAutomationConfig,
+  saveStratoKnownDomains,
   StratoAutomationApiError,
   summarizeImapMessage,
   translateImapMailMessage,
@@ -57,12 +58,15 @@ export function ImapMailPage() {
   const [showAccountPanel, setShowAccountPanel] = useState(false);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
 
+  const [stratoStatus, setStratoStatus] = useState<StratoAutomationStatus | null>(null);
+
   const knownDomains = useMemo(() => {
-    const domains = accounts
+    const fromAccounts = accounts
       .map((account) => account.username.split("@")[1]?.toLowerCase())
       .filter((domain): domain is string => Boolean(domain));
-    return Array.from(new Set(domains)).sort();
-  }, [accounts]);
+    const fromConfig = stratoStatus?.domains ?? [];
+    return Array.from(new Set([...fromAccounts, ...fromConfig])).sort();
+  }, [accounts, stratoStatus]);
 
   const [label, setLabel] = useState("");
   const [host, setHost] = useState("");
@@ -98,10 +102,13 @@ export function ImapMailPage() {
   const [translation, setTranslation] = useState<ImapMailTranslation | null>(null);
   const [translateError, setTranslateError] = useState("");
 
-  const [stratoStatus, setStratoStatus] = useState<StratoAutomationStatus | null>(null);
   const [stratoBusy, setStratoBusy] = useState(false);
   const [stratoCustomerNumber, setStratoCustomerNumber] = useState("");
   const [stratoPassword, setStratoPassword] = useState("");
+  const [editingDomains, setEditingDomains] = useState(false);
+  const [domainsInput, setDomainsInput] = useState("");
+  const [domainsBusy, setDomainsBusy] = useState(false);
+  const [domainsError, setDomainsError] = useState("");
   const [autoLocalPart, setAutoLocalPart] = useState("");
   const [autoDomain, setAutoDomain] = useState("");
   const [autoPassword, setAutoPassword] = useState("");
@@ -323,6 +330,22 @@ export function ImapMailPage() {
       setError(err instanceof Error ? err.message : t("common.error"));
     } finally {
       setStratoBusy(false);
+    }
+  }
+
+  async function handleSaveDomains(event: FormEvent) {
+    event.preventDefault();
+    setDomainsBusy(true);
+    setDomainsError("");
+    try {
+      const status = await saveStratoKnownDomains(domainsInput);
+      setStratoStatus(status);
+      setDomainsInput(status.domains_raw);
+      setEditingDomains(false);
+    } catch (err) {
+      setDomainsError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setDomainsBusy(false);
     }
   }
 
@@ -594,6 +617,54 @@ export function ImapMailPage() {
                     {t("imapMail.autoClearConfig")}
                   </button>
                 </div>
+
+                {editingDomains ? (
+                  <form className="entra-setup-form" onSubmit={(event) => void handleSaveDomains(event)}>
+                    <label>
+                      {t("imapMail.autoKnownDomains")}
+                      <input
+                        value={domainsInput}
+                        onChange={(event) => setDomainsInput(event.target.value)}
+                        placeholder="carbonauten.com, fuckco2.shop"
+                        autoComplete="off"
+                      />
+                    </label>
+                    <p className="muted">{t("imapMail.autoKnownDomainsHint")}</p>
+                    {domainsError ? <p className="error-text">{domainsError}</p> : null}
+                    <div className="row-actions">
+                      <button type="submit" className="primary-button" disabled={domainsBusy}>
+                        {domainsBusy ? t("common.loading") : t("imapMail.autoSaveConfig")}
+                      </button>
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        disabled={domainsBusy}
+                        onClick={() => setEditingDomains(false)}
+                      >
+                        {t("common.cancel")}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="row-actions">
+                    <span className="muted">
+                      {stratoStatus.domains.length > 0
+                        ? t("imapMail.autoKnownDomainsList", { domains: stratoStatus.domains.join(", ") })
+                        : t("imapMail.autoKnownDomainsNone")}
+                    </span>
+                    <button
+                      type="button"
+                      className="ghost-button"
+                      onClick={() => {
+                        setDomainsInput(stratoStatus.domains_raw);
+                        setDomainsError("");
+                        setEditingDomains(true);
+                      }}
+                    >
+                      {t("imapMail.autoKnownDomainsEdit")}
+                    </button>
+                  </div>
+                )}
 
                 <form className="entra-setup-form" onSubmit={(event) => void handleAutomatedCreate(event)}>
                   <div className="row-actions">
