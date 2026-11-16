@@ -668,11 +668,12 @@ a {
 .integration-connect-block {
   display: grid;
   gap: 0.75rem;
-  padding: 1rem;
+  padding: 1.25rem;
   margin-bottom: 1rem;
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: var(--surface-muted);
+  background: var(--surface);
+  box-shadow: var(--shadow);
 }
 
 .integration-connect-header {
@@ -910,12 +911,14 @@ a {
 
 .success-text {
   color: #027a48;
-  margin: 0;
+  background: #ecfdf3;
+  border-left-color: #027a48;
 }
 
 .warning-text {
   color: #b54708;
-  margin: 0;
+  background: #fef0c7;
+  border-left-color: #b54708;
 }
 
 .calendar-event-outlook_event {
@@ -2053,8 +2056,21 @@ a {
   margin: 0;
 }
 
+.error-text,
+.success-text,
+.warning-text {
+  margin: 0;
+  padding: 0.65rem 0.9rem;
+  border-radius: 10px;
+  border-left: 3px solid transparent;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
 .error-text {
   color: #b42318;
+  background: #fef3f2;
+  border-left-color: #b42318;
 }
 
 .ghost-button.danger {

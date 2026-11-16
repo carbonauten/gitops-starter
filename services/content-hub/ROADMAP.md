@@ -85,6 +85,7 @@ flowchart LR
 | T | 2–4 Tage | ✅ Abgeschlossen (MVP) | Shop-Rabattcodes/Gutscheine |
 | U | 1–2 Tage | ✅ Abgeschlossen (MVP) | Backend-Verbesserung: Alembic-Migrationen |
 | V | 1–2 Tage | ✅ Abgeschlossen (MVP) | Design-Verbesserung: Dark Mode (Admin) + Shop-Markenkonsistenz |
+| W | <1 Tag | ✅ Abgeschlossen (MVP) | Design-Verbesserung: Alert-Banner & Karten auf Integrations-Seiten |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -1141,6 +1142,29 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 - [x] Admin-Oberfläche lässt sich über den TopBar-Toggle zwischen Hell/Dunkel/System umschalten, Auswahl bleibt nach Reload erhalten
 - [x] Dashboard, Produkte- und Rabattcode-Seiten zeigen im Dark Mode durchgängig dunkle Hintergründe ohne weiße „Flecken"
 - [x] Shop-Cookie-Banner und Checkout-Rabattcode-UI verwenden die Marken-Grün-Farbe statt des Admin-Blaus
+- [x] `npm run build` läuft fehlerfrei durch
+
+---
+
+## Sprint W — Design-Verbesserung: Alert-Banner & Karten auf Integrations-Seiten ✅ (MVP)
+
+**Ziel:** Nutzer hat die Live-Seite `/imap-mail` gezeigt (Screenshot) — die Sicherheitswarnung beim experimentellen Strato-Auto-Provisioning war reiner eingefärbter Fließtext ohne visuelle Abgrenzung, und die Karten darunter hatten gegen den Seitenhintergrund kaum sichtbare Ränder, wirkten wie reiner Text statt wie klar abgegrenzte Abschnitte.
+
+### Deliverables
+
+- [x] `.error-text`/`.success-text`/`.warning-text` (66 Verwendungen in 32 Dateien, ausschließlich als `<p>`-Block-Elemente) von reinem eingefärbtem Text auf echte Banner umgestellt: Padding, abgerundete Ecken, farblich passender Hintergrund-Ton, linker Akzentrahmen in der jeweiligen Statusfarbe
+- [x] `.integration-connect-block` (gemeinsame Karten-Komponente für Integrations-/Setup-Abschnitte, verwendet auf 8 Seiten: IMAP-Mail, Mail-Server, Outlook, Dateien, Veröffentlichen, Kalender, Rabattcodes) von `var(--surface-muted)` (fast nicht vom Seitenhintergrund `--bg` zu unterscheiden) auf `var(--surface)` + `box-shadow: var(--shadow)` umgestellt — klar sichtbare Kartenabgrenzung statt „Textwand"
+- [x] Bewusst nicht angefasst: die farbigen Status-Badges (`.integration-badge-connected` etc.) — bleiben als in sich geschlossene Pillen unverändert, siehe Begründung in Sprint V
+
+### Bekannte Einschränkungen
+
+- [x] Die Alert-Banner-Hintergründe sind weiterhin feste helle Pastelltöne (nicht Dark-Mode-Token-basiert) — bewusste Entscheidung wie bei den Status-Badges in Sprint V: bleiben als in sich geschlossene, zweifarbige Boxen in beiden Themes lesbar, siehe Screenshot-Verifikation
+- [x] Nur visuell per Playwright-Screenshot gegen `/imap-mail` (hell + dunkel), `/mail-server` und `/discount-codes` verifiziert, nicht alle 8 Seiten mit `.integration-connect-block`
+
+### Akzeptanzkriterien
+
+- [x] Die Strato-Sicherheitswarnung auf `/imap-mail` ist als klar abgegrenztes Banner erkennbar, nicht mehr als reiner Fließtext
+- [x] Die Karten auf `/imap-mail`, `/mail-server` und `/discount-codes` heben sich sichtbar vom Seitenhintergrund ab, in Hell- und Dunkel-Theme
 - [x] `npm run build` läuft fehlerfrei durch
 
 ---
