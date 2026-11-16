@@ -665,78 +665,86 @@ export function ImapMailPage() {
                     </button>
                   </div>
                 )}
-
-                <form className="entra-setup-form" onSubmit={(event) => void handleAutomatedCreate(event)}>
-                  <div className="row-actions">
-                    <label>
-                      {t("imapMail.label")}
-                      <input
-                        value={autoLocalPart}
-                        onChange={(event) => setAutoLocalPart(event.target.value)}
-                        placeholder="sales"
-                        required
-                        autoComplete="off"
-                      />
-                    </label>
-                    <label>
-                      {t("imapMail.domain")}
-                      <input
-                        value={autoDomain}
-                        onChange={(event) => setAutoDomain(event.target.value)}
-                        placeholder="carbonauten.com"
-                        required
-                        autoComplete="off"
-                        list={knownDomains.length > 0 ? "strato-known-domains" : undefined}
-                      />
-                      {knownDomains.length > 0 ? (
-                        <datalist id="strato-known-domains">
-                          {knownDomains.map((domain) => (
-                            <option key={domain} value={domain} />
-                          ))}
-                        </datalist>
-                      ) : null}
-                    </label>
-                  </div>
-                  <label>
-                    {t("imapMail.password")}
-                    <div className="row-actions">
-                      <input
-                        type="text"
-                        value={autoPassword}
-                        onChange={(event) => setAutoPassword(event.target.value)}
-                        minLength={8}
-                        required
-                        autoComplete="off"
-                      />
-                      <button type="button" className="ghost-button" onClick={() => setAutoPassword(generatePassword())}>
-                        {t("imapMail.autoGeneratePassword")}
-                      </button>
-                    </div>
-                  </label>
-                  <button type="submit" className="primary-button" disabled={autoCreating}>
-                    {autoCreating ? t("imapMail.autoCreating") : t("imapMail.autoCreateButton")}
-                  </button>
-                </form>
               </>
             )}
-
-            {autoNotice ? <p className="success-text">{autoNotice}</p> : null}
-            {autoError ? (
-              <div>
-                <p className="error-text">{autoError}</p>
-                {autoScreenshot ? (
-                  <details>
-                    <summary>{t("imapMail.autoScreenshotLabel")}</summary>
-                    <img
-                      src={`data:image/png;base64,${autoScreenshot}`}
-                      alt=""
-                      style={{ maxWidth: "100%", border: "1px solid var(--border, #e4e7ec)", borderRadius: 8 }}
-                    />
-                  </details>
-                ) : null}
-              </div>
-            ) : null}
           </div>
+
+          {stratoStatus?.configured ? (
+            <div className="integration-connect-block">
+              <div className="integration-connect-header">
+                <strong>{t("imapMail.autoCreateFormTitle")}</strong>
+              </div>
+              <p className="muted">{t("imapMail.autoCreateFormHint")}</p>
+              <form className="entra-setup-form" onSubmit={(event) => void handleAutomatedCreate(event)}>
+                <div className="row-actions">
+                  <label>
+                    {t("imapMail.label")}
+                    <input
+                      value={autoLocalPart}
+                      onChange={(event) => setAutoLocalPart(event.target.value)}
+                      placeholder="sales"
+                      required
+                      autoComplete="off"
+                    />
+                  </label>
+                  <label>
+                    {t("imapMail.domain")}
+                    <input
+                      value={autoDomain}
+                      onChange={(event) => setAutoDomain(event.target.value)}
+                      placeholder="carbonauten.com"
+                      required
+                      autoComplete="off"
+                      list={knownDomains.length > 0 ? "strato-known-domains" : undefined}
+                    />
+                    {knownDomains.length > 0 ? (
+                      <datalist id="strato-known-domains">
+                        {knownDomains.map((domain) => (
+                          <option key={domain} value={domain} />
+                        ))}
+                      </datalist>
+                    ) : null}
+                  </label>
+                </div>
+                <label>
+                  {t("imapMail.password")}
+                  <div className="row-actions">
+                    <input
+                      type="text"
+                      value={autoPassword}
+                      onChange={(event) => setAutoPassword(event.target.value)}
+                      minLength={8}
+                      required
+                      autoComplete="off"
+                    />
+                    <button type="button" className="ghost-button" onClick={() => setAutoPassword(generatePassword())}>
+                      {t("imapMail.autoGeneratePassword")}
+                    </button>
+                  </div>
+                </label>
+                <button type="submit" className="primary-button" disabled={autoCreating}>
+                  {autoCreating ? t("imapMail.autoCreating") : t("imapMail.autoCreateButton")}
+                </button>
+              </form>
+
+              {autoNotice ? <p className="success-text">{autoNotice}</p> : null}
+              {autoError ? (
+                <div>
+                  <p className="error-text">{autoError}</p>
+                  {autoScreenshot ? (
+                    <details>
+                      <summary>{t("imapMail.autoScreenshotLabel")}</summary>
+                      <img
+                        src={`data:image/png;base64,${autoScreenshot}`}
+                        alt=""
+                        style={{ maxWidth: "100%", border: "1px solid var(--border, #e4e7ec)", borderRadius: 8 }}
+                      />
+                    </details>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           <div className="integration-connect-block">
             <div className="integration-connect-header">
