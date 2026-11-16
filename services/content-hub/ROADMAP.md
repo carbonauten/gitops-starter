@@ -88,6 +88,7 @@ flowchart LR
 | W | <1 Tag | ✅ Abgeschlossen (MVP) | Design-Verbesserung: Alert-Banner & Karten auf Integrations-Seiten |
 | X | <1 Tag | ✅ Abgeschlossen (MVP) | Strato-Domain als Auswahl statt Freitext |
 | Y | <1 Tag | ✅ Abgeschlossen (MVP) | Strato-Domain-Liste manuell konfigurierbar |
+| Z | <1 Tag | ✅ Abgeschlossen (MVP) | Klarere Struktur: eigene Karte für „Neue E-Mail-Adresse anlegen" |
 | 8+ | laufend | Backlog | Erweiterungen (siehe unten) |
 
 ---
@@ -1216,6 +1217,25 @@ Siehe auch: [README.md](./README.md) für lokale Entwicklung und Deployment.
 
 - [x] Eine manuell eingetragene Domain erscheint als Auswahlvorschlag im Domain-Feld, auch ohne dass je ein Postfach darauf verbunden wurde
 - [x] Gesamte Backend-Testsuite (316/316) bleibt grün, `npm run build` läuft fehlerfrei durch
+
+---
+
+## Sprint Z — Klarere Struktur: eigene Karte für „Neue E-Mail-Adresse anlegen" ✅ (MVP)
+
+**Ziel:** Nutzer-Feedback direkt nach Sprint Y, mit Screenshot der Live-Seite: Unklar, wie man eine neue Domain auswählt/anlegt und wie man überhaupt eine neue E-Mail-Adresse anlegt. Grund: Das Formular zum tatsächlichen Anlegen (Postfachname/Domain/Passwort) hing kommentarlos direkt an die Kundennummer- und „Bekannte Domains"-Zeilen innerhalb derselben Karte „Automatisch anlegen (experimentell)" — keine eigene Überschrift, keine Abgrenzung.
+
+### Deliverables
+
+- [x] Formular zum Anlegen (Postfachname/Domain/Passwort/Button) in eine eigene, zweite Karte mit eigener Überschrift „Neue E-Mail-Adresse anlegen" ausgelagert — entspricht exakt dem bereits bestehenden Muster auf `/mail-server` (dort schon zwei getrennte Karten: „Mailcow connection" und „Create email address")
+- [x] Neue Karte erscheint nur, wenn Strato-Login hinterlegt ist (`stratoStatus.configured`); die erste Karte bleibt für Konfiguration (Kundennummer, bekannte Domains) zuständig
+- [x] Hinweistext in der neuen Karte stellt explizit klar: die Domain kann frei eingegeben werden, unabhängig von der Liste in der Konfigurationskarte
+- [x] „Bekannte Domains"-Hinweistexte präzisiert: „nur eine Vorschlagsliste … keine Voraussetzung" statt der bisherigen, missverständlichen Formulierung
+
+### Akzeptanzkriterien
+
+- [x] Das Formular zum Anlegen einer neuen E-Mail-Adresse hat eine eigene, eindeutige Überschrift, getrennt von der Strato-Konfiguration
+- [x] Aus dem Hinweistext wird klar, dass das Domain-Feld jede beliebige Domain akzeptiert, nicht nur die in der Vorschlagsliste
+- [x] `npm run build` läuft fehlerfrei durch (reine Frontend-Änderung, kein Backend berührt)
 
 ---
 
