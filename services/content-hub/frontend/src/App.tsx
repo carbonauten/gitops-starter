@@ -32,6 +32,7 @@ import { ShopCustomersPage } from "./pages/ShopCustomersPage";
 import { ShopMonitoringPage } from "./pages/ShopMonitoringPage";
 import { ShopReturnsPage } from "./pages/ShopReturnsPage";
 import { ReputationPage } from "./pages/ReputationPage";
+import { WordPressPage } from "./pages/WordPressPage";
 import { usePermissions } from "./hooks/usePermissions";
 
 function ShopManageRoute({ children }: { children: React.ReactNode }) {
@@ -48,6 +49,23 @@ function ShopManageRoute({ children }: { children: React.ReactNode }) {
   }
   if (!user) return <Navigate to="/login" replace />;
   if (!canManageShop) return <Navigate to="/" replace />;
+  return <Layout>{children}</Layout>;
+}
+
+function WordPressRoute({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
+  const { user, loading } = useAuth();
+  const { canManageWordpress } = usePermissions();
+
+  if (loading) {
+    return (
+      <div className="center-screen" style={{ fontSize: "1.1rem", color: "#334155" }}>
+        {t("common.loading")}
+      </div>
+    );
+  }
+  if (!user) return <Navigate to="/login" replace />;
+  if (!canManageWordpress) return <Navigate to="/" replace />;
   return <Layout>{children}</Layout>;
 }
 
@@ -242,6 +260,14 @@ export default function App() {
           <MasterRoute>
             <ImapMailPage />
           </MasterRoute>
+        }
+      />
+      <Route
+        path="/wordpress"
+        element={
+          <WordPressRoute>
+            <WordPressPage />
+          </WordPressRoute>
         }
       />
       <Route

@@ -24,6 +24,7 @@
     "m365": "M365-Verwaltung",
     "mailServer": "Mail-Server (Mailcow)",
     "imapMail": "Postfächer (Strato)",
+    "wordpress": "WordPress (Strato)",
     "openMenu": "Menü öffnen",
     "closeMenu": "Menü schließen",
     "themeLight": "Helles Design",
@@ -354,12 +355,14 @@
       "it_master": "IT-Master",
       "editor": "Redakteur",
       "certificate_manager": "Zertifikats-Manager",
+      "designer": "Designer",
       "viewer": "Leser"
     },
     "roleDescriptions": {
       "it_master": "Vollzugriff inkl. Mitarbeiterverwaltung und Freigaben",
       "editor": "Inhalte erstellen und bearbeiten",
       "certificate_manager": "Zertifikate verwalten und Erneuerungen freigeben",
+      "designer": "WordPress-Seiten installieren und verwalten",
       "viewer": "Nur Lesen, keine Bearbeitung"
     },
     "invites": {
@@ -1121,6 +1124,27 @@
     "delete": "Löschen",
     "confirmDeleteMailbox": "Postfach {{email}} löschen? Das kann nicht rückgängig gemacht werden.",
     "mailboxDeleted": "Postfach {{email}} gelöscht."
+  },
+  "wordpress": {
+    "title": "WordPress (Strato)",
+    "subtitle": "WordPress-Installationen bei Strato über den Strato-Kundenlogin verwalten (Browser-Automatisierung, da Strato keine API dafür anbietet).",
+    "notConfigured": "Strato-Kundenlogin ist noch nicht hinterlegt.",
+    "notConfiguredHint": "Zugangsdaten auf der Seite „Postfächer (Strato)“ hinterlegen.",
+    "installTitle": "WordPress installieren",
+    "mode": "Update-Modus",
+    "modeSecurity": "Sicherheits-Modus",
+    "modeFlexibility": "Flexibilitäts-Modus",
+    "modeSecurityHint": "Immer die aktuellste Version, automatische Updates. Wechsel in den Flexibilitäts-Modus später möglich.",
+    "modeFlexibilityHint": "Absolute Update-Kontrolle, kein Wechsel in den Sicherheits-Modus später möglich.",
+    "domain": "Domain",
+    "install": "Installieren",
+    "installSuccess": "WordPress für {{domain}} wird installiert.",
+    "installationsTitle": "Bestehende Installationen",
+    "refresh": "Aktualisieren",
+    "empty": "Keine WordPress-Installationen gefunden.",
+    "openSite": "Seite öffnen",
+    "openAdmin": "wp-admin öffnen",
+    "automationScreenshotLabel": "Debug-Screenshot anzeigen"
   },
   "imapMail": {
     "title": "Postfächer (Strato)",

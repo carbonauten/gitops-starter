@@ -6,7 +6,7 @@ from fastapi import Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from .database import get_db
-from .roles import ADMIN_ROLES, APPROVAL_ROLES, CERT_APPROVAL_ROLES, EDIT_ROLES, can_manage_shop
+from .roles import ADMIN_ROLES, APPROVAL_ROLES, CERT_APPROVAL_ROLES, EDIT_ROLES, can_manage_shop, can_manage_wordpress
 from .user_service import enrich_user_session, get_user_by_entra_id, sync_master_role_from_env
 
 
@@ -66,5 +66,11 @@ def require_shop_editor(user: dict[str, Any] = Depends(get_current_user)) -> dic
     if user.get("role") not in EDIT_ROLES:
         raise HTTPException(status_code=403, detail="forbidden")
     if not can_manage_shop(user.get("role") or "", user.get("can_manage_shop")):
+        raise HTTPException(status_code=403, detail="forbidden")
+    return user
+
+
+def require_wordpress_manager(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+    if not can_manage_wordpress(user.get("role") or ""):
         raise HTTPException(status_code=403, detail="forbidden")
     return user

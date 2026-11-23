@@ -24,6 +24,7 @@
     "m365": "M365 管理",
     "mailServer": "邮件服务器（Mailcow）",
     "imapMail": "邮箱（Strato）",
+    "wordpress": "WordPress（Strato）",
     "openMenu": "打开菜单",
     "closeMenu": "关闭菜单",
     "themeLight": "浅色主题",
@@ -354,12 +355,14 @@
       "it_master": "IT 主管理员",
       "editor": "编辑者",
       "certificate_manager": "证书管理员",
+      "designer": "设计师",
       "viewer": "只读"
     },
     "roleDescriptions": {
       "it_master": "完全访问权限，包括员工管理和审批",
       "editor": "创建和编辑内容",
       "certificate_manager": "管理证书并审批续期",
+      "designer": "安装和管理 WordPress 网站",
       "viewer": "只读，不可编辑"
     },
     "invites": {
@@ -1121,6 +1124,27 @@
     "delete": "删除",
     "confirmDeleteMailbox": "删除邮箱 {{email}}？此操作无法撤销。",
     "mailboxDeleted": "邮箱 {{email}} 已删除。"
+  },
+  "wordpress": {
+    "title": "WordPress（Strato）",
+    "subtitle": "通过 Strato 客户登录管理 Strato 上的 WordPress 安装（浏览器自动化，因为 Strato 未提供相应 API）。",
+    "notConfigured": "尚未设置 Strato 客户登录信息。",
+    "notConfiguredHint": "请在“邮箱（Strato）”页面设置。",
+    "installTitle": "安装 WordPress",
+    "mode": "更新模式",
+    "modeSecurity": "安全模式",
+    "modeFlexibility": "灵活模式",
+    "modeSecurityHint": "始终使用最新版本，自动更新。之后可以切换到灵活模式。",
+    "modeFlexibilityHint": "完全控制更新，之后无法切换到安全模式。",
+    "domain": "域名",
+    "install": "安装",
+    "installSuccess": "正在为 {{domain}} 安装 WordPress。",
+    "installationsTitle": "现有安装",
+    "refresh": "刷新",
+    "empty": "未找到 WordPress 安装。",
+    "openSite": "打开网站",
+    "openAdmin": "打开 wp-admin",
+    "automationScreenshotLabel": "显示调试截图"
   },
   "imapMail": {
     "title": "邮箱（Strato）",
