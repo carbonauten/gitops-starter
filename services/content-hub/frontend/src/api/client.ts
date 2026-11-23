@@ -2855,3 +2855,110 @@ export async function resumeWordPressInstallCaptcha(
   );
   return body.installation;
 }
+
+// WordPress's own REST API (wp-json/), for managing an already-running site
+// via an Application Password - no browser automation/CAPTCHA involved, so
+// these go through the shared request() helper like everything else.
+export type WordPressSite = {
+  id: string;
+  label: string;
+  base_url: string;
+  username: string;
+  created_by_name: string;
+  created_at: string | null;
+};
+
+export async function fetchWordPressSites(): Promise<WordPressSite[]> {
+  const body = await request<{ sites: WordPressSite[] }>("/api/wordpress/sites");
+  return body.sites;
+}
+
+export async function createWordPressSite(payload: {
+  label: string;
+  base_url: string;
+  username: string;
+  app_password: string;
+}): Promise<WordPressSite> {
+  const body = await request<{ site: WordPressSite }>("/api/wordpress/sites", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return body.site;
+}
+
+export async function deleteWordPressSite(siteId: string): Promise<void> {
+  await request<void>(`/api/wordpress/sites/${encodeURIComponent(siteId)}`, { method: "DELETE" });
+}
+
+export type WordPressSiteStatus = {
+  reachable: boolean;
+  site_name: string;
+  connected_as: string;
+  roles: string[];
+};
+
+export async function fetchWordPressSiteStatus(siteId: string): Promise<WordPressSiteStatus> {
+  return request<WordPressSiteStatus>(`/api/wordpress/sites/${encodeURIComponent(siteId)}/status`);
+}
+
+export type WordPressPost = {
+  id: number;
+  title: string;
+  status: string;
+  link: string;
+  date: string;
+};
+
+export async function fetchWordPressSitePosts(siteId: string, status = "any"): Promise<WordPressPost[]> {
+  const body = await request<{ posts: WordPressPost[] }>(
+    `/api/wordpress/sites/${encodeURIComponent(siteId)}/posts?status=${encodeURIComponent(status)}`,
+  );
+  return body.posts;
+}
+
+export async function createWordPressSitePost(
+  siteId: string,
+  payload: { title: string; content: string; status: string },
+): Promise<WordPressPost> {
+  const body = await request<{ post: WordPressPost }>(`/api/wordpress/sites/${encodeURIComponent(siteId)}/posts`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  return body.post;
+}
+
+export async function updateWordPressSitePost(
+  siteId: string,
+  postId: number,
+  payload: { title?: string; content?: string; status?: string },
+): Promise<WordPressPost> {
+  const body = await request<{ post: WordPressPost }>(
+    `/api/wordpress/sites/${encodeURIComponent(siteId)}/posts/${postId}`,
+    { method: "PATCH", body: JSON.stringify(payload) },
+  );
+  return body.post;
+}
+
+export type WordPressPlugin = {
+  plugin: string;
+  name: string;
+  version: string;
+  status: string;
+};
+
+export async function fetchWordPressSitePlugins(siteId: string): Promise<WordPressPlugin[]> {
+  const body = await request<{ plugins: WordPressPlugin[] }>(`/api/wordpress/sites/${encodeURIComponent(siteId)}/plugins`);
+  return body.plugins;
+}
+
+export async function setWordPressSitePluginStatus(
+  siteId: string,
+  plugin: string,
+  status: "active" | "inactive",
+): Promise<WordPressPlugin> {
+  const body = await request<{ plugin: WordPressPlugin }>(
+    `/api/wordpress/sites/${encodeURIComponent(siteId)}/plugins/${plugin}`,
+    { method: "PATCH", body: JSON.stringify({ status }) },
+  );
+  return body.plugin;
+}
