@@ -2666,6 +2666,20 @@ export type StratoAutomationResult = {
   domain: string;
 };
 
+// Strato's login form always shows an image CAPTCHA for this account - no
+// selector fix can solve that automatically, so a human has to read the
+// image and type the code back in while the automation's browser session
+// stays open server-side (see strato_login_session.py). Both
+// createStratoMailboxAutomated() and resumeStratoMailboxCaptcha() below can
+// return this instead of a finished result.
+export type StratoCaptchaRequired = {
+  status: "captcha_required";
+  session_id: string;
+  captcha_image_base64: string | null;
+};
+
+export type StratoMailboxOutcome = ({ status: "created" } & StratoAutomationResult) | StratoCaptchaRequired;
+
 export class StratoAutomationApiError extends Error {
   code: string;
   screenshotBase64: string | null;
@@ -2677,34 +2691,26 @@ export class StratoAutomationApiError extends Error {
   }
 }
 
-// Not routed through the shared request() helper: on failure this endpoint
-// returns a screenshot of the browser automation's last state alongside the
-// error, which is genuinely useful for debugging a broken selector - the
-// shared helper only keeps the error message, so it's parsed here directly.
-export async function createStratoMailboxAutomated(payload: {
-  local_part: string;
-  domain: string;
-  password: string;
-}): Promise<StratoAutomationResult> {
+async function _stratoAutomationFetch<T>(url: string, body: unknown, timeoutMs = 90000): Promise<T> {
   const controller = new AbortController();
-  const timeout = window.setTimeout(() => controller.abort(), 90000);
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch("/api/strato-automation/create-mailbox", {
+    const response = await fetch(url, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
       signal: controller.signal,
     });
-    const body = await response.json();
+    const responseBody = await response.json();
     if (!response.ok) {
       throw new StratoAutomationApiError(
-        body.error || "Request failed",
-        body.code || "error",
-        body.screenshot_base64 || null,
+        responseBody.error || "Request failed",
+        responseBody.code || "error",
+        responseBody.screenshot_base64 || null,
       );
     }
-    return (body.mailbox as StratoAutomationResult) ?? body;
+    return responseBody as T;
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       throw new Error("Request timed out. Please try again.");
@@ -2713,6 +2719,28 @@ export async function createStratoMailboxAutomated(payload: {
   } finally {
     window.clearTimeout(timeout);
   }
+}
+
+// Not routed through the shared request() helper: on failure this endpoint
+// returns a screenshot of the browser automation's last state alongside the
+// error, which is genuinely useful for debugging a broken selector - the
+// shared helper only keeps the error message, so it's parsed here directly.
+export async function createStratoMailboxAutomated(payload: {
+  local_part: string;
+  domain: string;
+  password: string;
+}): Promise<StratoMailboxOutcome> {
+  const body = await _stratoAutomationFetch<Record<string, unknown>>("/api/strato-automation/create-mailbox", payload);
+  if (body.status === "captcha_required") return body as StratoCaptchaRequired;
+  return { status: "created", ...(body.mailbox as StratoAutomationResult) };
+}
+
+export async function resumeStratoMailboxCaptcha(sessionId: string, captchaCode: string): Promise<StratoAutomationResult> {
+  const body = await _stratoAutomationFetch<{ mailbox: StratoAutomationResult }>(
+    "/api/strato-automation/create-mailbox/captcha",
+    { session_id: sessionId, captcha_code: captchaCode },
+  );
+  return body.mailbox;
 }
 
 // WordPress management reuses the Strato customer login already stored for
@@ -2774,10 +2802,23 @@ async function _wordpressAutomationFetch<T>(url: string, init: RequestInit, time
   }
 }
 
-export async function fetchWordPressInstallations(): Promise<WordPressInstallation[]> {
+// Strato's login form always shows an image CAPTCHA for this account - see
+// StratoCaptchaRequired above, which this reuses (identical shape).
+export type WordPressListOutcome = { status: "listed"; installations: WordPressInstallation[] } | StratoCaptchaRequired;
+
+export async function fetchWordPressInstallations(): Promise<WordPressListOutcome> {
+  const body = await _wordpressAutomationFetch<Record<string, unknown>>("/api/wordpress/installations", { method: "GET" }, 60000);
+  if (body.status === "captcha_required") return body as StratoCaptchaRequired;
+  return { status: "listed", installations: body.installations as WordPressInstallation[] };
+}
+
+export async function resumeWordPressInstallationsCaptcha(
+  sessionId: string,
+  captchaCode: string,
+): Promise<WordPressInstallation[]> {
   const body = await _wordpressAutomationFetch<{ installations: WordPressInstallation[] }>(
-    "/api/wordpress/installations",
-    { method: "GET" },
+    "/api/wordpress/installations/captcha",
+    { method: "POST", body: JSON.stringify({ session_id: sessionId, captcha_code: captchaCode }) },
     60000,
   );
   return body.installations;
@@ -2788,13 +2829,28 @@ export type WordPressInstallResult = {
   mode: "flexibility" | "security";
 };
 
+export type WordPressInstallOutcome = ({ status: "installed" } & WordPressInstallResult) | StratoCaptchaRequired;
+
 export async function installWordPressAutomated(payload: {
   mode: "flexibility" | "security";
   domain: string;
-}): Promise<WordPressInstallResult> {
-  const body = await _wordpressAutomationFetch<{ installation: WordPressInstallResult }>(
+}): Promise<WordPressInstallOutcome> {
+  const body = await _wordpressAutomationFetch<Record<string, unknown>>(
     "/api/wordpress/install",
     { method: "POST", body: JSON.stringify(payload) },
+    90000,
+  );
+  if (body.status === "captcha_required") return body as StratoCaptchaRequired;
+  return { status: "installed", ...(body.installation as WordPressInstallResult) };
+}
+
+export async function resumeWordPressInstallCaptcha(
+  sessionId: string,
+  captchaCode: string,
+): Promise<WordPressInstallResult> {
+  const body = await _wordpressAutomationFetch<{ installation: WordPressInstallResult }>(
+    "/api/wordpress/install/captcha",
+    { method: "POST", body: JSON.stringify({ session_id: sessionId, captcha_code: captchaCode }) },
     90000,
   );
   return body.installation;

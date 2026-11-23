@@ -109,18 +109,18 @@ def test_create_mailbox_wraps_browser_launch_failure(it_auth_client):
         async def launch(headless=True):
             raise RuntimeError("Executable doesn't exist (simulated)")
 
-    class FakePw:
+    class FakePlaywright:
         chromium = FakeChromium()
 
-    class FakePlaywrightContextManager:
-        async def __aenter__(self):
-            return FakePw()
+        async def stop(self):
+            pass
 
-        async def __aexit__(self, *exc_info):
-            return False
+    class FakePlaywrightStarter:
+        async def start(self):
+            return FakePlaywright()
 
     def fake_async_playwright():
-        return FakePlaywrightContextManager()
+        return FakePlaywrightStarter()
 
     from app.database import _SessionLocal
 
@@ -150,7 +150,7 @@ def test_create_mailbox_success(it_auth_client):
     )
 
     async def _fake_create(*args, **kwargs):
-        return {"email": "sales@carbonauten.com", "local_part": "sales", "domain": "carbonauten.com"}
+        return {"status": "created", "email": "sales@carbonauten.com", "local_part": "sales", "domain": "carbonauten.com"}
 
     with patch("app.routes.strato_automation.create_mailbox_via_automation", side_effect=_fake_create):
         response = it_auth_client.post(
@@ -161,3 +161,65 @@ def test_create_mailbox_success(it_auth_client):
     assert response.json()["mailbox"]["email"] == "sales@carbonauten.com"
 
     it_auth_client.delete("/api/strato-automation/config")
+
+
+def test_create_mailbox_surfaces_captcha_required(it_auth_client):
+    # Strato's login form shows a CAPTCHA for this account - the route must
+    # pass this through as a normal 200 response (a human needs to solve
+    # it), not treat it as a failure or log a create_failed audit entry.
+    it_auth_client.put(
+        "/api/strato-automation/config",
+        json={"customer_number": "74845696", "password": "test-strato-password"},
+    )
+
+    async def _fake_create(*args, **kwargs):
+        return {"status": "captcha_required", "session_id": "abc123", "captcha_image_base64": "ZmFrZS1pbWFnZQ=="}
+
+    with patch("app.routes.strato_automation.create_mailbox_via_automation", side_effect=_fake_create):
+        response = it_auth_client.post(
+            "/api/strato-automation/create-mailbox",
+            json={"local_part": "sales", "domain": "carbonauten.com", "password": "a-strong-password-1"},
+        )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "captcha_required"
+    assert payload["session_id"] == "abc123"
+    assert payload["captcha_image_base64"] == "ZmFrZS1pbWFnZQ=="
+
+    it_auth_client.delete("/api/strato-automation/config")
+
+
+def test_resume_create_mailbox_with_captcha_success(it_auth_client):
+    async def _fake_resume(session_id, captcha_code):
+        assert session_id == "abc123"
+        assert captcha_code == "0802"
+        return {"status": "created", "email": "sales@carbonauten.com", "local_part": "sales", "domain": "carbonauten.com"}
+
+    with patch("app.routes.strato_automation.resume_create_mailbox_via_automation", side_effect=_fake_resume):
+        response = it_auth_client.post(
+            "/api/strato-automation/create-mailbox/captcha",
+            json={"session_id": "abc123", "captcha_code": "0802"},
+        )
+    assert response.status_code == 200
+    assert response.json()["mailbox"]["email"] == "sales@carbonauten.com"
+
+
+def test_resume_create_mailbox_with_wrong_captcha_surfaces_error(it_auth_client):
+    async def _fake_resume(session_id, captcha_code):
+        raise StratoAutomationError("strato_automation_2fa_or_captcha", "ZmFrZQ==")
+
+    with patch("app.routes.strato_automation.resume_create_mailbox_via_automation", side_effect=_fake_resume):
+        response = it_auth_client.post(
+            "/api/strato-automation/create-mailbox/captcha",
+            json={"session_id": "abc123", "captcha_code": "wrong"},
+        )
+    assert response.status_code == 502
+    assert response.json()["code"] == "strato_automation_2fa_or_captcha"
+
+
+def test_editor_cannot_resume_captcha(auth_client):
+    response = auth_client.post(
+        "/api/strato-automation/create-mailbox/captcha",
+        json={"session_id": "abc123", "captcha_code": "0802"},
+    )
+    assert response.status_code == 403

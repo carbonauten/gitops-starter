@@ -117,7 +117,7 @@ def test_install_success(it_auth_client):
     )
 
     async def _fake_install(*args, **kwargs):
-        return {"domain": "carbonauten.com", "mode": "security"}
+        return {"status": "installed", "domain": "carbonauten.com", "mode": "security"}
 
     with patch("app.routes.wordpress.install_wordpress_via_automation", side_effect=_fake_install):
         response = it_auth_client.post(
@@ -128,6 +128,70 @@ def test_install_success(it_auth_client):
     assert response.json()["installation"]["domain"] == "carbonauten.com"
 
     it_auth_client.delete("/api/strato-automation/config")
+
+
+def test_install_surfaces_captcha_required(it_auth_client):
+    # Strato's login form shows a CAPTCHA for this account - the route must
+    # pass this through as a normal 200 response (a human needs to solve
+    # it), not log an install_failed audit entry.
+    it_auth_client.put(
+        "/api/strato-automation/config",
+        json={"customer_number": "74845696", "password": "test-strato-password"},
+    )
+
+    async def _fake_install(*args, **kwargs):
+        return {"status": "captcha_required", "session_id": "xyz789", "captcha_image_base64": "ZmFrZS1pbWFnZQ=="}
+
+    with patch("app.routes.wordpress.install_wordpress_via_automation", side_effect=_fake_install):
+        response = it_auth_client.post(
+            "/api/wordpress/install",
+            json={"mode": "security", "domain": "carbonauten.com"},
+        )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "captcha_required"
+    assert payload["session_id"] == "xyz789"
+
+    it_auth_client.delete("/api/strato-automation/config")
+
+
+def test_resume_install_with_captcha_success(it_auth_client):
+    async def _fake_resume(session_id, captcha_code):
+        assert session_id == "xyz789"
+        assert captcha_code == "0802"
+        return {"status": "installed", "domain": "carbonauten.com", "mode": "security"}
+
+    with patch("app.routes.wordpress.resume_install_wordpress_via_automation", side_effect=_fake_resume):
+        response = it_auth_client.post(
+            "/api/wordpress/install/captcha",
+            json={"session_id": "xyz789", "captcha_code": "0802"},
+        )
+    assert response.status_code == 200
+    assert response.json()["installation"]["domain"] == "carbonauten.com"
+
+
+def test_resume_installations_list_with_captcha_success(designer_auth_client):
+    async def _fake_resume(session_id, captcha_code):
+        return {
+            "status": "listed",
+            "installations": [{"label": "example", "application": "WordPress", "link": "", "wp_admin_url": ""}],
+        }
+
+    with patch("app.routes.wordpress.resume_list_wordpress_installations", side_effect=_fake_resume):
+        response = designer_auth_client.post(
+            "/api/wordpress/installations/captcha",
+            json={"session_id": "abc123", "captcha_code": "0802"},
+        )
+    assert response.status_code == 200
+    assert response.json()["installations"][0]["label"] == "example"
+
+
+def test_editor_cannot_resume_wordpress_captcha(auth_client):
+    response = auth_client.post(
+        "/api/wordpress/install/captcha",
+        json={"session_id": "abc123", "captcha_code": "0802"},
+    )
+    assert response.status_code == 403
 
 
 def test_install_wraps_browser_launch_failure():
@@ -148,18 +212,18 @@ def test_install_wraps_browser_launch_failure():
             async def launch(headless=True):
                 raise RuntimeError("Executable doesn't exist (simulated)")
 
-        class FakePw:
+        class FakePlaywright:
             chromium = FakeChromium()
 
-        class FakePlaywrightContextManager:
-            async def __aenter__(self):
-                return FakePw()
+            async def stop(self):
+                pass
 
-            async def __aexit__(self, *exc_info):
-                return False
+        class FakePlaywrightStarter:
+            async def start(self):
+                return FakePlaywright()
 
         def fake_async_playwright():
-            return FakePlaywrightContextManager()
+            return FakePlaywrightStarter()
 
         with patch("playwright.async_api.async_playwright", fake_async_playwright):
             with pytest.raises(WordPressAutomationError) as exc_info:

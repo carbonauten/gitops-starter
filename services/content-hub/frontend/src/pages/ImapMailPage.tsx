@@ -14,6 +14,7 @@ import {
   fetchImapMessages,
   fetchStratoAutomationStatus,
   imapAttachmentDownloadUrl,
+  resumeStratoMailboxCaptcha,
   saveStratoAutomationConfig,
   saveStratoKnownDomains,
   StratoAutomationApiError,
@@ -25,11 +26,13 @@ import {
   type ImapMailMessage,
   type ImapMailSummary,
   type ImapMailTranslation,
+  type StratoAutomationResult,
   type StratoAutomationStatus,
 } from "../api/client";
 import { EmailBodyFrame } from "../components/EmailBodyFrame";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingState } from "../components/LoadingState";
+import { StratoCaptchaModal } from "../components/StratoCaptchaModal";
 
 function formatDateTime(iso: string | null | undefined, locale: string): string {
   if (!iso) return "—";
@@ -116,6 +119,7 @@ export function ImapMailPage() {
   const [autoError, setAutoError] = useState("");
   const [autoScreenshot, setAutoScreenshot] = useState<string | null>(null);
   const [autoNotice, setAutoNotice] = useState("");
+  const [autoCaptcha, setAutoCaptcha] = useState<{ sessionId: string; imageBase64: string | null } | null>(null);
 
   async function reloadAccounts() {
     setLoadingAccounts(true);
@@ -349,6 +353,45 @@ export function ImapMailPage() {
     }
   }
 
+  // Automation only creates the mailbox at Strato - immediately connect it
+  // here too with the same credentials so it's usable right away. This
+  // second step can fail independently of the first (e.g. a brand-new
+  // mailbox not yet reachable over IMAP for a minute or two), so it gets
+  // its own try/catch: a failure here must say the mailbox already exists
+  // at Strato, not look like the whole thing failed - otherwise the
+  // obvious next move (retrying "Automatisch anlegen") would hit Strato
+  // with an address that's already taken. Shared by the direct-success
+  // path and the CAPTCHA-resume path below, since both end up with the
+  // same just-created mailbox to connect.
+  async function finishAutomatedMailbox(result: StratoAutomationResult) {
+    try {
+      await createImapAccount({
+        label: result.email,
+        host: "imap.strato.de",
+        port: 993,
+        use_ssl: true,
+        username: result.email,
+        password: autoPassword,
+        folder: "INBOX",
+      });
+      setAutoNotice(t("imapMail.autoCreateSuccess", { email: result.email }));
+      setAutoLocalPart("");
+      setAutoDomain("");
+      setAutoPassword("");
+      await reloadAccounts();
+    } catch (connectErr) {
+      setAutoError(
+        t("imapMail.autoCreatedButConnectFailed", {
+          email: result.email,
+          error: connectErr instanceof Error ? connectErr.message : t("common.error"),
+        }),
+      );
+      setLabel(result.email);
+      setUsername(result.email);
+      setPassword(autoPassword);
+    }
+  }
+
   async function handleAutomatedCreate(event: FormEvent) {
     event.preventDefault();
     setAutoCreating(true);
@@ -356,45 +399,16 @@ export function ImapMailPage() {
     setAutoScreenshot(null);
     setAutoNotice("");
     try {
-      const result = await createStratoMailboxAutomated({
+      const outcome = await createStratoMailboxAutomated({
         local_part: autoLocalPart,
         domain: autoDomain,
         password: autoPassword,
       });
-      // Automation only creates the mailbox at Strato - immediately connect
-      // it here too with the same credentials so it's usable right away.
-      // This second step can fail independently of the first (e.g. a
-      // brand-new mailbox not yet reachable over IMAP for a minute or two),
-      // so it gets its own try/catch: a failure here must say the mailbox
-      // already exists at Strato, not look like the whole thing failed -
-      // otherwise the obvious next move (retrying "Automatisch anlegen")
-      // would hit Strato with an address that's already taken.
-      try {
-        await createImapAccount({
-          label: result.email,
-          host: "imap.strato.de",
-          port: 993,
-          use_ssl: true,
-          username: result.email,
-          password: autoPassword,
-          folder: "INBOX",
-        });
-        setAutoNotice(t("imapMail.autoCreateSuccess", { email: result.email }));
-        setAutoLocalPart("");
-        setAutoDomain("");
-        setAutoPassword("");
-        await reloadAccounts();
-      } catch (connectErr) {
-        setAutoError(
-          t("imapMail.autoCreatedButConnectFailed", {
-            email: result.email,
-            error: connectErr instanceof Error ? connectErr.message : t("common.error"),
-          }),
-        );
-        setLabel(result.email);
-        setUsername(result.email);
-        setPassword(autoPassword);
+      if (outcome.status === "captcha_required") {
+        setAutoCaptcha({ sessionId: outcome.session_id, imageBase64: outcome.captcha_image_base64 });
+        return;
       }
+      await finishAutomatedMailbox(outcome);
     } catch (err) {
       if (err instanceof StratoAutomationApiError) {
         setAutoError(err.message);
@@ -405,6 +419,22 @@ export function ImapMailPage() {
     } finally {
       setAutoCreating(false);
     }
+  }
+
+  async function handleAutoCaptchaSubmit(code: string) {
+    if (!autoCaptcha) return;
+    try {
+      const result = await resumeStratoMailboxCaptcha(autoCaptcha.sessionId, code);
+      setAutoCaptcha(null);
+      await finishAutomatedMailbox(result);
+    } finally {
+      setAutoCreating(false);
+    }
+  }
+
+  function handleAutoCaptchaCancel() {
+    setAutoCaptcha(null);
+    setAutoCreating(false);
   }
 
   async function handleSelectMessage(messageId: string) {
@@ -492,6 +522,14 @@ export function ImapMailPage() {
 
   return (
     <section className="page">
+      {autoCaptcha ? (
+        <StratoCaptchaModal
+          imageBase64={autoCaptcha.imageBase64}
+          onSubmit={handleAutoCaptchaSubmit}
+          onCancel={handleAutoCaptchaCancel}
+        />
+      ) : null}
+
       <header className="page-header row-header">
         <div>
           <h1>{t("imapMail.title")}</h1>

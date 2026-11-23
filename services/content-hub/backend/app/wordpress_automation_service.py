@@ -5,8 +5,8 @@ IT-Master's or Designer's stored Strato customer-login drives a headless
 Chromium browser through the real "Website & Shop > WordPress & Co."
 customer panel on their behalf.
 
-**This has not been exercised against a live Strato account.** The
-selectors below are written from a single screenshot of the WordPress & Co.
+**This has not been exercised end-to-end against a live Strato account.**
+The selectors below are written from a single screenshot of the WordPress & Co.
 overview page (two mode cards - "Flexibilitaets-Modus" / "Sicherheits-Modus"
 - each with an "Installieren" button, and a table of existing installations
 below with "Bezeichnung" as its first column) - not from inspecting the live
@@ -16,19 +16,22 @@ this runs for real; that's why every step is wrapped individually with a
 specific error code and a failure screenshot, exactly like
 strato_automation_service.py.
 
-Deliberately NOT sharing code with strato_automation_service.py: both
-modules are untested browser automation against a third-party site that
-changes outside our control, so keeping them independent means fixing a
-broken selector in one never risks silently breaking the other.
+The login step itself (including a CAPTCHA this account's login form always
+shows) is handled by strato_login_session.py, shared with
+strato_automation_service.py - see that module's docstring for why. The
+post-login WordPress-specific automation below stays independent from
+strato_automation_service.py's own post-login mailbox automation: both are
+untested against a third-party site that changes outside our control, so
+keeping them independent means fixing a broken selector in one never risks
+silently breaking the other.
 
 Known failure modes this cannot handle: see strato_automation_service.py's
-docstring - the same caveats (2FA/captcha, Strato UI changes, concurrent
-manual session) apply here.
+docstring - the same caveats (Strato UI changes, concurrent manual
+session) apply here.
 """
 
 from __future__ import annotations
 
-import base64
 import logging
 import re
 from typing import Any
@@ -36,12 +39,14 @@ from typing import Any
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from .strato_config_service import StratoCredentials, resolve_strato_credentials
+from . import strato_login_session
+from .strato_config_service import resolve_strato_credentials
 
 logger = logging.getLogger(__name__)
 
 STEP_LOGIN = "wordpress_automation_login_failed"
-STEP_2FA = "wordpress_automation_2fa_or_captcha"
+STEP_CAPTCHA = "wordpress_automation_2fa_or_captcha"
+STEP_SESSION_EXPIRED = "wordpress_automation_captcha_session_expired"
 STEP_NAVIGATE = "wordpress_automation_navigation_failed"
 STEP_LIST = "wordpress_automation_list_failed"
 STEP_INSTALL = "wordpress_automation_install_failed"
@@ -49,6 +54,16 @@ STEP_UNEXPECTED = "wordpress_automation_unexpected_error"
 
 INSTALL_MODES = ("flexibility", "security")
 _MODE_CARD_TITLES = {"flexibility": "Flexibilitäts-Modus", "security": "Sicherheits-Modus"}
+
+# Maps strato_login_session's generic error codes onto this module's own
+# translatable ones (routes/wordpress.py's translate() calls expect these
+# specific keys, already shipped in backend/locales/*.json).
+_LOGIN_ERROR_CODE_MAP = {
+    "strato_login_captcha_rejected": STEP_CAPTCHA,
+    "strato_login_failed": STEP_LOGIN,
+    "strato_login_session_expired": STEP_SESSION_EXPIRED,
+    "strato_login_unexpected_error": STEP_UNEXPECTED,
+}
 
 
 class WordPressAutomationError(Exception):
@@ -62,52 +77,9 @@ class WordPressAutomationError(Exception):
         super().__init__(code)
 
 
-async def _safe_screenshot(page: Any) -> str | None:
-    try:
-        data = await page.screenshot(type="png")
-        return base64.b64encode(data).decode("ascii")
-    except Exception:  # noqa: BLE001 - screenshot is best-effort debug info, never the real failure
-        return None
-
-
-async def _login(page: Any, creds: StratoCredentials) -> None:
-    await page.goto("https://www.strato.de/login", wait_until="domcontentloaded", timeout=20000)
-    # Strato shows a cookie-consent modal on first visit that covers the
-    # login form and blocks every fill()/click() below until dismissed -
-    # confirmed via a live screenshot (2026-11-23). Best-effort: if the
-    # button isn't there (different wording, consent already stored, ...)
-    # this just times out quickly and falls through without failing the run.
-    try:
-        await page.get_by_role("button", name=re.compile("Zustimmen und schließen|Alle akzeptieren", re.I)).click(
-            timeout=5000
-        )
-    except Exception:  # noqa: BLE001 - genuinely optional, never the real failure
-        pass
-    # Confirmed via a live screenshot (2026-11-23): this account's login form
-    # always shows an image CAPTCHA ("Security code") alongside
-    # username/password, not just as a conditional post-submit challenge.
-    # No selector fix can solve an image CAPTCHA, so this must fail fast and
-    # clearly here instead of submitting with that field empty.
-    if await page.get_by_label(re.compile("Security code|Sicherheitscode", re.I)).count() > 0:
-        raise WordPressAutomationError(STEP_2FA, await _safe_screenshot(page))
-    await page.get_by_label(re.compile("Benutzername|Kundennummer", re.I)).first.fill(creds.customer_number)
-    await page.get_by_label(re.compile("Passwort", re.I)).first.fill(creds.password)
-    await page.get_by_role("button", name=re.compile("Login", re.I)).click()
-    await page.wait_for_load_state("networkidle", timeout=20000)
-    if (
-        await page.get_by_text(
-            re.compile("Captcha|Sicherheitscode|Security code|Zwei-Faktor|2FA|Bestätigungscode", re.I)
-        ).count()
-        > 0
-    ):
-        raise WordPressAutomationError(STEP_2FA, await _safe_screenshot(page))
-    # Strato's login form also showed a "Security code" field even before
-    # any 2FA text appears (confirmed via a live screenshot, 2026-11-23) -
-    # if we're still on the login page after submitting, something blocked
-    # the login that the text check above didn't catch (e.g. a validation
-    # error), so this must not be silently treated as a success.
-    if "/login" in page.url:
-        raise WordPressAutomationError(STEP_LOGIN, await _safe_screenshot(page))
+def _map_login_error(exc: strato_login_session.StratoLoginError) -> WordPressAutomationError:
+    code = _LOGIN_ERROR_CODE_MAP.get(exc.code, STEP_UNEXPECTED)
+    return WordPressAutomationError(code, exc.screenshot_base64)
 
 
 async def _open_wordpress_management(page: Any) -> None:
@@ -176,52 +148,76 @@ async def _run_step(page: Any, code: str, awaitable: Any) -> None:
 
     try:
         await awaitable
-    except WordPressAutomationError:
-        raise
     except PlaywrightTimeoutError as exc:
-        raise WordPressAutomationError(code, await _safe_screenshot(page)) from exc
+        raise WordPressAutomationError(code, await strato_login_session.safe_screenshot(page)) from exc
     except Exception as exc:  # noqa: BLE001 - never let an unexpected Playwright/site error become a raw 500
         logger.exception("Unexpected error during WordPress automation step %s", code)
-        raise WordPressAutomationError(STEP_UNEXPECTED, await _safe_screenshot(page)) from exc
+        raise WordPressAutomationError(STEP_UNEXPECTED, await strato_login_session.safe_screenshot(page)) from exc
 
 
-async def list_wordpress_installations(db: Session) -> list[dict[str, str]]:
+async def _finish_list(page: Any, browser: Any, playwright: Any) -> dict[str, Any]:
+    try:
+        await _run_step(page, STEP_NAVIGATE, _open_wordpress_management(page))
+        installations: list[dict[str, str]] = []
+
+        async def _scrape() -> None:
+            nonlocal installations
+            installations = await _scrape_installations(page)
+
+        await _run_step(page, STEP_LIST, _scrape())
+    finally:
+        await browser.close()
+        await playwright.stop()
+    return {"status": "listed", "installations": installations}
+
+
+async def _finish_install(page: Any, browser: Any, playwright: Any, *, mode: str, domain: str) -> dict[str, Any]:
+    try:
+        await _run_step(page, STEP_NAVIGATE, _open_wordpress_management(page))
+        await _run_step(page, STEP_INSTALL, _install(page, mode=mode, domain=domain))
+    finally:
+        await browser.close()
+        await playwright.stop()
+    return {"status": "installed", "domain": domain, "mode": mode}
+
+
+async def list_wordpress_installations(db: Session) -> dict[str, Any]:
+    """Returns either {"status": "listed", "installations": [...]} or, if
+    Strato's login form shows its CAPTCHA, {"status": "captcha_required",
+    "session_id": ..., "captcha_image_base64": ...} - the caller must then
+    collect the code from a human and call
+    resume_list_wordpress_installations()."""
     creds = resolve_strato_credentials(db)
     if not creds.configured:
         raise HTTPException(status_code=400, detail="strato_automation_not_configured")
 
-    # Imported lazily so the rest of the app works even in environments
-    # where the playwright package/browser isn't installed.
-    from playwright.async_api import async_playwright
+    try:
+        outcome = await strato_login_session.begin_login(creds)
+    except strato_login_session.StratoLoginError as exc:
+        raise _map_login_error(exc) from exc
 
-    installations: list[dict[str, str]] = []
-    async with async_playwright() as pw:
-        browser = None
-        try:
-            browser = await pw.chromium.launch(headless=True)
-            context = await browser.new_context(locale="de-DE")
-            page = await context.new_page()
-            await _run_step(page, STEP_LOGIN, _login(page, creds))
-            await _run_step(page, STEP_NAVIGATE, _open_wordpress_management(page))
+    if isinstance(outcome, strato_login_session.CaptchaRequired):
+        return {
+            "status": "captcha_required",
+            "session_id": outcome.session_id,
+            "captcha_image_base64": outcome.captcha_image_base64,
+        }
 
-            async def _scrape() -> None:
-                nonlocal installations
-                installations = await _scrape_installations(page)
-
-            await _run_step(page, STEP_LIST, _scrape())
-        except WordPressAutomationError:
-            raise
-        except Exception as exc:  # noqa: BLE001 - see _run_step's docstring; same rationale applies to setup
-            logger.exception("Unexpected error setting up the WordPress automation browser")
-            raise WordPressAutomationError(STEP_UNEXPECTED, None) from exc
-        finally:
-            if browser is not None:
-                await browser.close()
-
-    return installations
+    return await _finish_list(outcome.page, outcome.browser, outcome.playwright)
 
 
-async def install_wordpress_via_automation(db: Session, *, mode: str, domain: str) -> dict[str, str]:
+async def resume_list_wordpress_installations(session_id: str, captcha_code: str) -> dict[str, Any]:
+    try:
+        outcome = await strato_login_session.resume_login(session_id, captcha_code)
+    except strato_login_session.StratoLoginError as exc:
+        raise _map_login_error(exc) from exc
+    return await _finish_list(outcome.page, outcome.browser, outcome.playwright)
+
+
+async def install_wordpress_via_automation(db: Session, *, mode: str, domain: str) -> dict[str, Any]:
+    """Returns either {"status": "installed", ...} or, if Strato's login
+    form shows its CAPTCHA, {"status": "captcha_required", ...} - see
+    list_wordpress_installations() above."""
     creds = resolve_strato_credentials(db)
     if not creds.configured:
         raise HTTPException(status_code=400, detail="strato_automation_not_configured")
@@ -230,24 +226,27 @@ async def install_wordpress_via_automation(db: Session, *, mode: str, domain: st
     if mode not in INSTALL_MODES or not target_domain:
         raise HTTPException(status_code=400, detail="validation")
 
-    from playwright.async_api import async_playwright
+    try:
+        outcome = await strato_login_session.begin_login(creds, extra={"mode": mode, "domain": target_domain})
+    except strato_login_session.StratoLoginError as exc:
+        raise _map_login_error(exc) from exc
 
-    async with async_playwright() as pw:
-        browser = None
-        try:
-            browser = await pw.chromium.launch(headless=True)
-            context = await browser.new_context(locale="de-DE")
-            page = await context.new_page()
-            await _run_step(page, STEP_LOGIN, _login(page, creds))
-            await _run_step(page, STEP_NAVIGATE, _open_wordpress_management(page))
-            await _run_step(page, STEP_INSTALL, _install(page, mode=mode, domain=target_domain))
-        except WordPressAutomationError:
-            raise
-        except Exception as exc:  # noqa: BLE001
-            logger.exception("Unexpected error setting up the WordPress automation browser")
-            raise WordPressAutomationError(STEP_UNEXPECTED, None) from exc
-        finally:
-            if browser is not None:
-                await browser.close()
+    if isinstance(outcome, strato_login_session.CaptchaRequired):
+        return {
+            "status": "captcha_required",
+            "session_id": outcome.session_id,
+            "captcha_image_base64": outcome.captcha_image_base64,
+        }
 
-    return {"domain": target_domain, "mode": mode}
+    return await _finish_install(outcome.page, outcome.browser, outcome.playwright, mode=mode, domain=target_domain)
+
+
+async def resume_install_wordpress_via_automation(session_id: str, captcha_code: str) -> dict[str, Any]:
+    try:
+        outcome = await strato_login_session.resume_login(session_id, captcha_code)
+    except strato_login_session.StratoLoginError as exc:
+        raise _map_login_error(exc) from exc
+    params = outcome.extra or {}
+    return await _finish_install(
+        outcome.page, outcome.browser, outcome.playwright, mode=params.get("mode", ""), domain=params.get("domain", "")
+    )
