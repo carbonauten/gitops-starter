@@ -266,6 +266,31 @@ class UserIntegration(Base):
     )
 
 
+class WordPressSite(Base):
+    """A WordPress site managed through its own REST API (wp-json/), using a
+    WP Application Password (core WordPress feature since 5.6) - separate
+    from the Strato hosting-provider browser automation in
+    strato_login_session.py, which only covers *installing* a site, not
+    managing one that's already running (WordPress itself publishes a real,
+    documented API for that - no browser automation needed). Manually
+    registered (URL + WP username + Application Password) rather than
+    auto-discovered, same reasoning as ImapMailAccount below."""
+
+    __tablename__ = "wordpress_sites"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    label: Mapped[str] = mapped_column(String(200), default="")
+    base_url: Mapped[str] = mapped_column(String(500), default="")
+    username: Mapped[str] = mapped_column(String(200), default="")
+    app_password_enc: Mapped[str] = mapped_column(Text, default="")
+    created_by_id: Mapped[str] = mapped_column(String(100), default="")
+    created_by_name: Mapped[str] = mapped_column(String(200), default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
 class ImapMailAccount(Base):
     """IT-Master-configured IMAP mailbox (e.g. a Strato-hosted address) shown
     read-only inside the platform. Unlike Outlook (OAuth2/Graph), providers

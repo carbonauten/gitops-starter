@@ -33,6 +33,7 @@ import { ShopMonitoringPage } from "./pages/ShopMonitoringPage";
 import { ShopReturnsPage } from "./pages/ShopReturnsPage";
 import { ReputationPage } from "./pages/ReputationPage";
 import { WordPressPage } from "./pages/WordPressPage";
+import { WordPressSiteDetailPage } from "./pages/WordPressSiteDetailPage";
 import { usePermissions } from "./hooks/usePermissions";
 
 function ShopManageRoute({ children }: { children: React.ReactNode }) {
@@ -267,6 +268,14 @@ export default function App() {
         element={
           <WordPressRoute>
             <WordPressPage />
+          </WordPressRoute>
+        }
+      />
+      <Route
+        path="/wordpress/sites/:id"
+        element={
+          <WordPressRoute>
+            <WordPressSiteDetailPage />
           </WordPressRoute>
         }
       />

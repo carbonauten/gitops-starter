@@ -3,13 +3,19 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
 import {
+  createWordPressSite,
+  deleteWordPressSite,
   fetchWordPressInstallations,
+  fetchWordPressSiteStatus,
+  fetchWordPressSites,
   fetchWordPressStatus,
   installWordPressAutomated,
   resumeWordPressInstallCaptcha,
   resumeWordPressInstallationsCaptcha,
   WordPressAutomationApiError,
   type WordPressInstallation,
+  type WordPressSite,
+  type WordPressSiteStatus,
   type WordPressStatus,
 } from "../api/client";
 import { EmptyState } from "../components/EmptyState";
@@ -36,6 +42,64 @@ export function WordPressPage() {
   const [installNotice, setInstallNotice] = useState("");
 
   const [captchaPrompt, setCaptchaPrompt] = useState<CaptchaPrompt | null>(null);
+
+  const [sites, setSites] = useState<WordPressSite[]>([]);
+  const [loadingSites, setLoadingSites] = useState(true);
+  const [siteStatuses, setSiteStatuses] = useState<Record<string, WordPressSiteStatus | "loading" | "error">>({});
+  const [siteLabel, setSiteLabel] = useState("");
+  const [siteBaseUrl, setSiteBaseUrl] = useState("");
+  const [siteUsername, setSiteUsername] = useState("");
+  const [siteAppPassword, setSiteAppPassword] = useState("");
+  const [addSiteBusy, setAddSiteBusy] = useState(false);
+  const [addSiteError, setAddSiteError] = useState("");
+  const [addSiteNotice, setAddSiteNotice] = useState("");
+
+  async function reloadSites() {
+    setLoadingSites(true);
+    try {
+      const next = await fetchWordPressSites();
+      setSites(next);
+      for (const site of next) {
+        setSiteStatuses((prev) => ({ ...prev, [site.id]: "loading" }));
+        void fetchWordPressSiteStatus(site.id)
+          .then((status) => setSiteStatuses((prev) => ({ ...prev, [site.id]: status })))
+          .catch(() => setSiteStatuses((prev) => ({ ...prev, [site.id]: "error" })));
+      }
+    } finally {
+      setLoadingSites(false);
+    }
+  }
+
+  async function handleAddSite(event: FormEvent) {
+    event.preventDefault();
+    setAddSiteBusy(true);
+    setAddSiteError("");
+    setAddSiteNotice("");
+    try {
+      const site = await createWordPressSite({
+        label: siteLabel,
+        base_url: siteBaseUrl,
+        username: siteUsername,
+        app_password: siteAppPassword,
+      });
+      setAddSiteNotice(t("wordpressSites.siteAdded", { label: site.label }));
+      setSiteLabel("");
+      setSiteBaseUrl("");
+      setSiteUsername("");
+      setSiteAppPassword("");
+      await reloadSites();
+    } catch (err) {
+      setAddSiteError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setAddSiteBusy(false);
+    }
+  }
+
+  async function handleDeleteSite(site: WordPressSite) {
+    if (!window.confirm(t("wordpressSites.confirmDelete", { label: site.label }))) return;
+    await deleteWordPressSite(site.id);
+    await reloadSites();
+  }
 
   async function reloadStatus() {
     setLoadingStatus(true);
@@ -76,6 +140,7 @@ export function WordPressPage() {
 
   useEffect(() => {
     void reloadStatus();
+    void reloadSites();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -147,6 +212,96 @@ export function WordPressPage() {
           onCancel={handleCaptchaCancel}
         />
       ) : null}
+
+      <div className="integration-connect-block">
+        <div className="integration-connect-header">
+          <strong>{t("wordpressSites.title")}</strong>
+        </div>
+        <p className="muted">{t("wordpressSites.subtitle")}</p>
+
+        <form className="entra-setup-form" onSubmit={(event) => void handleAddSite(event)}>
+          <div className="row-actions">
+            <label>
+              {t("wordpressSites.label")}
+              <input value={siteLabel} onChange={(event) => setSiteLabel(event.target.value)} required autoComplete="off" />
+            </label>
+            <label>
+              {t("wordpressSites.baseUrl")}
+              <input
+                value={siteBaseUrl}
+                onChange={(event) => setSiteBaseUrl(event.target.value)}
+                placeholder="https://carbonauten.com"
+                required
+                autoComplete="off"
+              />
+            </label>
+          </div>
+          <div className="row-actions">
+            <label>
+              {t("wordpressSites.username")}
+              <input
+                value={siteUsername}
+                onChange={(event) => setSiteUsername(event.target.value)}
+                required
+                autoComplete="off"
+              />
+            </label>
+            <label>
+              {t("wordpressSites.appPassword")}
+              <input
+                type="password"
+                value={siteAppPassword}
+                onChange={(event) => setSiteAppPassword(event.target.value)}
+                required
+                autoComplete="new-password"
+              />
+            </label>
+          </div>
+          <p className="muted">{t("wordpressSites.appPasswordHint")}</p>
+          <button type="submit" className="primary-button" disabled={addSiteBusy}>
+            {addSiteBusy ? t("common.loading") : t("wordpressSites.connect")}
+          </button>
+        </form>
+
+        {addSiteNotice ? (
+          <p className="success-text" role="status">
+            {addSiteNotice}
+          </p>
+        ) : null}
+        {addSiteError ? <p className="error-text">{addSiteError}</p> : null}
+
+        {loadingSites ? <LoadingState /> : null}
+        {!loadingSites && sites.length === 0 ? <EmptyState message={t("wordpressSites.empty")} icon="❖" /> : null}
+
+        <div className="list-stack">
+          {!loadingSites
+            ? sites.map((site) => {
+                const siteStatus = siteStatuses[site.id];
+                return (
+                  <article key={site.id} className="list-card">
+                    <div>
+                      <h2>{site.label}</h2>
+                      <p className="muted">{site.base_url}</p>
+                      {siteStatus === "loading" ? <p className="muted">{t("wordpressSites.statusChecking")}</p> : null}
+                      {siteStatus === "error" ? <p className="error-text">{t("wordpressSites.statusError")}</p> : null}
+                      {siteStatus && typeof siteStatus === "object" ? (
+                        <p className="success-text">{t("wordpressSites.statusOk", { user: siteStatus.connected_as })}</p>
+                      ) : null}
+                    </div>
+                    <div className="list-card-actions">
+                      <Link className="ghost-button" to={`/wordpress/sites/${site.id}`}>
+                        {t("wordpressSites.manage")}
+                      </Link>
+                      <button type="button" className="ghost-button danger" onClick={() => void handleDeleteSite(site)}>
+                        {t("wordpressSites.delete")}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })
+            : null}
+        </div>
+      </div>
 
       {loadingStatus ? <LoadingState /> : null}
 
