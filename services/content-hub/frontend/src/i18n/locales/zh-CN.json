@@ -1125,6 +1125,14 @@
     "confirmDeleteMailbox": "删除邮箱 {{email}}？此操作无法撤销。",
     "mailboxDeleted": "邮箱 {{email}} 已删除。"
   },
+  "stratoCaptcha": {
+    "eyebrow": "Strato",
+    "title": "输入安全验证码",
+    "hint": "Strato 登录时需要安全验证码。请读取下方图片中的数字并输入——自动化流程会在同一已登录会话中继续。",
+    "imageAlt": "Strato 安全验证码图片",
+    "codeLabel": "安全验证码",
+    "submit": "继续"
+  },
   "wordpress": {
     "title": "WordPress（Strato）",
     "subtitle": "通过 Strato 客户登录管理 Strato 上的 WordPress 安装（浏览器自动化，因为 Strato 未提供相应 API）。",

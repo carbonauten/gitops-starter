@@ -1125,6 +1125,14 @@
     "confirmDeleteMailbox": "Postfach {{email}} löschen? Das kann nicht rückgängig gemacht werden.",
     "mailboxDeleted": "Postfach {{email}} gelöscht."
   },
+  "stratoCaptcha": {
+    "eyebrow": "Strato",
+    "title": "Sicherheitscode eingeben",
+    "hint": "Strato verlangt beim Login einen Sicherheitscode. Bitte die Ziffern aus dem Bild unten ablesen und eingeben — die Automatisierung macht danach in derselben angemeldeten Sitzung weiter.",
+    "imageAlt": "Sicherheitscode-Bild von Strato",
+    "codeLabel": "Sicherheitscode",
+    "submit": "Weiter"
+  },
   "wordpress": {
     "title": "WordPress (Strato)",
     "subtitle": "WordPress-Installationen bei Strato über den Strato-Kundenlogin verwalten (Browser-Automatisierung, da Strato keine API dafür anbietet).",

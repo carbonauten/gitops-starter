@@ -1125,6 +1125,14 @@
     "confirmDeleteMailbox": "Delete mailbox {{email}}? This cannot be undone.",
     "mailboxDeleted": "Mailbox {{email}} deleted."
   },
+  "stratoCaptcha": {
+    "eyebrow": "Strato",
+    "title": "Enter security code",
+    "hint": "Strato asks for a security code at login. Please read the digits from the image below and enter them — the automation continues in that same signed-in session afterwards.",
+    "imageAlt": "Strato security-code image",
+    "codeLabel": "Security code",
+    "submit": "Continue"
+  },
   "wordpress": {
     "title": "WordPress (Strato)",
     "subtitle": "Manage WordPress installations at Strato using the Strato customer login (browser automation, since Strato offers no API for this).",

@@ -5,8 +5,8 @@ Strato customer-login (strato_config_service.py) drives a headless Chromium
 browser through the real customer panel to click through mailbox creation on
 their behalf.
 
-**This has not been exercised against a live Strato account.** The
-selectors below are written from two screenshots of the login page and the
+**This has not been exercised end-to-end against a live Strato account.**
+The selectors below are written from screenshots of the login page and the
 E-Mail-Verwaltung overview - not from inspecting the live DOM of the actual
 "Neu anlegen" dialog, which was never seen. Treat every selector here as a
 best guess that will very likely need adjustment the first time this runs
@@ -14,9 +14,11 @@ for real; that's why every step is wrapped individually with a specific
 error code and a failure screenshot, so a human can see exactly where it
 broke and fix the one selector that's wrong instead of debugging blind.
 
+The login step itself (including a CAPTCHA this account's login form
+always shows) is handled by strato_login_session.py, shared with
+wordpress_automation_service.py - see that module's docstring for why.
+
 Known failure modes this cannot handle:
-- Two-factor authentication / CAPTCHA on login (detected best-effort, surfaced
-  as a distinct error rather than hanging)
 - Any Strato UI change (new field layout, renamed buttons, a confirmation
   step this code doesn't know about)
 - Concurrent manual session: logging in here may terminate a session the
@@ -26,7 +28,6 @@ Known failure modes this cannot handle:
 
 from __future__ import annotations
 
-import base64
 import logging
 import re
 from typing import Any
@@ -34,15 +35,27 @@ from typing import Any
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from .strato_config_service import StratoCredentials, resolve_strato_credentials
+from . import strato_login_session
+from .strato_config_service import resolve_strato_credentials
 
 logger = logging.getLogger(__name__)
 
 STEP_LOGIN = "strato_automation_login_failed"
-STEP_2FA = "strato_automation_2fa_or_captcha"
 STEP_NAVIGATE = "strato_automation_navigation_failed"
 STEP_CREATE = "strato_automation_create_failed"
 STEP_UNEXPECTED = "strato_automation_unexpected_error"
+STEP_CAPTCHA = "strato_automation_2fa_or_captcha"
+STEP_SESSION_EXPIRED = "strato_automation_captcha_session_expired"
+
+# Maps strato_login_session's generic error codes onto this module's own
+# translatable ones (routes/strato_automation.py's translate() calls expect
+# these specific keys, already shipped in backend/locales/*.json).
+_LOGIN_ERROR_CODE_MAP = {
+    "strato_login_captcha_rejected": STEP_CAPTCHA,
+    "strato_login_failed": STEP_LOGIN,
+    "strato_login_session_expired": STEP_SESSION_EXPIRED,
+    "strato_login_unexpected_error": STEP_UNEXPECTED,
+}
 
 
 class StratoAutomationError(Exception):
@@ -58,52 +71,9 @@ class StratoAutomationError(Exception):
         super().__init__(code)
 
 
-async def _safe_screenshot(page: Any) -> str | None:
-    try:
-        data = await page.screenshot(type="png")
-        return base64.b64encode(data).decode("ascii")
-    except Exception:  # noqa: BLE001 - screenshot is best-effort debug info, never the real failure
-        return None
-
-
-async def _login(page: Any, creds: StratoCredentials) -> None:
-    await page.goto("https://www.strato.de/login", wait_until="domcontentloaded", timeout=20000)
-    # Strato shows a cookie-consent modal on first visit that covers the
-    # login form and blocks every fill()/click() below until dismissed -
-    # confirmed via a live screenshot (2026-11-23). Best-effort: if the
-    # button isn't there (different wording, consent already stored, ...)
-    # this just times out quickly and falls through without failing the run.
-    try:
-        await page.get_by_role("button", name=re.compile("Zustimmen und schließen|Alle akzeptieren", re.I)).click(
-            timeout=5000
-        )
-    except Exception:  # noqa: BLE001 - genuinely optional, never the real failure
-        pass
-    # Confirmed via a live screenshot (2026-11-23): this account's login form
-    # always shows an image CAPTCHA ("Security code") alongside
-    # username/password, not just as a conditional post-submit challenge.
-    # No selector fix can solve an image CAPTCHA, so this must fail fast and
-    # clearly here instead of submitting with that field empty.
-    if await page.get_by_label(re.compile("Security code|Sicherheitscode", re.I)).count() > 0:
-        raise StratoAutomationError(STEP_2FA, await _safe_screenshot(page))
-    await page.get_by_label(re.compile("Benutzername|Kundennummer", re.I)).first.fill(creds.customer_number)
-    await page.get_by_label(re.compile("Passwort", re.I)).first.fill(creds.password)
-    await page.get_by_role("button", name=re.compile("Login", re.I)).click()
-    await page.wait_for_load_state("networkidle", timeout=20000)
-    if (
-        await page.get_by_text(
-            re.compile("Captcha|Sicherheitscode|Security code|Zwei-Faktor|2FA|Bestätigungscode", re.I)
-        ).count()
-        > 0
-    ):
-        raise StratoAutomationError(STEP_2FA, await _safe_screenshot(page))
-    # Strato's login form also showed a "Security code" field even before
-    # any 2FA text appears (confirmed via a live screenshot, 2026-11-23) -
-    # if we're still on the login page after submitting, something blocked
-    # the login that the text check above didn't catch (e.g. a validation
-    # error), so this must not be silently treated as a success.
-    if "/login" in page.url:
-        raise StratoAutomationError(STEP_LOGIN, await _safe_screenshot(page))
+def _map_login_error(exc: strato_login_session.StratoLoginError) -> StratoAutomationError:
+    code = _LOGIN_ERROR_CODE_MAP.get(exc.code, STEP_UNEXPECTED)
+    return StratoAutomationError(code, exc.screenshot_base64)
 
 
 async def _open_email_management(page: Any) -> None:
@@ -139,13 +109,35 @@ async def _run_step(page: Any, code: str, awaitable: Any) -> None:
 
     try:
         await awaitable
-    except StratoAutomationError:
-        raise
     except PlaywrightTimeoutError as exc:
-        raise StratoAutomationError(code, await _safe_screenshot(page)) from exc
+        raise StratoAutomationError(code, await strato_login_session.safe_screenshot(page)) from exc
     except Exception as exc:  # noqa: BLE001 - never let an unexpected Playwright/site error become a raw 500
         logger.exception("Unexpected error during Strato automation step %s", code)
-        raise StratoAutomationError(STEP_UNEXPECTED, await _safe_screenshot(page)) from exc
+        raise StratoAutomationError(STEP_UNEXPECTED, await strato_login_session.safe_screenshot(page)) from exc
+
+
+def _validate_mailbox_params(local_part: str, domain: str, password: str) -> tuple[str, str]:
+    local = (local_part or "").strip().lower()
+    target_domain = (domain or "").strip().lower()
+    if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", local) or not target_domain or not password:
+        raise HTTPException(status_code=400, detail="validation")
+    return local, target_domain
+
+
+async def _finish_create_mailbox(
+    page: Any, browser: Any, playwright: Any, *, local: str, target_domain: str, password: str
+) -> dict[str, Any]:
+    try:
+        await _run_step(page, STEP_NAVIGATE, _open_email_management(page))
+        await _run_step(
+            page,
+            STEP_CREATE,
+            _create_mailbox(page, local_part=local, domain=target_domain, password=password),
+        )
+    finally:
+        await browser.close()
+        await playwright.stop()
+    return {"status": "created", "email": f"{local}@{target_domain}", "local_part": local, "domain": target_domain}
 
 
 async def create_mailbox_via_automation(
@@ -155,44 +147,46 @@ async def create_mailbox_via_automation(
     domain: str,
     password: str,
 ) -> dict[str, Any]:
+    """Returns either {"status": "created", ...} or, if Strato's login form
+    shows its CAPTCHA, {"status": "captcha_required", "session_id": ...,
+    "captcha_image_base64": ...} - the caller must then collect the code
+    from a human and call resume_create_mailbox_via_automation()."""
     creds = resolve_strato_credentials(db)
     if not creds.configured:
         raise HTTPException(status_code=400, detail="strato_automation_not_configured")
+    local, target_domain = _validate_mailbox_params(local_part, domain, password)
 
-    local = (local_part or "").strip().lower()
-    target_domain = (domain or "").strip().lower()
-    if not re.fullmatch(r"[a-z0-9][a-z0-9._-]*", local) or not target_domain or not password:
-        raise HTTPException(status_code=400, detail="validation")
+    try:
+        outcome = await strato_login_session.begin_login(
+            creds, extra={"local_part": local, "domain": target_domain, "password": password}
+        )
+    except strato_login_session.StratoLoginError as exc:
+        raise _map_login_error(exc) from exc
 
-    # Imported lazily so the rest of the app (and the checks above) work even
-    # in environments where the playwright package/browser isn't installed.
-    from playwright.async_api import async_playwright
+    if isinstance(outcome, strato_login_session.CaptchaRequired):
+        return {
+            "status": "captcha_required",
+            "session_id": outcome.session_id,
+            "captcha_image_base64": outcome.captcha_image_base64,
+        }
 
-    async with async_playwright() as pw:
-        browser = None
-        try:
-            # Launching Chromium/creating the context/page can itself fail
-            # (missing browser binary, OOM, ...) - that's arguably the most
-            # likely real-world failure mode of this whole feature, so it
-            # must land in StratoAutomationError exactly like the three named
-            # steps below, not bypass it as a raw, untranslated 500.
-            browser = await pw.chromium.launch(headless=True)
-            context = await browser.new_context(locale="de-DE")
-            page = await context.new_page()
-            await _run_step(page, STEP_LOGIN, _login(page, creds))
-            await _run_step(page, STEP_NAVIGATE, _open_email_management(page))
-            await _run_step(
-                page,
-                STEP_CREATE,
-                _create_mailbox(page, local_part=local, domain=target_domain, password=password),
-            )
-        except StratoAutomationError:
-            raise
-        except Exception as exc:  # noqa: BLE001 - see _run_step's docstring; same rationale applies to setup
-            logger.exception("Unexpected error setting up the Strato automation browser")
-            raise StratoAutomationError(STEP_UNEXPECTED, None) from exc
-        finally:
-            if browser is not None:
-                await browser.close()
+    return await _finish_create_mailbox(
+        outcome.page, outcome.browser, outcome.playwright, local=local, target_domain=target_domain, password=password
+    )
 
-    return {"email": f"{local}@{target_domain}", "local_part": local, "domain": target_domain}
+
+async def resume_create_mailbox_via_automation(session_id: str, captcha_code: str) -> dict[str, Any]:
+    try:
+        outcome = await strato_login_session.resume_login(session_id, captcha_code)
+    except strato_login_session.StratoLoginError as exc:
+        raise _map_login_error(exc) from exc
+
+    params = outcome.extra or {}
+    return await _finish_create_mailbox(
+        outcome.page,
+        outcome.browser,
+        outcome.playwright,
+        local=params.get("local_part", ""),
+        target_domain=params.get("domain", ""),
+        password=params.get("password", ""),
+    )

@@ -6,14 +6,18 @@ import {
   fetchWordPressInstallations,
   fetchWordPressStatus,
   installWordPressAutomated,
+  resumeWordPressInstallCaptcha,
+  resumeWordPressInstallationsCaptcha,
   WordPressAutomationApiError,
   type WordPressInstallation,
   type WordPressStatus,
 } from "../api/client";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingState } from "../components/LoadingState";
+import { StratoCaptchaModal } from "../components/StratoCaptchaModal";
 
 type Mode = "flexibility" | "security";
+type CaptchaPrompt = { kind: "install" | "list"; sessionId: string; imageBase64: string | null };
 
 export function WordPressPage() {
   const { t } = useTranslation();
@@ -30,6 +34,8 @@ export function WordPressPage() {
   const [installError, setInstallError] = useState("");
   const [installScreenshot, setInstallScreenshot] = useState<string | null>(null);
   const [installNotice, setInstallNotice] = useState("");
+
+  const [captchaPrompt, setCaptchaPrompt] = useState<CaptchaPrompt | null>(null);
 
   async function reloadStatus() {
     setLoadingStatus(true);
@@ -50,7 +56,12 @@ export function WordPressPage() {
     setListError("");
     setListScreenshot(null);
     try {
-      setInstallations(await fetchWordPressInstallations());
+      const outcome = await fetchWordPressInstallations();
+      if (outcome.status === "captcha_required") {
+        setCaptchaPrompt({ kind: "list", sessionId: outcome.session_id, imageBase64: outcome.captcha_image_base64 });
+        return;
+      }
+      setInstallations(outcome.installations);
     } catch (err) {
       if (err instanceof WordPressAutomationApiError) {
         setListError(err.message);
@@ -75,8 +86,12 @@ export function WordPressPage() {
     setInstallScreenshot(null);
     setInstallNotice("");
     try {
-      const result = await installWordPressAutomated({ mode: installMode, domain: installDomain });
-      setInstallNotice(t("wordpress.installSuccess", { domain: result.domain }));
+      const outcome = await installWordPressAutomated({ mode: installMode, domain: installDomain });
+      if (outcome.status === "captcha_required") {
+        setCaptchaPrompt({ kind: "install", sessionId: outcome.session_id, imageBase64: outcome.captcha_image_base64 });
+        return;
+      }
+      setInstallNotice(t("wordpress.installSuccess", { domain: outcome.domain }));
       await reloadInstallations();
     } catch (err) {
       if (err instanceof WordPressAutomationApiError) {
@@ -90,12 +105,48 @@ export function WordPressPage() {
     }
   }
 
+  async function handleCaptchaSubmit(code: string) {
+    if (!captchaPrompt) return;
+    if (captchaPrompt.kind === "list") {
+      try {
+        const result = await resumeWordPressInstallationsCaptcha(captchaPrompt.sessionId, code);
+        setInstallations(result);
+        setCaptchaPrompt(null);
+      } finally {
+        setLoadingList(false);
+      }
+      return;
+    }
+    try {
+      const result = await resumeWordPressInstallCaptcha(captchaPrompt.sessionId, code);
+      setInstallNotice(t("wordpress.installSuccess", { domain: result.domain }));
+      setCaptchaPrompt(null);
+      await reloadInstallations();
+    } finally {
+      setInstallBusy(false);
+    }
+  }
+
+  function handleCaptchaCancel() {
+    setCaptchaPrompt(null);
+    setLoadingList(false);
+    setInstallBusy(false);
+  }
+
   return (
     <section className="page">
       <header className="page-header">
         <h1>{t("wordpress.title")}</h1>
         <p className="muted">{t("wordpress.subtitle")}</p>
       </header>
+
+      {captchaPrompt ? (
+        <StratoCaptchaModal
+          imageBase64={captchaPrompt.imageBase64}
+          onSubmit={handleCaptchaSubmit}
+          onCancel={handleCaptchaCancel}
+        />
+      ) : null}
 
       {loadingStatus ? <LoadingState /> : null}
 

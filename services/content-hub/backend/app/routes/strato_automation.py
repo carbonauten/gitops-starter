@@ -9,7 +9,11 @@ from ..audit_service import log_audit
 from ..database import get_db
 from ..dependencies import require_it_master
 from ..i18n import translate
-from ..strato_automation_service import StratoAutomationError, create_mailbox_via_automation
+from ..strato_automation_service import (
+    StratoAutomationError,
+    create_mailbox_via_automation,
+    resume_create_mailbox_via_automation,
+)
 from ..strato_config_service import (
     clear_stored_strato_config,
     save_strato_config,
@@ -33,6 +37,11 @@ class StratoCreateMailboxRequest(BaseModel):
     local_part: str = Field(..., min_length=1, max_length=100)
     domain: str = Field(..., min_length=1, max_length=200)
     password: str = Field(..., min_length=8, max_length=200)
+
+
+class StratoCaptchaResumeRequest(BaseModel):
+    session_id: str = Field(..., min_length=1, max_length=64)
+    captcha_code: str = Field(..., min_length=1, max_length=32)
 
 
 @router.get("/status")
@@ -75,6 +84,17 @@ def delete_config(
     return status
 
 
+def _translated_automation_error(request: Request, exc: StratoAutomationError) -> JSONResponse:
+    language = getattr(request.state, "language", "de")
+    message = translate(f"errors.{exc.code}", language)
+    if message == f"errors.{exc.code}":
+        message = translate("errors.generic", language)
+    return JSONResponse(
+        status_code=502,
+        content={"error": message, "code": exc.code, "screenshot_base64": exc.screenshot_base64},
+    )
+
+
 @router.post("/create-mailbox")
 async def post_create_mailbox(
     payload: StratoCreateMailboxRequest,
@@ -82,9 +102,8 @@ async def post_create_mailbox(
     db: Session = Depends(get_db),
     user: dict = Depends(require_it_master),
 ):
-    language = getattr(request.state, "language", "de")
     try:
-        mailbox = await create_mailbox_via_automation(
+        result = await create_mailbox_via_automation(
             db,
             local_part=payload.local_part,
             domain=payload.domain,
@@ -99,19 +118,46 @@ async def post_create_mailbox(
             actor=user,
             details={"code": exc.code},
         )
-        message = translate(f"errors.{exc.code}", language)
-        if message == f"errors.{exc.code}":
-            message = translate("errors.generic", language)
-        return JSONResponse(
-            status_code=502,
-            content={"error": message, "code": exc.code, "screenshot_base64": exc.screenshot_base64},
-        )
+        return _translated_automation_error(request, exc)
+
+    if result["status"] == "captcha_required":
+        return result
 
     log_audit(
         db,
         entity_type="strato_automation",
-        entity_id=mailbox["email"],
+        entity_id=result["email"],
         action="mailbox_created",
         actor=user,
     )
-    return {"mailbox": mailbox}
+    return {"mailbox": result}
+
+
+@router.post("/create-mailbox/captcha")
+async def post_create_mailbox_captcha(
+    payload: StratoCaptchaResumeRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: dict = Depends(require_it_master),
+):
+    try:
+        result = await resume_create_mailbox_via_automation(payload.session_id, payload.captcha_code)
+    except StratoAutomationError as exc:
+        log_audit(
+            db,
+            entity_type="strato_automation",
+            entity_id=payload.session_id,
+            action="create_failed",
+            actor=user,
+            details={"code": exc.code},
+        )
+        return _translated_automation_error(request, exc)
+
+    log_audit(
+        db,
+        entity_type="strato_automation",
+        entity_id=result["email"],
+        action="mailbox_created",
+        actor=user,
+    )
+    return {"mailbox": result}

@@ -15,6 +15,8 @@ from ..wordpress_automation_service import (
     WordPressAutomationError,
     install_wordpress_via_automation,
     list_wordpress_installations,
+    resume_install_wordpress_via_automation,
+    resume_list_wordpress_installations,
 )
 
 router = APIRouter(prefix="/api/wordpress", tags=["wordpress"])
@@ -23,6 +25,22 @@ router = APIRouter(prefix="/api/wordpress", tags=["wordpress"])
 class WordPressInstallRequest(BaseModel):
     mode: str = Field(..., description="flexibility or security")
     domain: str = Field(..., min_length=1, max_length=200)
+
+
+class WordPressCaptchaResumeRequest(BaseModel):
+    session_id: str = Field(..., min_length=1, max_length=64)
+    captcha_code: str = Field(..., min_length=1, max_length=32)
+
+
+def _translated_automation_error(request: Request, exc: WordPressAutomationError) -> JSONResponse:
+    language = getattr(request.state, "language", "de")
+    message = translate(f"errors.{exc.code}", language)
+    if message == f"errors.{exc.code}":
+        message = translate("errors.generic", language)
+    return JSONResponse(
+        status_code=502,
+        content={"error": message, "code": exc.code, "screenshot_base64": exc.screenshot_base64},
+    )
 
 
 @router.get("/status")
@@ -41,18 +59,26 @@ async def get_installations(
     db: Session = Depends(get_db),
     _user: dict = Depends(require_wordpress_manager),
 ):
-    language = getattr(request.state, "language", "de")
     try:
-        installations = await list_wordpress_installations(db)
+        result = await list_wordpress_installations(db)
     except WordPressAutomationError as exc:
-        message = translate(f"errors.{exc.code}", language)
-        if message == f"errors.{exc.code}":
-            message = translate("errors.generic", language)
-        return JSONResponse(
-            status_code=502,
-            content={"error": message, "code": exc.code, "screenshot_base64": exc.screenshot_base64},
-        )
-    return {"installations": installations}
+        return _translated_automation_error(request, exc)
+    if result["status"] == "captcha_required":
+        return result
+    return {"installations": result["installations"]}
+
+
+@router.post("/installations/captcha")
+async def post_installations_captcha(
+    payload: WordPressCaptchaResumeRequest,
+    request: Request,
+    _user: dict = Depends(require_wordpress_manager),
+):
+    try:
+        result = await resume_list_wordpress_installations(payload.session_id, payload.captcha_code)
+    except WordPressAutomationError as exc:
+        return _translated_automation_error(request, exc)
+    return {"installations": result["installations"]}
 
 
 @router.post("/install")
@@ -65,7 +91,6 @@ async def post_install(
     if payload.mode not in INSTALL_MODES:
         return JSONResponse(status_code=400, content={"error": "validation", "code": "validation"})
 
-    language = getattr(request.state, "language", "de")
     try:
         result = await install_wordpress_via_automation(db, mode=payload.mode, domain=payload.domain)
     except WordPressAutomationError as exc:
@@ -77,13 +102,10 @@ async def post_install(
             actor=user,
             details={"code": exc.code, "mode": payload.mode},
         )
-        message = translate(f"errors.{exc.code}", language)
-        if message == f"errors.{exc.code}":
-            message = translate("errors.generic", language)
-        return JSONResponse(
-            status_code=502,
-            content={"error": message, "code": exc.code, "screenshot_base64": exc.screenshot_base64},
-        )
+        return _translated_automation_error(request, exc)
+
+    if result["status"] == "captcha_required":
+        return result
 
     log_audit(
         db,
@@ -92,5 +114,36 @@ async def post_install(
         action="installed",
         actor=user,
         details={"mode": payload.mode},
+    )
+    return {"installation": result}
+
+
+@router.post("/install/captcha")
+async def post_install_captcha(
+    payload: WordPressCaptchaResumeRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: dict = Depends(require_wordpress_manager),
+):
+    try:
+        result = await resume_install_wordpress_via_automation(payload.session_id, payload.captcha_code)
+    except WordPressAutomationError as exc:
+        log_audit(
+            db,
+            entity_type="wordpress_automation",
+            entity_id=payload.session_id,
+            action="install_failed",
+            actor=user,
+            details={"code": exc.code},
+        )
+        return _translated_automation_error(request, exc)
+
+    log_audit(
+        db,
+        entity_type="wordpress_automation",
+        entity_id=result["domain"],
+        action="installed",
+        actor=user,
+        details={"mode": result["mode"]},
     )
     return {"installation": result}
