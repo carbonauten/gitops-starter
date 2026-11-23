@@ -83,6 +83,13 @@ async def _login(page: Any, creds: StratoCredentials) -> None:
         )
     except Exception:  # noqa: BLE001 - genuinely optional, never the real failure
         pass
+    # Confirmed via a live screenshot (2026-11-23): this account's login form
+    # always shows an image CAPTCHA ("Security code") alongside
+    # username/password, not just as a conditional post-submit challenge.
+    # No selector fix can solve an image CAPTCHA, so this must fail fast and
+    # clearly here instead of submitting with that field empty.
+    if await page.get_by_label(re.compile("Security code|Sicherheitscode", re.I)).count() > 0:
+        raise WordPressAutomationError(STEP_2FA, await _safe_screenshot(page))
     await page.get_by_label(re.compile("Benutzername|Kundennummer", re.I)).first.fill(creds.customer_number)
     await page.get_by_label(re.compile("Passwort", re.I)).first.fill(creds.password)
     await page.get_by_role("button", name=re.compile("Login", re.I)).click()
