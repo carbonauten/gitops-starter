@@ -1152,7 +1152,9 @@
     "empty": "No WordPress installations found.",
     "openSite": "Open site",
     "openAdmin": "Open wp-admin",
-    "automationScreenshotLabel": "Show debug screenshot"
+    "automationScreenshotLabel": "Show debug screenshot",
+    "openStrato": "Open Strato login ↗",
+    "openStratoHint": "If the automation doesn't work: install or manage it manually at Strato under \"Website & Shop > WordPress & Co.\""
   },
   "imapMail": {
     "title": "Mailboxes (Strato)",

@@ -1152,7 +1152,9 @@
     "empty": "Keine WordPress-Installationen gefunden.",
     "openSite": "Seite öffnen",
     "openAdmin": "wp-admin öffnen",
-    "automationScreenshotLabel": "Debug-Screenshot anzeigen"
+    "automationScreenshotLabel": "Debug-Screenshot anzeigen",
+    "openStrato": "Strato-Login öffnen ↗",
+    "openStratoHint": "Falls die Automatisierung nicht klappt: direkt bei Strato unter „Website & Shop > WordPress & Co.“ manuell installieren oder verwalten."
   },
   "imapMail": {
     "title": "Postfächer (Strato)",
