@@ -72,12 +72,35 @@ async def _safe_screenshot(page: Any) -> str | None:
 
 async def _login(page: Any, creds: StratoCredentials) -> None:
     await page.goto("https://www.strato.de/login", wait_until="domcontentloaded", timeout=20000)
+    # Strato shows a cookie-consent modal on first visit that covers the
+    # login form and blocks every fill()/click() below until dismissed -
+    # confirmed via a live screenshot (2026-11-23). Best-effort: if the
+    # button isn't there (different wording, consent already stored, ...)
+    # this just times out quickly and falls through without failing the run.
+    try:
+        await page.get_by_role("button", name=re.compile("Zustimmen und schließen|Alle akzeptieren", re.I)).click(
+            timeout=5000
+        )
+    except Exception:  # noqa: BLE001 - genuinely optional, never the real failure
+        pass
     await page.get_by_label(re.compile("Benutzername|Kundennummer", re.I)).first.fill(creds.customer_number)
     await page.get_by_label(re.compile("Passwort", re.I)).first.fill(creds.password)
     await page.get_by_role("button", name=re.compile("Login", re.I)).click()
     await page.wait_for_load_state("networkidle", timeout=20000)
-    if await page.get_by_text(re.compile("Captcha|Sicherheitscode|Zwei-Faktor|2FA|Bestätigungscode", re.I)).count() > 0:
+    if (
+        await page.get_by_text(
+            re.compile("Captcha|Sicherheitscode|Security code|Zwei-Faktor|2FA|Bestätigungscode", re.I)
+        ).count()
+        > 0
+    ):
         raise WordPressAutomationError(STEP_2FA, await _safe_screenshot(page))
+    # Strato's login form also showed a "Security code" field even before
+    # any 2FA text appears (confirmed via a live screenshot, 2026-11-23) -
+    # if we're still on the login page after submitting, something blocked
+    # the login that the text check above didn't catch (e.g. a validation
+    # error), so this must not be silently treated as a success.
+    if "/login" in page.url:
+        raise WordPressAutomationError(STEP_LOGIN, await _safe_screenshot(page))
 
 
 async def _open_wordpress_management(page: Any) -> None:
