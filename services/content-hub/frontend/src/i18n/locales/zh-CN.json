@@ -1152,7 +1152,9 @@
     "empty": "未找到 WordPress 安装。",
     "openSite": "打开网站",
     "openAdmin": "打开 wp-admin",
-    "automationScreenshotLabel": "显示调试截图"
+    "automationScreenshotLabel": "显示调试截图",
+    "openStrato": "打开 Strato 登录 ↗",
+    "openStratoHint": "如果自动化不起作用：请直接在 Strato「Website & Shop > WordPress & Co.」中手动安装或管理。"
   },
   "imapMail": {
     "title": "邮箱（Strato）",

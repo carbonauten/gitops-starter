@@ -221,6 +221,12 @@ export function WordPressPage() {
                     />
                   </details>
                 ) : null}
+                <p className="muted">
+                  {t("wordpress.openStratoHint")}{" "}
+                  <a href="https://www.strato.de/login" target="_blank" rel="noreferrer">
+                    {t("wordpress.openStrato")}
+                  </a>
+                </p>
               </div>
             ) : null}
           </div>
@@ -245,6 +251,12 @@ export function WordPressPage() {
                   />
                 </details>
               ) : null}
+              <p className="muted">
+                {t("wordpress.openStratoHint")}{" "}
+                <a href="https://www.strato.de/login" target="_blank" rel="noreferrer">
+                  {t("wordpress.openStrato")}
+                </a>
+              </p>
             </div>
           ) : null}
 

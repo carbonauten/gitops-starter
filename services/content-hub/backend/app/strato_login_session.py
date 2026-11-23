@@ -144,6 +144,7 @@ async def begin_login(creds: StratoCredentials, *, extra: Any = None) -> "Logged
 
     playwright = None
     browser = None
+    page = None
     try:
         playwright = await async_playwright().start()
         browser = await playwright.chromium.launch(headless=True)
@@ -172,11 +173,12 @@ async def begin_login(creds: StratoCredentials, *, extra: Any = None) -> "Logged
         raise
     except Exception as exc:  # noqa: BLE001 - never let an unexpected Playwright/site error become a raw 500
         logger.exception("Unexpected error starting the Strato login")
+        screenshot = await safe_screenshot(page) if page is not None else None
         if browser is not None:
             await browser.close()
         if playwright is not None:
             await playwright.stop()
-        raise StratoLoginError("strato_login_unexpected_error", None) from exc
+        raise StratoLoginError("strato_login_unexpected_error", screenshot) from exc
 
 
 async def resume_login(session_id: str, captcha_code: str) -> LoggedIn:
@@ -206,8 +208,9 @@ async def resume_login(session_id: str, captcha_code: str) -> LoggedIn:
         raise
     except Exception as exc:  # noqa: BLE001
         logger.exception("Unexpected error resuming the Strato login with a CAPTCHA code")
+        screenshot = await safe_screenshot(page)
         await _close_pending(session)
-        raise StratoLoginError("strato_login_unexpected_error", None) from exc
+        raise StratoLoginError("strato_login_unexpected_error", screenshot) from exc
 
 
 async def cancel_login(session_id: str) -> None:
