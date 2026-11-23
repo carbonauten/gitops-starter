@@ -24,6 +24,7 @@
     "m365": "M365 admin",
     "mailServer": "Mail server (Mailcow)",
     "imapMail": "Mailboxes (Strato)",
+    "wordpress": "WordPress (Strato)",
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
     "themeLight": "Light theme",
@@ -532,12 +533,14 @@
       "it_master": "IT master",
       "editor": "Editor",
       "certificate_manager": "Certificate manager",
+      "designer": "Designer",
       "viewer": "Viewer"
     },
     "roleDescriptions": {
       "it_master": "Full access including employee management and approvals",
       "editor": "Create and edit content",
       "certificate_manager": "Manage and approve certificate renewals",
+      "designer": "Install and manage WordPress sites",
       "viewer": "Read-only access"
     },
     "invites": {
@@ -1121,6 +1124,27 @@
     "delete": "Delete",
     "confirmDeleteMailbox": "Delete mailbox {{email}}? This cannot be undone.",
     "mailboxDeleted": "Mailbox {{email}} deleted."
+  },
+  "wordpress": {
+    "title": "WordPress (Strato)",
+    "subtitle": "Manage WordPress installations at Strato using the Strato customer login (browser automation, since Strato offers no API for this).",
+    "notConfigured": "Strato customer login is not set up yet.",
+    "notConfiguredHint": "Set it up on the \"Mailboxes (Strato)\" page.",
+    "installTitle": "Install WordPress",
+    "mode": "Update mode",
+    "modeSecurity": "Security mode",
+    "modeFlexibility": "Flexibility mode",
+    "modeSecurityHint": "Always the latest version, automatic updates. Switching to flexibility mode later is possible.",
+    "modeFlexibilityHint": "Full update control, switching to security mode later is not possible.",
+    "domain": "Domain",
+    "install": "Install",
+    "installSuccess": "Installing WordPress for {{domain}}.",
+    "installationsTitle": "Existing installations",
+    "refresh": "Refresh",
+    "empty": "No WordPress installations found.",
+    "openSite": "Open site",
+    "openAdmin": "Open wp-admin",
+    "automationScreenshotLabel": "Show debug screenshot"
   },
   "imapMail": {
     "title": "Mailboxes (Strato)",

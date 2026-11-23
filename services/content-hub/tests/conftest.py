@@ -98,3 +98,10 @@ def viewer_auth_client(client):
     _seed_password_user(role="viewer")
     _login(client)
     return client
+
+
+@pytest.fixture
+def designer_auth_client(client):
+    _seed_password_user(role="designer")
+    _login(client)
+    return client

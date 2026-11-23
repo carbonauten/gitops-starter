@@ -88,7 +88,8 @@ export function TopBar({ onMenuToggle }: { onMenuToggle: () => void }) {
 
 export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
   const { t } = useTranslation();
-  const { canEdit, canManageUsers, canManageShop, canApprove, canApproveCertificates } = usePermissions();
+  const { canEdit, canManageUsers, canManageShop, canManageWordpress, canApprove, canApproveCertificates } =
+    usePermissions();
   const [pendingApprovals, setPendingApprovals] = useState(0);
   const [expiringSoon, setExpiringSoon] = useState(0);
 
@@ -151,6 +152,11 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
         { to: "/audit", label: t("nav.audit"), icon: "≡" },
       ]
     : [];
+  // Designers can't manage users/mail/audit, but can still manage
+  // WordPress - add it to the admin section independently of canManageUsers.
+  if (canManageWordpress) {
+    admin.push({ to: "/wordpress", label: t("nav.wordpress"), icon: "❖" });
+  }
 
   return (
     <aside className={`sidebar${open ? " sidebar-open" : ""}`}>

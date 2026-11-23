@@ -3,7 +3,7 @@ export type User = {
   db_id: string;
   name: string;
   email: string;
-  role: "it_master" | "editor" | "certificate_manager" | "viewer";
+  role: "it_master" | "editor" | "certificate_manager" | "designer" | "viewer";
   role_source?: "manual" | "default" | "entra_group";
   department_id?: string | null;
   department_name?: string | null;
@@ -68,6 +68,10 @@ export function canApproveCertificates(role: User["role"]): boolean {
 
 export function canManageUsers(role: User["role"]): boolean {
   return role === "it_master";
+}
+
+export function canManageWordpress(role: User["role"]): boolean {
+  return role === "it_master" || role === "designer";
 }
 
 export function canManageShop(user: Pick<User, "role" | "can_manage_shop"> | null | undefined): boolean {
@@ -2709,4 +2713,89 @@ export async function createStratoMailboxAutomated(payload: {
   } finally {
     window.clearTimeout(timeout);
   }
+}
+
+// WordPress management reuses the Strato customer login already stored for
+// mailbox automation above - /api/wordpress/status just reflects
+// /api/strato-automation/status, so it shares that same response shape.
+export type WordPressStatus = StratoAutomationStatus;
+
+export async function fetchWordPressStatus(): Promise<WordPressStatus> {
+  return request<WordPressStatus>("/api/wordpress/status");
+}
+
+export type WordPressInstallation = {
+  label: string;
+  application: string;
+  link: string;
+  wp_admin_url: string;
+};
+
+export class WordPressAutomationApiError extends Error {
+  code: string;
+  screenshotBase64: string | null;
+
+  constructor(message: string, code: string, screenshotBase64: string | null) {
+    super(message);
+    this.code = code;
+    this.screenshotBase64 = screenshotBase64;
+  }
+}
+
+// Not routed through the shared request() helper, same reasoning as
+// createStratoMailboxAutomated above: a failure here can carry a debug
+// screenshot of the browser automation's last state.
+async function _wordpressAutomationFetch<T>(url: string, init: RequestInit, timeoutMs: number): Promise<T> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      ...init,
+      signal: controller.signal,
+    });
+    const body = await response.json();
+    if (!response.ok) {
+      throw new WordPressAutomationApiError(
+        body.error || "Request failed",
+        body.code || "error",
+        body.screenshot_base64 || null,
+      );
+    }
+    return body as T;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("Request timed out. Please try again.");
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+export async function fetchWordPressInstallations(): Promise<WordPressInstallation[]> {
+  const body = await _wordpressAutomationFetch<{ installations: WordPressInstallation[] }>(
+    "/api/wordpress/installations",
+    { method: "GET" },
+    60000,
+  );
+  return body.installations;
+}
+
+export type WordPressInstallResult = {
+  domain: string;
+  mode: "flexibility" | "security";
+};
+
+export async function installWordPressAutomated(payload: {
+  mode: "flexibility" | "security";
+  domain: string;
+}): Promise<WordPressInstallResult> {
+  const body = await _wordpressAutomationFetch<{ installation: WordPressInstallResult }>(
+    "/api/wordpress/install",
+    { method: "POST", body: JSON.stringify(payload) },
+    90000,
+  );
+  return body.installation;
 }
