@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import re
 
 from playwright.async_api import async_playwright
 
-from app.strato_automation_service import _choose_free_mailbox_tier, _select_mailbox_domain
+from app.strato_automation_service import _choose_free_mailbox_tier, _fill_mailbox_password, _select_mailbox_domain
 
 # Regression test for a real live failure (confirmed via a live screenshot,
 # 2026-11-24): "Neu anlegen" opens a Basic (free) vs. Business (paid)
@@ -142,3 +143,37 @@ def test_select_mailbox_domain_custom_combobox_clicks_matching_option():
     result = asyncio.run(_run_select(CUSTOM_COMBOBOX_HTML, "elphen.ag"))
     assert result["kind"] == "combobox"
     assert "elphen.ag" in (result["text"] or "")
+
+
+# Regression test for a third live failure, same day: with the tier dialog
+# and domain picker both fixed, a live run filled E-Mail-Adresse and Domain
+# fine (both are properly label-associated) but left Passwort completely
+# empty - that field has its own password-strength-meter widget, unlike the
+# other two, and apparently isn't label-associated the same way, so
+# get_by_label matched nothing and the old fill loop silently never ran.
+STRENGTH_METER_PASSWORD_HTML = """
+<html><body>
+  <div class="strength-meter-widget">
+    <span class="floating-label">Passwort</span>
+    <input type="password" />
+    <div class="bars"></div>
+  </div>
+</body></html>
+"""
+
+
+def test_fill_mailbox_password_falls_back_to_input_type_when_label_is_unassociated():
+    async def _run():
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch(headless=True)
+            try:
+                page = await browser.new_page()
+                await page.set_content(STRENGTH_METER_PASSWORD_HTML)
+                assert await page.get_by_label(re.compile("Passwort", re.I)).count() == 0
+
+                await _fill_mailbox_password(page, "a-strong-password-1")
+                assert await page.locator('input[type="password"]').input_value() == "a-strong-password-1"
+            finally:
+                await browser.close()
+
+    asyncio.run(_run())
