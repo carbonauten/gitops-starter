@@ -111,10 +111,18 @@ async def _sweep_expired() -> None:
             await _close_pending(session)
 
 
-async def _dismiss_cookie_banner(page: Any) -> None:
+async def _dismiss_cookie_banner(page: Any, *, timeout: int = 15000) -> None:
+    """Confirmed via a live screenshot (2026-11-24): the cookie-consent
+    modal can still be sitting on top of the form well after
+    "networkidle" fires (it's presumably injected by a third-party
+    consent-management script on its own schedule) - a short one-shot
+    check right after navigation isn't enough, it has shown up and
+    blocked every subsequent fill()/click() with it still fully visible
+    in the failure screenshot. Called more than once per login (see call
+    sites) since there's no single moment that's reliably "late enough"."""
     try:
         await page.get_by_role("button", name=re.compile("Zustimmen und schließen|Alle akzeptieren", re.I)).click(
-            timeout=5000
+            timeout=timeout
         )
     except Exception:  # noqa: BLE001 - genuinely optional, never the real failure
         pass
@@ -186,6 +194,11 @@ async def begin_login(creds: StratoCredentials, *, extra: Any = None) -> "Logged
             _SESSIONS[session_id] = _PendingLogin(playwright, browser, page, creds, time.monotonic(), extra)
             return CaptchaRequired(session_id, screenshot)
 
+        # Defensive re-check: if the cookie banner was still rendering during
+        # the first attempt above, it may have appeared by now and be
+        # sitting on top of the fields about to be filled.
+        await _dismiss_cookie_banner(page, timeout=3000)
+
         username_field = await _find_field(page, re.compile("Benutzername|Kundennummer", re.I))
         await username_field.first.fill(creds.customer_number)
         password_field = await _find_field(page, re.compile("Passwort", re.I), input_type="password")
@@ -223,6 +236,12 @@ async def resume_login(session_id: str, captcha_code: str) -> LoggedIn:
 
     page = session.page
     try:
+        # Several minutes may have passed while a human read and typed the
+        # CAPTCHA - plenty of time for a slow-loading cookie banner to have
+        # appeared since begin_login()'s own attempts, sitting on top of the
+        # very fields about to be filled.
+        await _dismiss_cookie_banner(page, timeout=3000)
+
         username_field = await _find_field(page, re.compile("Benutzername|Kundennummer", re.I))
         await username_field.first.fill(session.creds.customer_number)
         password_field = await _find_field(page, re.compile("Passwort", re.I), input_type="password")

@@ -222,3 +222,41 @@ def test_find_field_falls_back_to_input_type_when_placeholder_is_absent():
                 await browser.close()
 
     asyncio.run(_run())
+
+
+# Regression test for a third live failure, same day: the cookie-consent
+# modal was still fully visible - unclicked - in the final failure
+# screenshot, meaning the single dismiss attempt right after navigation
+# didn't catch it (presumably injected by a delayed third-party consent
+# script). Simulates that by injecting the banner into the DOM after a
+# short delay, verifying _dismiss_cookie_banner() still finds and clicks
+# it as long as its timeout comfortably covers that delay.
+DELAYED_COOKIE_BANNER_HTML = """
+<html><body>
+  <script>
+    setTimeout(() => {
+      const el = document.createElement('button');
+      el.textContent = 'Zustimmen und schließen';
+      el.onclick = () => { document.body.setAttribute('data-dismissed', 'true'); el.remove(); };
+      document.body.appendChild(el);
+    }, 300);
+  </script>
+</body></html>
+"""
+
+
+def test_dismiss_cookie_banner_waits_for_a_delayed_banner():
+    async def _run():
+        from playwright.async_api import async_playwright
+
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch(headless=True)
+            try:
+                page = await browser.new_page()
+                await page.set_content(DELAYED_COOKIE_BANNER_HTML)
+                await strato_login_session._dismiss_cookie_banner(page, timeout=2000)
+                assert await page.locator("body[data-dismissed='true']").count() == 1
+            finally:
+                await browser.close()
+
+    asyncio.run(_run())
