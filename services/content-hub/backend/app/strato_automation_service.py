@@ -186,18 +186,50 @@ async def _fill_mailbox_password(page: Any, password: str) -> None:
     events; .fill() sets the value in one shot via a lower-level call that
     a custom-controlled input like this one can silently fail to pick up
     (a well-known class of browser-automation issue). Click to focus, then
-    type it out character by character instead of filling it in one shot."""
+    type it out character by character instead of filling it in one shot.
+
+    A THIRD live run still showed the field empty even with that in place.
+    There is no live interactive session left for a human to inspect by
+    then (the screenshot shown to the user is a static image of an
+    already-torn-down session, not something DevTools can attach to), so
+    guessing a fourth time blind isn't worth another ~15-minute deploy
+    cycle - log the real markup/visibility/position of every
+    input[type=password] on the page instead. Visible via Railway's
+    service logs (the "View Logs" button on the deployment)."""
     pattern = re.compile("Passwort", re.I)
     fields = page.get_by_label(pattern)
+    strategy = "label"
     if await fields.count() == 0:
         fields = page.get_by_placeholder(pattern)
+        strategy = "placeholder"
     if await fields.count() == 0:
         fields = page.locator('input[type="password"]')
+        strategy = "input[type=password]"
     field_count = await fields.count()
+    logger.info("Password field lookup: strategy=%s matched_count=%d", strategy, field_count)
+
+    all_password_inputs = page.locator('input[type="password"]')
+    all_count = await all_password_inputs.count()
+    logger.info("Total input[type=password] elements on page: %d", all_count)
+    for i in range(all_count):
+        el = all_password_inputs.nth(i)
+        try:
+            visible = await el.is_visible()
+            box = await el.bounding_box()
+            html = await el.evaluate("el => el.outerHTML")
+        except Exception as exc:  # noqa: BLE001 - diagnostic only, never block the real flow
+            logger.warning("Introspecting password input[%d] failed: %s", i, exc)
+            continue
+        logger.info("password input[%d]: visible=%s box=%s html=%s", i, visible, box, html)
+
     for index in range(field_count):
         field = fields.nth(index)
-        await field.click()
-        await field.press_sequentially(password)
+        try:
+            await field.click()
+            await field.press_sequentially(password)
+        except Exception:
+            logger.exception("Failed to click/type into password field index %d", index)
+            raise
 
 
 async def _create_mailbox(page: Any, *, local_part: str, domain: str, password: str) -> None:
