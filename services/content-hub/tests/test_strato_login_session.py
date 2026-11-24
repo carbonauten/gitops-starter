@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 
 import pytest
 
@@ -63,6 +64,14 @@ class FakePage:
 
     def get_by_label(self, pattern):
         if self.show_captcha and pattern.search("Security code"):
+            return _FakeLocator(count=1)
+        return _FakeLocator(count=0)
+
+    def get_by_placeholder(self, pattern):
+        # Mirrors the real bug this is a regression test for: Strato's
+        # username/password fields only ever match by placeholder, never by
+        # label (confirmed via a live screenshot, 2026-11-24).
+        if pattern.search("Benutzername") or pattern.search("Passwort"):
             return _FakeLocator(count=1)
         return _FakeLocator(count=0)
 
@@ -133,3 +142,44 @@ def test_resume_login_with_unknown_session_raises():
     with pytest.raises(strato_login_session.StratoLoginError) as exc_info:
         asyncio.run(strato_login_session.resume_login("does-not-exist", "0802"))
     assert exc_info.value.code == "strato_login_session_expired"
+
+
+# Regression test for the real bug (confirmed via a live screenshot,
+# 2026-11-24): Strato's login form fields render as placeholder text with
+# no associated <label>, so a plain get_by_label() never matches any of
+# them - the CAPTCHA went undetected, the subsequent .fill() calls timed
+# out waiting for a label-matched element that doesn't exist, and the
+# whole thing surfaced as a generic "unexpected error" instead of the
+# CAPTCHA prompt. Exercised against a real headless browser (not a fake
+# Locator) since the point of this test is specifically that get_by_label
+# finds nothing on this markup.
+PLACEHOLDER_ONLY_LOGIN_HTML = """
+<html><body>
+  <input type="text" placeholder="Benutzername oder Kundennummer" />
+  <input type="password" placeholder="Passwort" />
+  <input type="text" placeholder="Security code" />
+  <button type="button">Login</button>
+</body></html>
+"""
+
+
+def test_find_field_falls_back_to_placeholder_when_label_is_absent():
+    async def _run():
+        from playwright.async_api import async_playwright
+
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch(headless=True)
+            try:
+                page = await browser.new_page()
+                await page.set_content(PLACEHOLDER_ONLY_LOGIN_HTML)
+
+                pattern = re.compile("Security code", re.I)
+                by_label = page.get_by_label(pattern)
+                assert await by_label.count() == 0  # the bug: label-only matching finds nothing
+
+                field = await strato_login_session._find_field(page, pattern)
+                assert await field.count() == 1
+            finally:
+                await browser.close()
+
+    asyncio.run(_run())

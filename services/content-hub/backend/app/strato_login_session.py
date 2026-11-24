@@ -120,6 +120,20 @@ async def _dismiss_cookie_banner(page: Any) -> None:
         pass
 
 
+async def _find_field(page: Any, pattern: "re.Pattern[str]") -> Any:
+    """Confirmed via a live screenshot (2026-11-24): Strato's login form
+    fields (Benutzername/Kundennummer, Passwort, Security code) render as
+    placeholder text inside the input, not an associated <label> - a plain
+    get_by_label() never matches any of them, silently falls through to a
+    30s timeout on .fill(), and surfaces as a generic "unexpected error"
+    with no indication the field was never found. Try label first (in case
+    a future Strato redesign adds one), then placeholder."""
+    by_label = page.get_by_label(pattern)
+    if await by_label.count() > 0:
+        return by_label
+    return page.get_by_placeholder(pattern)
+
+
 async def _verify_logged_in(page: Any) -> None:
     if (
         await page.get_by_text(
@@ -153,14 +167,17 @@ async def begin_login(creds: StratoCredentials, *, extra: Any = None) -> "Logged
         await page.goto(LOGIN_URL, wait_until="domcontentloaded", timeout=20000)
         await _dismiss_cookie_banner(page)
 
-        if await page.get_by_label(re.compile("Security code|Sicherheitscode", re.I)).count() > 0:
+        captcha_field = await _find_field(page, re.compile("Security code|Sicherheitscode", re.I))
+        if await captcha_field.count() > 0:
             session_id = uuid.uuid4().hex
             screenshot = await safe_screenshot(page)
             _SESSIONS[session_id] = _PendingLogin(playwright, browser, page, creds, time.monotonic(), extra)
             return CaptchaRequired(session_id, screenshot)
 
-        await page.get_by_label(re.compile("Benutzername|Kundennummer", re.I)).first.fill(creds.customer_number)
-        await page.get_by_label(re.compile("Passwort", re.I)).first.fill(creds.password)
+        username_field = await _find_field(page, re.compile("Benutzername|Kundennummer", re.I))
+        await username_field.first.fill(creds.customer_number)
+        password_field = await _find_field(page, re.compile("Passwort", re.I))
+        await password_field.first.fill(creds.password)
         await page.get_by_role("button", name=re.compile("Login", re.I)).click()
         await page.wait_for_load_state("networkidle", timeout=20000)
         await _verify_logged_in(page)
@@ -194,11 +211,12 @@ async def resume_login(session_id: str, captcha_code: str) -> LoggedIn:
 
     page = session.page
     try:
-        await page.get_by_label(re.compile("Benutzername|Kundennummer", re.I)).first.fill(
-            session.creds.customer_number
-        )
-        await page.get_by_label(re.compile("Passwort", re.I)).first.fill(session.creds.password)
-        await page.get_by_label(re.compile("Security code|Sicherheitscode", re.I)).first.fill(captcha_code)
+        username_field = await _find_field(page, re.compile("Benutzername|Kundennummer", re.I))
+        await username_field.first.fill(session.creds.customer_number)
+        password_field = await _find_field(page, re.compile("Passwort", re.I))
+        await password_field.first.fill(session.creds.password)
+        captcha_field = await _find_field(page, re.compile("Security code|Sicherheitscode", re.I))
+        await captcha_field.first.fill(captcha_code)
         await page.get_by_role("button", name=re.compile("Login", re.I)).click()
         await page.wait_for_load_state("networkidle", timeout=20000)
         await _verify_logged_in(page)

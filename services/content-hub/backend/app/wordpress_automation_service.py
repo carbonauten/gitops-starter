@@ -125,6 +125,52 @@ async def _scrape_installations(page: Any) -> list[dict[str, str]]:
     return installations
 
 
+async def _select_domain(page: Any, domain: str) -> None:
+    # Confirmed via a live screenshot (2026-11-24): the field is labeled
+    # "Ihre Domains und Subdomains" and its options combine domain + path
+    # ("elphen.ag - /"), so an exact label match against the bare domain
+    # would never hit - match on the option containing the domain text
+    # instead. Its visual style (bordered box + chevron, not a plain
+    # browser <select> arrow) also looks like it could be a custom
+    # combobox rather than a native <select>, so this handles both.
+    domain_field = page.get_by_label(re.compile("Domain", re.I)).first
+    if await domain_field.count() == 0:
+        return
+    try:
+        tag = await domain_field.evaluate("el => el.tagName.toLowerCase()")
+    except Exception:  # noqa: BLE001 - falls through to the combobox path below
+        tag = ""
+    if tag == "select":
+        option = domain_field.locator("option").filter(has_text=domain)
+        if await option.count() > 0:
+            value = await option.first.get_attribute("value")
+            if value is not None:
+                await domain_field.select_option(value=value)
+        return
+    await domain_field.click()
+    option = page.get_by_role("option", name=re.compile(re.escape(domain), re.I))
+    if await option.count() == 0:
+        option = page.get_by_text(re.compile(re.escape(domain), re.I))
+    await option.first.click()
+
+
+# Confirmed via a live screenshot (2026-11-24): admin username/password/email
+# come pre-filled by Strato itself (customer number, a generated password,
+# the account's registered email) - nothing to fill there. "Titel der
+# Webseite" is the one field Strato leaves blank; fill it with a reasonable
+# default if it's actually empty (never overwrite a value already there).
+async def _fill_site_title_if_empty(page: Any, title: str) -> None:
+    title_field = page.get_by_label(re.compile("Titel der Webseite|Website-?Titel|Site [Tt]itle", re.I)).first
+    if await title_field.count() == 0:
+        return
+    try:
+        current = await title_field.input_value()
+    except Exception:  # noqa: BLE001 - not a fillable input after all; skip rather than fail the run
+        return
+    if not current:
+        await title_field.fill(title)
+
+
 async def _install(page: Any, *, mode: str, domain: str) -> None:
     card_title = _MODE_CARD_TITLES[mode]
     heading = page.get_by_text(re.compile(re.escape(card_title), re.I)).first
@@ -132,11 +178,13 @@ async def _install(page: Any, *, mode: str, domain: str) -> None:
     await install_button.click()
     await page.wait_for_load_state("networkidle", timeout=20000)
 
-    domain_field = page.get_by_label(re.compile("Domain|Subdomain", re.I))
-    if await domain_field.count() > 0:
-        await domain_field.first.select_option(label=domain)
+    await _select_domain(page, domain)
+    await _fill_site_title_if_empty(page, domain)
 
-    confirm_button = page.get_by_role("button", name=re.compile("Installieren|Weiter|Bestätigen", re.I))
+    # Confirmed via a live screenshot (2026-11-24): the confirm button is
+    # labeled "Fertig" ("Done"), not "Installieren"/"Weiter"/"Bestätigen" as
+    # originally guessed.
+    confirm_button = page.get_by_role("button", name=re.compile("Fertig|Installieren|Weiter|Bestätigen", re.I))
     if await confirm_button.count() > 0:
         await confirm_button.first.click()
     await page.wait_for_load_state("networkidle", timeout=20000)
