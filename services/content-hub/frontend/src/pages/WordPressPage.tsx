@@ -177,6 +177,18 @@ export function WordPressPage() {
         const result = await resumeWordPressInstallationsCaptcha(captchaPrompt.sessionId, code);
         setInstallations(result);
         setCaptchaPrompt(null);
+      } catch (err) {
+        // A wrong CAPTCHA code should stay in the dialog so the user can
+        // retry it - but any other failure means the session is already
+        // consumed server-side, so surface it (with the debug screenshot)
+        // instead of leaving it trapped as unreadable text in the modal.
+        if (err instanceof WordPressAutomationApiError && err.code !== "wordpress_automation_2fa_or_captcha") {
+          setCaptchaPrompt(null);
+          setListError(err.message);
+          setListScreenshot(err.screenshotBase64);
+          return;
+        }
+        throw err;
       } finally {
         setLoadingList(false);
       }
@@ -187,6 +199,14 @@ export function WordPressPage() {
       setInstallNotice(t("wordpress.installSuccess", { domain: result.domain }));
       setCaptchaPrompt(null);
       await reloadInstallations();
+    } catch (err) {
+      if (err instanceof WordPressAutomationApiError && err.code !== "wordpress_automation_2fa_or_captcha") {
+        setCaptchaPrompt(null);
+        setInstallError(err.message);
+        setInstallScreenshot(err.screenshotBase64);
+        return;
+      }
+      throw err;
     } finally {
       setInstallBusy(false);
     }

@@ -427,6 +427,21 @@ export function ImapMailPage() {
       const result = await resumeStratoMailboxCaptcha(autoCaptcha.sessionId, code);
       setAutoCaptcha(null);
       await finishAutomatedMailbox(result);
+    } catch (err) {
+      // A wrong CAPTCHA code should stay in the dialog so the user can retry
+      // it (StratoCaptchaModal's own error display handles that) - but any
+      // other failure (e.g. a broken selector further along in mailbox
+      // creation) means the session is already consumed server-side and
+      // retrying in the dialog can't help. Surface it the same way
+      // handleAutomatedCreate does, with the debug screenshot, instead of
+      // leaving it trapped as unreadable text inside the modal.
+      if (err instanceof StratoAutomationApiError && err.code !== "strato_automation_2fa_or_captcha") {
+        setAutoCaptcha(null);
+        setAutoError(err.message);
+        setAutoScreenshot(err.screenshotBase64);
+        return;
+      }
+      throw err;
     } finally {
       setAutoCreating(false);
     }
