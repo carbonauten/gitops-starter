@@ -48,6 +48,9 @@ class FakePage:
     async def wait_for_load_state(self, state=None, timeout=None):
         pass
 
+    async def wait_for_selector(self, selector, timeout=None):
+        pass
+
     async def screenshot(self, type="png", full_page=False):
         return b"fake-png-bytes"
 
