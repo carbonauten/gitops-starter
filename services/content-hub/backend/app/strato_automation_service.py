@@ -178,7 +178,15 @@ async def _fill_mailbox_password(page: Any, password: str) -> None:
     fallback chain as strato_login_session._find_field: label, then
     placeholder, then the HTML input type itself, which is the one signal
     that can't be wrong regardless of how a strength-meter widget wraps the
-    real <input>."""
+    real <input>.
+
+    A second live run, same day, still showed the field empty even with
+    this fallback chain live - the visible strength-meter bars update live
+    as you type, meaning this widget reacts to real per-keystroke input
+    events; .fill() sets the value in one shot via a lower-level call that
+    a custom-controlled input like this one can silently fail to pick up
+    (a well-known class of browser-automation issue). Click to focus, then
+    type it out character by character instead of filling it in one shot."""
     pattern = re.compile("Passwort", re.I)
     fields = page.get_by_label(pattern)
     if await fields.count() == 0:
@@ -187,7 +195,9 @@ async def _fill_mailbox_password(page: Any, password: str) -> None:
         fields = page.locator('input[type="password"]')
     field_count = await fields.count()
     for index in range(field_count):
-        await fields.nth(index).fill(password)
+        field = fields.nth(index)
+        await field.click()
+        await field.press_sequentially(password)
 
 
 async def _create_mailbox(page: Any, *, local_part: str, domain: str, password: str) -> None:
