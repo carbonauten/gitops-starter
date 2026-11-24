@@ -1262,7 +1262,21 @@
     "saveAccount": "保存",
     "cancelEdit": "取消",
     "accountUpdated": "邮箱“{{label}}”已更新。",
-    "hasAttachments": "包含附件"
+    "hasAttachments": "包含附件",
+    "setupGuideToggle": "在邮件客户端中设置",
+    "setupGuideTitle": "在邮件客户端中设置 {{email}}",
+    "setupGuideIntro": "这个邮箱可以作为一个独立的第二账户添加到任何邮件客户端中，与现有账户（例如 Outlook/M365 中的 @carbonauten.com 账户）并存。",
+    "setupGuideServerTitle": "服务器设置",
+    "setupGuideImapLabel": "IMAP（收件）",
+    "setupGuideSmtpLabel": "SMTP（发件）",
+    "setupGuideSmtpValue": "smtp.strato.de，端口 587（STARTTLS）或 465（SSL）",
+    "setupGuideCredentialsNote": "用户名：{{username}} · 密码：为该邮箱设置的密码",
+    "setupGuideAppleMailTitle": "Apple 邮件（Mac）",
+    "setupGuideAppleMailSteps": "邮件 → 设置 → 账户 → 点击“+” → 添加“其他邮件账户”。输入姓名、{{email}} 和密码。如果邮件无法自动识别服务器，请手动输入上面的 IMAP/SMTP 信息。",
+    "setupGuideIphoneTitle": "iPhone/iPad（邮件应用）",
+    "setupGuideIphoneSteps": "设置 → 邮件 → 账户 → 添加账户 → “其他” → “添加邮件账户”，然后输入相同的登录信息，如有需要再输入上面的服务器信息。",
+    "setupGuideOutlookTitle": "Outlook（作为附加账户）",
+    "setupGuideOutlookSteps": "文件 → 添加账户 → “高级选项” → 选择“IMAP”，然后输入相同的登录信息和上面的服务器信息。"
   },
   "discountCodes": {
     "title": "折扣码",

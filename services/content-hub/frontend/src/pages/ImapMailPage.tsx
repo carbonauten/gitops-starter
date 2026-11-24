@@ -60,6 +60,7 @@ export function ImapMailPage() {
   const [notice, setNotice] = useState("");
   const [showAccountPanel, setShowAccountPanel] = useState(false);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+  const [setupGuideAccountId, setSetupGuideAccountId] = useState<string | null>(null);
 
   const [stratoStatus, setStratoStatus] = useState<StratoAutomationStatus | null>(null);
 
@@ -579,8 +580,42 @@ export function ImapMailPage() {
                       <p className="muted">
                         {account.username} · {account.host}:{account.port} · {account.folder}
                       </p>
+                      {setupGuideAccountId === account.id ? (
+                        <div className="setup-guide">
+                          <h3>{t("imapMail.setupGuideTitle", { email: account.username })}</h3>
+                          <p className="muted">{t("imapMail.setupGuideIntro")}</p>
+                          <p>
+                            <strong>{t("imapMail.setupGuideServerTitle")}:</strong>
+                            <br />
+                            {t("imapMail.setupGuideImapLabel")}: {account.host}:{account.port} (SSL/TLS)
+                            <br />
+                            {t("imapMail.setupGuideSmtpLabel")}: {t("imapMail.setupGuideSmtpValue")}
+                            <br />
+                            {t("imapMail.setupGuideCredentialsNote", { username: account.username })}
+                          </p>
+                          <p>
+                            <strong>{t("imapMail.setupGuideAppleMailTitle")}:</strong>{" "}
+                            {t("imapMail.setupGuideAppleMailSteps", { email: account.username })}
+                          </p>
+                          <p>
+                            <strong>{t("imapMail.setupGuideIphoneTitle")}:</strong>{" "}
+                            {t("imapMail.setupGuideIphoneSteps")}
+                          </p>
+                          <p>
+                            <strong>{t("imapMail.setupGuideOutlookTitle")}:</strong>{" "}
+                            {t("imapMail.setupGuideOutlookSteps")}
+                          </p>
+                        </div>
+                      ) : null}
                     </div>
                     <div className="list-card-actions">
+                      <button
+                        type="button"
+                        className="ghost-button"
+                        onClick={() => setSetupGuideAccountId(setupGuideAccountId === account.id ? null : account.id)}
+                      >
+                        {t("imapMail.setupGuideToggle")}
+                      </button>
                       <button type="button" className="ghost-button" disabled={busy} onClick={() => handleEditAccount(account)}>
                         {t("imapMail.editAccount")}
                       </button>

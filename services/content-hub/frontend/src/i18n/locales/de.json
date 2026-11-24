@@ -1262,7 +1262,21 @@
     "saveAccount": "Speichern",
     "cancelEdit": "Abbrechen",
     "accountUpdated": "Postfach „{{label}}“ aktualisiert.",
-    "hasAttachments": "Enthält Anhang"
+    "hasAttachments": "Enthält Anhang",
+    "setupGuideToggle": "Einrichtung für Mail-Programme",
+    "setupGuideTitle": "{{email}} in einem Mail-Programm einrichten",
+    "setupGuideIntro": "Dieses Postfach lässt sich zusätzlich zu bestehenden Konten (z. B. ein @carbonauten.com-Konto in Outlook/M365) in jedem Mail-Programm einrichten — als eigenständiges, zweites Konto.",
+    "setupGuideServerTitle": "Serverdaten",
+    "setupGuideImapLabel": "IMAP (Posteingang)",
+    "setupGuideSmtpLabel": "SMTP (Postausgang)",
+    "setupGuideSmtpValue": "smtp.strato.de, Port 587 (STARTTLS) oder 465 (SSL)",
+    "setupGuideCredentialsNote": "Benutzername: {{username}} · Passwort: das für dieses Postfach vergebene Passwort",
+    "setupGuideAppleMailTitle": "Apple Mail (Mac)",
+    "setupGuideAppleMailSteps": "Mail → Einstellungen → Accounts → „+“ → „Anderer Mail-Account“ hinzufügen. Name, {{email}} und Passwort eingeben. Erkennt Mail die Server nicht automatisch, oben stehende IMAP-/SMTP-Daten manuell eintragen.",
+    "setupGuideIphoneTitle": "iPhone/iPad (Mail-App)",
+    "setupGuideIphoneSteps": "Einstellungen → Mail → Accounts → Account hinzufügen → „Andere“ → „Mail-Account hinzufügen“, dann dieselben Zugangsdaten und ggf. die Serverdaten oben eintragen.",
+    "setupGuideOutlookTitle": "Outlook (als zusätzliches Konto)",
+    "setupGuideOutlookSteps": "Datei → Konto hinzufügen → „Erweiterte Optionen“ → „IMAP“ auswählen, dann dieselben Zugangsdaten und Serverdaten oben eintragen."
   },
   "discountCodes": {
     "title": "Rabattcodes",
