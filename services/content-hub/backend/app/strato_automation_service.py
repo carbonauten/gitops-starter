@@ -110,11 +110,33 @@ async def _choose_free_mailbox_tier(page: Any, *, timeout: int = 8000) -> None:
     address field and timed out on this blocking dialog instead. Always
     choose the free Basic tier; swallow a timeout since some accounts/flows
     may skip this dialog entirely and go straight to the form (same
-    optional-step pattern as strato_login_session._dismiss_cookie_banner)."""
+    optional-step pattern as strato_login_session._dismiss_cookie_banner).
+
+    A role="button" match against the page alone (first attempt below)
+    turned out not to be enough - a live run still got stuck on exactly
+    this dialog even with that click in place. Pricing/upsell widgets like
+    this one are often served from a separate payment micro-frontend
+    embedded via <iframe>, which page-level locators never see into - so
+    fall back to a plain text match (covers a non-<button> element with the
+    right text) and then to checking every frame directly (covers the
+    iframe case) before giving up."""
+    pattern = re.compile("Basic-Postfach anlegen", re.I)
     try:
-        await page.get_by_role("button", name=re.compile("Basic-Postfach anlegen", re.I)).click(timeout=timeout)
-    except Exception:  # noqa: BLE001 - optional step, not every flow shows it
+        await page.get_by_role("button", name=pattern).click(timeout=timeout)
+        return
+    except Exception:  # noqa: BLE001 - try the next strategy below
         pass
+    try:
+        await page.get_by_text(pattern).first.click(timeout=timeout)
+        return
+    except Exception:  # noqa: BLE001 - try the next strategy below
+        pass
+    for frame in page.frames:
+        try:
+            await frame.get_by_text(pattern).first.click(timeout=2000)
+            return
+        except Exception:  # noqa: BLE001 - not this frame, or no dialog at all
+            continue
 
 
 async def _select_mailbox_domain(page: Any, domain: str) -> None:
