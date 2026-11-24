@@ -83,12 +83,27 @@ def _map_login_error(exc: strato_login_session.StratoLoginError) -> WordPressAut
 
 
 async def _open_wordpress_management(page: Any) -> None:
-    website_nav = page.get_by_role("link", name=re.compile("Website.*Shop", re.I))
-    if await website_nav.count() > 0:
-        await website_nav.first.click()
-    wordpress_link = page.get_by_role("link", name=re.compile("WordPress", re.I))
-    if await wordpress_link.count() > 0:
-        await wordpress_link.first.click()
+    # Confirmed via a live screenshot (2026-11-24, during the mailbox-
+    # creation automation's own debugging - this account lands on the same
+    # page regardless of which automation logs in): login lands on a single
+    # product's "STRATO WordPress Hosting Plus" overview page, not a global
+    # nav - the originally guessed "Website.*Shop" -> "WordPress" link chain
+    # matches nothing there. The actual entry point on that page is a
+    # content card labeled "WordPress & Co. starten" ("Installieren Sie Ihre
+    # Wunschanwendung."). Try that first; fall back to the originally
+    # guessed link chain in case this account ever lands somewhere else.
+    wordpress_entry = page.get_by_role("link", name=re.compile(r"WordPress.*starten", re.I))
+    if await wordpress_entry.count() == 0:
+        wordpress_entry = page.get_by_text(re.compile(r"WordPress.*starten", re.I))
+    if await wordpress_entry.count() > 0:
+        await wordpress_entry.first.click()
+    else:
+        website_nav = page.get_by_role("link", name=re.compile("Website.*Shop", re.I))
+        if await website_nav.count() > 0:
+            await website_nav.first.click()
+        wordpress_link = page.get_by_role("link", name=re.compile("WordPress", re.I))
+        if await wordpress_link.count() > 0:
+            await wordpress_link.first.click()
     # Strato's pages never go network-idle (confirmed via a live inspection,
     # 2026-11-24 - see strato_login_session.py), so wait for "load" instead.
     await page.wait_for_load_state("load", timeout=20000)
