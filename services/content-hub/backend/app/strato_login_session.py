@@ -120,18 +120,23 @@ async def _dismiss_cookie_banner(page: Any) -> None:
         pass
 
 
-async def _find_field(page: Any, pattern: "re.Pattern[str]") -> Any:
+async def _find_field(page: Any, pattern: "re.Pattern[str]", *, input_type: str | None = None) -> Any:
     """Confirmed via a live screenshot (2026-11-24): Strato's login form
     fields (Benutzername/Kundennummer, Passwort, Security code) render as
     placeholder text inside the input, not an associated <label> - a plain
     get_by_label() never matches any of them, silently falls through to a
     30s timeout on .fill(), and surfaces as a generic "unexpected error"
     with no indication the field was never found. Try label first (in case
-    a future Strato redesign adds one), then placeholder."""
+    a future Strato redesign adds one), then placeholder, then - if given -
+    the HTML input type, which is the most reliable signal for a field like
+    the password input regardless of how its text is styled/rendered."""
     by_label = page.get_by_label(pattern)
     if await by_label.count() > 0:
         return by_label
-    return page.get_by_placeholder(pattern)
+    by_placeholder = page.get_by_placeholder(pattern)
+    if await by_placeholder.count() > 0 or input_type is None:
+        return by_placeholder
+    return page.locator(f'input[type="{input_type}"]')
 
 
 async def _verify_logged_in(page: Any) -> None:
@@ -164,8 +169,15 @@ async def begin_login(creds: StratoCredentials, *, extra: Any = None) -> "Logged
         browser = await playwright.chromium.launch(headless=True)
         context = await browser.new_context(locale="de-DE")
         page = await context.new_page()
-        await page.goto(LOGIN_URL, wait_until="domcontentloaded", timeout=20000)
+        # Confirmed via two live screenshots (2026-11-24): a run that
+        # checked for the CAPTCHA field right after "domcontentloaded"
+        # filled the username field fine but found no CAPTCHA and no
+        # password field - strongly suggesting those render a beat later
+        # (async JS, not present in the initial HTML). Wait for the network
+        # to go quiet before touching anything on the page.
+        await page.goto(LOGIN_URL, wait_until="networkidle", timeout=20000)
         await _dismiss_cookie_banner(page)
+        await page.wait_for_load_state("networkidle", timeout=10000)
 
         captcha_field = await _find_field(page, re.compile("Security code|Sicherheitscode", re.I))
         if await captcha_field.count() > 0:
@@ -176,7 +188,7 @@ async def begin_login(creds: StratoCredentials, *, extra: Any = None) -> "Logged
 
         username_field = await _find_field(page, re.compile("Benutzername|Kundennummer", re.I))
         await username_field.first.fill(creds.customer_number)
-        password_field = await _find_field(page, re.compile("Passwort", re.I))
+        password_field = await _find_field(page, re.compile("Passwort", re.I), input_type="password")
         await password_field.first.fill(creds.password)
         await page.get_by_role("button", name=re.compile("Login", re.I)).click()
         await page.wait_for_load_state("networkidle", timeout=20000)
@@ -213,7 +225,7 @@ async def resume_login(session_id: str, captcha_code: str) -> LoggedIn:
     try:
         username_field = await _find_field(page, re.compile("Benutzername|Kundennummer", re.I))
         await username_field.first.fill(session.creds.customer_number)
-        password_field = await _find_field(page, re.compile("Passwort", re.I))
+        password_field = await _find_field(page, re.compile("Passwort", re.I), input_type="password")
         await password_field.first.fill(session.creds.password)
         captcha_field = await _find_field(page, re.compile("Security code|Sicherheitscode", re.I))
         await captcha_field.first.fill(captcha_code)
