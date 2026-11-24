@@ -2655,6 +2655,19 @@ a {
   color: var(--text-muted);
 }
 
+/* .office-panel's fixed-height 3-row grid (header / auto / 1fr) is sized
+   for OfficeOnlinePanel's single iframe. StratoCaptchaModal instead stacks a
+   full-page screenshot plus a form, whose combined height can exceed that
+   fixed box - without this, the form (code input + submit button) was
+   pushed entirely out of view with no way to scroll down to it. */
+.office-panel.strato-captcha-panel {
+  height: auto;
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
 .analytics-header {
   display: flex;
   flex-wrap: wrap;
