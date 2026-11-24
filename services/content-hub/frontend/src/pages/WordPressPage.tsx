@@ -178,17 +178,20 @@ export function WordPressPage() {
         setInstallations(result);
         setCaptchaPrompt(null);
       } catch (err) {
-        // A wrong CAPTCHA code should stay in the dialog so the user can
-        // retry it - but any other failure means the session is already
-        // consumed server-side, so surface it (with the debug screenshot)
-        // instead of leaving it trapped as unreadable text in the modal.
-        if (err instanceof WordPressAutomationApiError && err.code !== "wordpress_automation_2fa_or_captcha") {
-          setCaptchaPrompt(null);
+        // resume_login() always consumes the pending browser session
+        // server-side, success or failure (see strato_login_session.py) - a
+        // rejected CAPTCHA is therefore just as terminal as any other
+        // failure here, there is no live session left to retry into. Close
+        // the dialog and surface every failure with its debug screenshot
+        // instead of leaving it trapped as unreadable text (and an unusable
+        // "retry") in the modal.
+        setCaptchaPrompt(null);
+        if (err instanceof WordPressAutomationApiError) {
           setListError(err.message);
           setListScreenshot(err.screenshotBase64);
-          return;
+        } else {
+          setListError(err instanceof Error ? err.message : t("common.error"));
         }
-        throw err;
       } finally {
         setLoadingList(false);
       }
@@ -200,13 +203,13 @@ export function WordPressPage() {
       setCaptchaPrompt(null);
       await reloadInstallations();
     } catch (err) {
-      if (err instanceof WordPressAutomationApiError && err.code !== "wordpress_automation_2fa_or_captcha") {
-        setCaptchaPrompt(null);
+      setCaptchaPrompt(null);
+      if (err instanceof WordPressAutomationApiError) {
         setInstallError(err.message);
         setInstallScreenshot(err.screenshotBase64);
-        return;
+      } else {
+        setInstallError(err instanceof Error ? err.message : t("common.error"));
       }
-      throw err;
     } finally {
       setInstallBusy(false);
     }
