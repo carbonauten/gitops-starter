@@ -1262,7 +1262,21 @@
     "saveAccount": "Save",
     "cancelEdit": "Cancel",
     "accountUpdated": "Mailbox \"{{label}}\" updated.",
-    "hasAttachments": "Has attachment"
+    "hasAttachments": "Has attachment",
+    "setupGuideToggle": "Set up in a mail app",
+    "setupGuideTitle": "Set up {{email}} in a mail app",
+    "setupGuideIntro": "This mailbox can be added to any mail app alongside existing accounts (e.g. an @carbonauten.com account in Outlook/M365) - as a separate, second account.",
+    "setupGuideServerTitle": "Server settings",
+    "setupGuideImapLabel": "IMAP (incoming)",
+    "setupGuideSmtpLabel": "SMTP (outgoing)",
+    "setupGuideSmtpValue": "smtp.strato.de, port 587 (STARTTLS) or 465 (SSL)",
+    "setupGuideCredentialsNote": "Username: {{username}} · Password: the password set for this mailbox",
+    "setupGuideAppleMailTitle": "Apple Mail (Mac)",
+    "setupGuideAppleMailSteps": "Mail → Settings → Accounts → \"+\" → add \"Other Mail Account\". Enter a name, {{email}}, and the password. If Mail can't find the servers automatically, enter the IMAP/SMTP details above manually.",
+    "setupGuideIphoneTitle": "iPhone/iPad (Mail app)",
+    "setupGuideIphoneSteps": "Settings → Mail → Accounts → Add Account → \"Other\" → \"Add Mail Account\", then enter the same credentials and the server details above if asked.",
+    "setupGuideOutlookTitle": "Outlook (as an additional account)",
+    "setupGuideOutlookSteps": "File → Add Account → \"Advanced options\" → choose \"IMAP\", then enter the same credentials and server details above."
   },
   "discountCodes": {
     "title": "Discount codes",

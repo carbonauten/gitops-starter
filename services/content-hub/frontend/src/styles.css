@@ -1643,6 +1643,19 @@ a {
   font-size: 1.05rem;
 }
 
+.setup-guide {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border, #e4e7ec);
+  font-size: 0.9rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.setup-guide h3 {
+  font-size: 0.95rem;
+}
+
 .workflow-actions {
   align-items: flex-end;
 }
