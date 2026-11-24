@@ -83,7 +83,9 @@ async def _open_email_management(page: Any) -> None:
     management_link = page.get_by_role("link", name=re.compile("E-Mail-Verwaltung", re.I))
     if await management_link.count() > 0:
         await management_link.first.click()
-    await page.wait_for_load_state("networkidle", timeout=20000)
+    # Strato's pages never go network-idle (confirmed via a live inspection,
+    # 2026-11-24 - see strato_login_session.py), so wait for "load" instead.
+    await page.wait_for_load_state("load", timeout=20000)
 
 
 async def _create_mailbox(page: Any, *, local_part: str, domain: str, password: str) -> None:
@@ -100,7 +102,7 @@ async def _create_mailbox(page: Any, *, local_part: str, domain: str, password: 
         await password_fields.nth(index).fill(password)
 
     await page.get_by_role("button", name=re.compile("Postfach anlegen", re.I)).click()
-    await page.wait_for_load_state("networkidle", timeout=20000)
+    await page.wait_for_load_state("load", timeout=20000)
     await page.get_by_text(f"{local_part}@{domain}", exact=False).first.wait_for(timeout=10000)
 
 

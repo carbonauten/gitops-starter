@@ -89,7 +89,9 @@ async def _open_wordpress_management(page: Any) -> None:
     wordpress_link = page.get_by_role("link", name=re.compile("WordPress", re.I))
     if await wordpress_link.count() > 0:
         await wordpress_link.first.click()
-    await page.wait_for_load_state("networkidle", timeout=20000)
+    # Strato's pages never go network-idle (confirmed via a live inspection,
+    # 2026-11-24 - see strato_login_session.py), so wait for "load" instead.
+    await page.wait_for_load_state("load", timeout=20000)
 
 
 async def _scrape_installations(page: Any) -> list[dict[str, str]]:
@@ -176,7 +178,7 @@ async def _install(page: Any, *, mode: str, domain: str) -> None:
     heading = page.get_by_text(re.compile(re.escape(card_title), re.I)).first
     install_button = heading.locator("xpath=following::button[1]")
     await install_button.click()
-    await page.wait_for_load_state("networkidle", timeout=20000)
+    await page.wait_for_load_state("load", timeout=20000)
 
     await _select_domain(page, domain)
     await _fill_site_title_if_empty(page, domain)
@@ -187,7 +189,7 @@ async def _install(page: Any, *, mode: str, domain: str) -> None:
     confirm_button = page.get_by_role("button", name=re.compile("Fertig|Installieren|Weiter|Bestätigen", re.I))
     if await confirm_button.count() > 0:
         await confirm_button.first.click()
-    await page.wait_for_load_state("networkidle", timeout=20000)
+    await page.wait_for_load_state("load", timeout=20000)
     await page.get_by_text(re.compile("installiert|erfolgreich", re.I)).first.wait_for(timeout=15000)
 
 

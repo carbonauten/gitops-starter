@@ -177,15 +177,22 @@ async def begin_login(creds: StratoCredentials, *, extra: Any = None) -> "Logged
         browser = await playwright.chromium.launch(headless=True)
         context = await browser.new_context(locale="de-DE")
         page = await context.new_page()
-        # Confirmed via two live screenshots (2026-11-24): a run that
-        # checked for the CAPTCHA field right after "domcontentloaded"
-        # filled the username field fine but found no CAPTCHA and no
-        # password field - strongly suggesting those render a beat later
-        # (async JS, not present in the initial HTML). Wait for the network
-        # to go quiet before touching anything on the page.
-        await page.goto(LOGIN_URL, wait_until="networkidle", timeout=20000)
+        # Confirmed via a live inspection (2026-11-24): this page never
+        # reaches "networkidle" - two requests (the CAPTCHA image and a
+        # duplicate) stay perpetually in flight - so wait_until="networkidle"
+        # here was timing out on every single run, long before the code ever
+        # got to the cookie banner or the fields. That's the actual cause of
+        # every "Unerwarteter Fehler" screenshot showing the cookie banner
+        # still up: the banner-dismissal code was simply never reached.
+        # "load" fires promptly (~2s); the fields render a further ~1-2s
+        # after that, so wait for one of them explicitly instead of for the
+        # network to go quiet, which it never does.
+        await page.goto(LOGIN_URL, wait_until="load", timeout=20000)
         await _dismiss_cookie_banner(page)
-        await page.wait_for_load_state("networkidle", timeout=10000)
+        await page.wait_for_selector(
+            'input[type="password"], input[placeholder*="Kundennummer" i], input[placeholder*="Benutzername" i]',
+            timeout=10000,
+        )
 
         captcha_field = await _find_field(page, re.compile("Security code|Sicherheitscode", re.I))
         if await captcha_field.count() > 0:
@@ -204,7 +211,10 @@ async def begin_login(creds: StratoCredentials, *, extra: Any = None) -> "Logged
         password_field = await _find_field(page, re.compile("Passwort", re.I), input_type="password")
         await password_field.first.fill(creds.password)
         await page.get_by_role("button", name=re.compile("Login", re.I)).click()
-        await page.wait_for_load_state("networkidle", timeout=20000)
+        # Same "networkidle" trap as the initial goto() above - this page
+        # never goes network-idle (success or failure), so wait for the
+        # "load" event from the post-submit navigation instead.
+        await page.wait_for_load_state("load", timeout=20000)
         await _verify_logged_in(page)
         return LoggedIn(page, browser, playwright, extra)
     except StratoLoginError:
@@ -249,7 +259,8 @@ async def resume_login(session_id: str, captcha_code: str) -> LoggedIn:
         captcha_field = await _find_field(page, re.compile("Security code|Sicherheitscode", re.I))
         await captcha_field.first.fill(captcha_code)
         await page.get_by_role("button", name=re.compile("Login", re.I)).click()
-        await page.wait_for_load_state("networkidle", timeout=20000)
+        # Same "networkidle" trap as begin_login() - wait for "load" instead.
+        await page.wait_for_load_state("load", timeout=20000)
         await _verify_logged_in(page)
         return LoggedIn(page, session.browser, session.playwright, session.extra)
     except StratoLoginError:
