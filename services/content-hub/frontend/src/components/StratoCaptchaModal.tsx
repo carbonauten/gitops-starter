@@ -43,7 +43,7 @@ export function StratoCaptchaModal({
   return (
     <div className="office-panel-backdrop" role="presentation" onClick={() => !busy && onCancel()}>
       <div
-        className="office-panel"
+        className="office-panel strato-captcha-panel"
         role="dialog"
         aria-modal="true"
         style={{ maxWidth: 480 }}
@@ -66,7 +66,14 @@ export function StratoCaptchaModal({
           <img
             src={`data:image/png;base64,${imageBase64}`}
             alt={t("stratoCaptcha.imageAlt")}
-            style={{ maxWidth: "100%", border: "1px solid var(--border, #e4e7ec)", borderRadius: 8, marginBottom: 12 }}
+            style={{
+              maxWidth: "100%",
+              maxHeight: "45vh",
+              objectFit: "contain",
+              border: "1px solid var(--border, #e4e7ec)",
+              borderRadius: 8,
+              marginBottom: 12,
+            }}
           />
         ) : null}
 
