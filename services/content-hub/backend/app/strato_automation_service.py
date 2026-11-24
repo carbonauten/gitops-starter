@@ -103,13 +103,54 @@ async def _open_email_management(page: Any) -> None:
         await page.wait_for_load_state("load", timeout=20000)
 
 
+async def _choose_free_mailbox_tier(page: Any, *, timeout: int = 8000) -> None:
+    """Confirmed via a live screenshot (2026-11-24): "Neu anlegen" first
+    opens a Basic (free) vs. Business (paid) pricing dialog, before the
+    actual address/password form - the previous code went straight for the
+    address field and timed out on this blocking dialog instead. Always
+    choose the free Basic tier; swallow a timeout since some accounts/flows
+    may skip this dialog entirely and go straight to the form (same
+    optional-step pattern as strato_login_session._dismiss_cookie_banner)."""
+    try:
+        await page.get_by_role("button", name=re.compile("Basic-Postfach anlegen", re.I)).click(timeout=timeout)
+    except Exception:  # noqa: BLE001 - optional step, not every flow shows it
+        pass
+
+
+async def _select_mailbox_domain(page: Any, domain: str) -> None:
+    """Confirmed via a live screenshot (2026-11-24): the domain picker is
+    styled as a bordered chevron control next to the e-mail-address field,
+    not a plain browser <select> arrow - handle both a native <select> and a
+    custom combobox, same pattern as wordpress_automation_service.py's
+    _select_domain(). Kept as a separate copy here deliberately - see this
+    module's docstring on why the two automations' selectors aren't shared."""
+    domain_field = page.get_by_label(re.compile("Domain", re.I)).first
+    if await domain_field.count() == 0:
+        return
+    try:
+        tag = await domain_field.evaluate("el => el.tagName.toLowerCase()")
+    except Exception:  # noqa: BLE001 - falls through to the combobox path below
+        tag = ""
+    if tag == "select":
+        option = domain_field.locator("option").filter(has_text=domain)
+        if await option.count() > 0:
+            value = await option.first.get_attribute("value")
+            if value is not None:
+                await domain_field.select_option(value=value)
+        return
+    await domain_field.click()
+    option = page.get_by_role("option", name=re.compile(re.escape(domain), re.I))
+    if await option.count() == 0:
+        option = page.get_by_text(re.compile(re.escape(domain), re.I))
+    await option.first.click()
+
+
 async def _create_mailbox(page: Any, *, local_part: str, domain: str, password: str) -> None:
     await page.get_by_role("button", name=re.compile("Neu anlegen", re.I)).click()
+    await _choose_free_mailbox_tier(page)
     await page.get_by_label(re.compile("E-Mail-Adresse|Postfachname|^Name$", re.I)).first.fill(local_part)
 
-    domain_field = page.get_by_label(re.compile("Domain", re.I))
-    if await domain_field.count() > 0:
-        await domain_field.first.select_option(label=domain)
+    await _select_mailbox_domain(page, domain)
 
     password_fields = page.get_by_label(re.compile("Passwort", re.I))
     field_count = await password_fields.count()
