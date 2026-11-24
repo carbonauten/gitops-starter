@@ -167,6 +167,29 @@ async def _select_mailbox_domain(page: Any, domain: str) -> None:
     await option.first.click()
 
 
+async def _fill_mailbox_password(page: Any, password: str) -> None:
+    """Confirmed via a live screenshot (2026-11-24): the E-Mail-Adresse and
+    Domain fields on this form are properly label-associated (get_by_label
+    matches and fills them fine), but the Passwort field - the one field
+    with its own password-strength-meter widget, unlike the other two -
+    stayed completely empty, silently (get_by_label matched zero elements,
+    so the old fill loop simply never ran), leaving "Postfach anlegen"
+    disabled and the whole step hanging until its click() timed out. Same
+    fallback chain as strato_login_session._find_field: label, then
+    placeholder, then the HTML input type itself, which is the one signal
+    that can't be wrong regardless of how a strength-meter widget wraps the
+    real <input>."""
+    pattern = re.compile("Passwort", re.I)
+    fields = page.get_by_label(pattern)
+    if await fields.count() == 0:
+        fields = page.get_by_placeholder(pattern)
+    if await fields.count() == 0:
+        fields = page.locator('input[type="password"]')
+    field_count = await fields.count()
+    for index in range(field_count):
+        await fields.nth(index).fill(password)
+
+
 async def _create_mailbox(page: Any, *, local_part: str, domain: str, password: str) -> None:
     await page.get_by_role("button", name=re.compile("Neu anlegen", re.I)).click()
     await _choose_free_mailbox_tier(page)
@@ -174,10 +197,7 @@ async def _create_mailbox(page: Any, *, local_part: str, domain: str, password: 
 
     await _select_mailbox_domain(page, domain)
 
-    password_fields = page.get_by_label(re.compile("Passwort", re.I))
-    field_count = await password_fields.count()
-    for index in range(field_count):
-        await password_fields.nth(index).fill(password)
+    await _fill_mailbox_password(page, password)
 
     await page.get_by_role("button", name=re.compile("Postfach anlegen", re.I)).click()
     await page.wait_for_load_state("load", timeout=20000)
