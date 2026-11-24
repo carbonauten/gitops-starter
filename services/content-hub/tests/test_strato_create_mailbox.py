@@ -44,6 +44,33 @@ def test_choose_free_mailbox_tier_clicks_basic_when_dialog_appears():
     asyncio.run(_run())
 
 
+# Regression test for a second live failure, same day: with the plain
+# page-level button click above already deployed, a live run still got
+# stuck on exactly this dialog. Pricing/upsell widgets like this one are
+# often served from a separate payment micro-frontend embedded via
+# <iframe>, which page-level locators never see into - verifies the frame
+# fallback actually reaches into one.
+def test_choose_free_mailbox_tier_reaches_into_an_iframe():
+    async def _run():
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch(headless=True)
+            try:
+                page = await browser.new_page()
+                await page.set_content("<html><body><iframe id='dialog-frame'></iframe></body></html>")
+                frame_element = await page.query_selector("#dialog-frame")
+                frame = await frame_element.content_frame()
+                await frame.set_content(
+                    "<html><body><button onclick=\"document.body.setAttribute('data-tier','basic')\">"
+                    "Basic-Postfach anlegen</button></body></html>"
+                )
+                await _choose_free_mailbox_tier(page, timeout=2000)
+                assert await frame.locator("body[data-tier='basic']").count() == 1
+            finally:
+                await browser.close()
+
+    asyncio.run(_run())
+
+
 def test_choose_free_mailbox_tier_is_a_noop_when_dialog_is_absent():
     async def _run():
         async with async_playwright() as pw:
