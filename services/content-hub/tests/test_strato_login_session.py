@@ -183,3 +183,42 @@ def test_find_field_falls_back_to_placeholder_when_label_is_absent():
                 await browser.close()
 
     asyncio.run(_run())
+
+
+# Regression test for a second, related live failure (2026-11-24): a run
+# that filled the username field fine (via the placeholder fallback above)
+# then found no password field at all - some password inputs apparently
+# don't carry a matching placeholder either (styling quirk, or the
+# placeholder text is rendered by a separate overlay element rather than
+# the real attribute). input[type="password"] is the one signal that can't
+# be wrong regardless of how the field's visible text is implemented.
+NO_PLACEHOLDER_PASSWORD_HTML = """
+<html><body>
+  <input type="text" />
+  <input type="password" />
+</body></html>
+"""
+
+
+def test_find_field_falls_back_to_input_type_when_placeholder_is_absent():
+    async def _run():
+        from playwright.async_api import async_playwright
+
+        async with async_playwright() as pw:
+            browser = await pw.chromium.launch(headless=True)
+            try:
+                page = await browser.new_page()
+                await page.set_content(NO_PLACEHOLDER_PASSWORD_HTML)
+
+                pattern = re.compile("Passwort", re.I)
+                assert await page.get_by_label(pattern).count() == 0
+                assert await page.get_by_placeholder(pattern).count() == 0  # the bug: nothing to match on
+
+                field = await strato_login_session._find_field(page, pattern, input_type="password")
+                assert await field.count() == 1
+                await field.fill("secret")
+                assert await page.locator('input[type="password"]').input_value() == "secret"
+            finally:
+                await browser.close()
+
+    asyncio.run(_run())
