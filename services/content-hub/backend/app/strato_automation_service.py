@@ -77,15 +77,30 @@ def _map_login_error(exc: strato_login_session.StratoLoginError) -> StratoAutoma
 
 
 async def _open_email_management(page: Any) -> None:
-    email_nav = page.get_by_role("link", name=re.compile(r"^E-Mail$", re.I))
-    if await email_nav.count() > 0:
-        await email_nav.first.click()
-    management_link = page.get_by_role("link", name=re.compile("E-Mail-Verwaltung", re.I))
-    if await management_link.count() > 0:
-        await management_link.first.click()
+    # Confirmed via a live screenshot (2026-11-24): after login this account
+    # lands on a single product's "STRATO WordPress Hosting Plus" overview
+    # page, not a global nav with a plain "E-Mail" link - that originally
+    # guessed selector matched nothing there, so this click silently never
+    # happened and _create_mailbox()'s own "Neu anlegen" click then failed
+    # with a confusing, unrelated-looking error two steps later. The actual
+    # entry point on that page is a content card labeled "E-Mails verwalten"
+    # ("Informieren Sie sich über Ihre Postfächer."). Try that first; fall
+    # back to the originally guessed sidebar link in case this account ever
+    # lands somewhere else.
+    email_entry = page.get_by_role("link", name=re.compile(r"E-Mails?\s+verwalten", re.I))
+    if await email_entry.count() == 0:
+        email_entry = page.get_by_text(re.compile(r"E-Mails?\s+verwalten", re.I))
+    if await email_entry.count() == 0:
+        email_entry = page.get_by_role("link", name=re.compile(r"^E-Mail$", re.I))
+    await email_entry.first.click()
     # Strato's pages never go network-idle (confirmed via a live inspection,
     # 2026-11-24 - see strato_login_session.py), so wait for "load" instead.
     await page.wait_for_load_state("load", timeout=20000)
+
+    management_link = page.get_by_role("link", name=re.compile("E-Mail-Verwaltung", re.I))
+    if await management_link.count() > 0:
+        await management_link.first.click()
+        await page.wait_for_load_state("load", timeout=20000)
 
 
 async def _create_mailbox(page: Any, *, local_part: str, domain: str, password: str) -> None:
