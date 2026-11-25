@@ -105,3 +105,28 @@ def delete_upload(storage_path: str) -> None:
 
 def open_upload_stream(storage_path: str) -> BytesIO:
     return BytesIO(read_upload(storage_path))
+
+
+def overwrite_upload(storage_path: str, content: bytes) -> None:
+    """Replace a file's bytes in place (same stored_name/key), used by the
+    WOPI PutFile operation so the FileAsset's id/download links stay stable
+    across edits instead of minting a new upload each save."""
+    if storage_path.startswith("oss://"):
+        settings = get_settings()
+        if not settings.oss_configured:
+            raise HTTPException(status_code=500, detail="oss_not_configured")
+        try:
+            import oss2
+        except ImportError as exc:  # pragma: no cover
+            raise HTTPException(status_code=500, detail="oss_not_configured") from exc
+
+        _, remainder = storage_path.split("oss://", 1)
+        bucket_name, key = remainder.split("/", 1)
+        auth = oss2.Auth(settings.oss_access_key_id.strip(), settings.oss_access_key_secret.strip())
+        bucket = oss2.Bucket(auth, settings.oss_endpoint.strip(), bucket_name)
+        bucket.put_object(key, content)
+        return
+
+    path = Path(storage_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(content)
