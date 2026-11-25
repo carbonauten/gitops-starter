@@ -22,6 +22,7 @@ import { UsersAdminPage } from "./pages/UsersAdminPage";
 import { SearchPage } from "./pages/SearchPage";
 import { PublishCalendarPage } from "./pages/PublishCalendarPage";
 import { OutlookMailPage } from "./pages/OutlookMailPage";
+import { SignalPage } from "./pages/SignalPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { ProductsPage } from "./pages/ProductsPage";
 import { ProductEditorPage } from "./pages/ProductEditorPage";
@@ -147,6 +148,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <OutlookMailPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/signal"
+        element={
+          <ProtectedRoute>
+            <SignalPage />
           </ProtectedRoute>
         }
       />

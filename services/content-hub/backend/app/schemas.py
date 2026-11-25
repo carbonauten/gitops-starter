@@ -29,6 +29,15 @@ class EntraConfigSaveRequest(BaseModel):
     client_secret: str = Field(default="", max_length=500)
 
 
+class SignalLinkCompleteRequest(BaseModel):
+    accounts_before: list[str] = Field(default_factory=list)
+
+
+class SignalSendRequest(BaseModel):
+    to: str = Field(min_length=1, max_length=40)
+    message: str = Field(min_length=1, max_length=4000)
+
+
 class ArticleUpdate(BaseModel):
     title: Optional[str] = Field(default=None, max_length=500)
     content: Optional[str] = None

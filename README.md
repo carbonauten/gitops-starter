@@ -11,6 +11,7 @@ Structure:
 - `gitops/charts/datapipeline-consumer/` — Helm chart for the data pipeline Kafka consumer (A/B variants)
 - `services/example-service/` — Example Flask service and `Dockerfile`
 - `services/content-hub/` — Unified Carbonauten Platform ([Roadmap](services/content-hub/ROADMAP.md))
+- `services/signal-cli-rest-api/` — self-hosted Signal bridge for content-hub's Signal integration (see its own [README](services/signal-cli-rest-api/README.md))
 - `services/datapipeline-consumer/` — In-repo Kafka consumer (A/B topics); image used by `gitops/charts/datapipeline-consumer`
 - `.github/workflows/ci.yml` — CI to build and push images to GitHub Container Registry (GHCR)
 

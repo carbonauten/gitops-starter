@@ -114,6 +114,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
     { to: "/articles", label: t("nav.articles"), icon: "✎" },
     { to: "/files", label: t("nav.files"), icon: "▣" },
     { to: "/mail", label: t("nav.mail"), icon: "✉" },
+    { to: "/signal", label: t("nav.signal"), icon: "◐" },
     { to: "/certificates", label: t("nav.certificates"), icon: "◎", badge: expiringSoon, badgeUrgent: true },
   ];
   if (canEdit) {

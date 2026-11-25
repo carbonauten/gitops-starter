@@ -699,6 +699,43 @@ a {
   color: #027a48;
 }
 
+.signal-link-panel {
+  display: grid;
+  justify-items: start;
+  gap: 0.5rem;
+}
+
+.signal-qr-image {
+  width: 220px;
+  height: 220px;
+  padding: 0.5rem;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.signal-message-list {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.signal-message-item {
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-muted);
+}
+
+.signal-message-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
 .integration-connect-button {
   display: inline-flex;
   width: fit-content;
