@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 
 from ..ai_service import ai_configured, summarize_article
@@ -32,7 +32,22 @@ from ..outlook_service import (
     save_outlook_message,
 )
 from ..publish_service import update_publish_settings
-from ..schemas import EntraConfigSaveRequest, OutlookMailSaveRequest, OutlookMailSummarizeRequest
+from ..schemas import (
+    EntraConfigSaveRequest,
+    OutlookMailSaveRequest,
+    OutlookMailSummarizeRequest,
+    SignalLinkCompleteRequest,
+    SignalSendRequest,
+)
+from ..signal_service import (
+    complete_signal_link,
+    disconnect_signal,
+    fetch_signal_messages,
+    send_signal_message,
+    signal_service_reachable,
+    signal_status,
+    start_signal_link,
+)
 
 router = APIRouter(prefix="/api/integrations", tags=["integrations"])
 
@@ -352,3 +367,84 @@ async def outlook_mail_summarize(
     if not summary:
         raise HTTPException(status_code=502, detail="ai_summary_failed")
     return {"summary": summary}
+
+
+@router.get("/signal/status")
+async def signal_status_route(
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+) -> dict:
+    status = signal_status(db, user_id=user.get("db_id", ""))
+    status["service_reachable"] = await signal_service_reachable()
+    return status
+
+
+@router.post("/signal/link/start")
+async def signal_link_start(
+    request: Request,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+) -> dict:
+    result = await start_signal_link(device_name="Unified Carbonauten Platform")
+    session = get_session(request) or {}
+    session["signal_link_accounts_before"] = result["accounts_before"]
+    # Store the snapshot server-side via the session cookie so link/complete
+    # can diff against it without trusting a client-supplied list.
+    response = JSONResponse({"qr_data_url": result["qr_data_url"]})
+    set_session(response, session)
+    return response
+
+
+@router.post("/signal/link/complete")
+async def signal_link_complete(
+    request: Request,
+    payload: SignalLinkCompleteRequest,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+) -> dict:
+    session = get_session(request) or {}
+    accounts_before = session.get("signal_link_accounts_before", payload.accounts_before)
+    result = await complete_signal_link(
+        db,
+        user_id=user.get("db_id", ""),
+        accounts_before=accounts_before,
+    )
+    if not result.get("connected"):
+        return result
+    session.pop("signal_link_accounts_before", None)
+    response = JSONResponse(result)
+    set_session(response, session)
+    return response
+
+
+@router.delete("/signal")
+async def signal_disconnect(
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+) -> dict:
+    await disconnect_signal(db, user_id=user.get("db_id", ""))
+    return {"ok": True}
+
+
+@router.get("/signal/messages")
+async def signal_messages_route(
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+) -> dict:
+    messages = await fetch_signal_messages(db, user_id=user.get("db_id", ""))
+    return {"messages": messages}
+
+
+@router.post("/signal/send")
+async def signal_send_route(
+    payload: SignalSendRequest,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+) -> dict:
+    await send_signal_message(
+        db,
+        user_id=user.get("db_id", ""),
+        to_number=payload.to,
+        text=payload.message,
+    )
+    return {"ok": True}

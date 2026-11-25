@@ -855,6 +855,53 @@ export async function fetchOutlookMail(options?: {
   return payload.messages;
 }
 
+export type SignalStatus = {
+  connected: boolean;
+  account: string;
+  connected_at?: string | null;
+  service_configured: boolean;
+  service_reachable?: boolean;
+};
+
+export type SignalMessage = {
+  id: string;
+  from_number: string;
+  from_name: string;
+  text: string;
+  received_at?: string | null;
+};
+
+export async function fetchSignalStatus(): Promise<SignalStatus> {
+  return request<SignalStatus>("/api/integrations/signal/status");
+}
+
+export async function startSignalLink(): Promise<{ qr_data_url: string }> {
+  return request<{ qr_data_url: string }>("/api/integrations/signal/link/start", { method: "POST" });
+}
+
+export async function completeSignalLink(): Promise<{ connected: boolean; account?: string }> {
+  return request<{ connected: boolean; account?: string }>("/api/integrations/signal/link/complete", {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+}
+
+export async function disconnectSignal(): Promise<void> {
+  await request<void>("/api/integrations/signal", { method: "DELETE" });
+}
+
+export async function fetchSignalMessages(): Promise<SignalMessage[]> {
+  const payload = await request<{ messages: SignalMessage[] }>("/api/integrations/signal/messages");
+  return payload.messages;
+}
+
+export async function sendSignalMessage(to: string, message: string): Promise<void> {
+  await request<void>("/api/integrations/signal/send", {
+    method: "POST",
+    body: JSON.stringify({ to, message }),
+  });
+}
+
 export async function fetchOutlookMailMessage(messageId: string): Promise<OutlookMailMessage> {
   const params = new URLSearchParams({ id: messageId });
   const payload = await request<{ message: OutlookMailMessage }>(

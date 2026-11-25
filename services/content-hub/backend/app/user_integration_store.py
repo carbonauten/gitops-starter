@@ -12,7 +12,7 @@ from .config import Settings, get_settings
 from .database import UserIntegration
 
 USER_INTEGRATION_SALT = "content-hub-user-integration-token"
-USER_PROVIDERS = ("outlook",)
+USER_PROVIDERS = ("outlook", "signal")
 
 
 def _serializer(settings: Settings | None = None) -> URLSafeSerializer:

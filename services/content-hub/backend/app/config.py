@@ -62,6 +62,9 @@ class Settings(BaseSettings):
     mailcow_api_key: str = ""
     mailcow_default_domain: str = ""
 
+    # Self-hosted signal-cli-rest-api sidecar (see services/signal-cli-rest-api).
+    signal_cli_rest_api_url: str = ""
+
     notion_api_key: str = ""
     notion_database_id: str = ""
     notion_client_id: str = ""
