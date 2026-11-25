@@ -91,4 +91,4 @@ def test_signal_send_requires_connection(auth_client):
         json={"to": "+491701234567", "message": "Hi"},
     )
     assert response.status_code == 400
-    assert response.json()["error"] == "signal_not_configured"
+    assert response.json()["code"] == "signal_not_configured"
