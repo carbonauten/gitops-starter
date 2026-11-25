@@ -308,6 +308,12 @@ class Meeting(Base):
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
     )
+    # Null for an instant/ad-hoc call (the original use case); set for a
+    # meeting scheduled ahead of time via the "Meeting planen" form, which
+    # also drives the .ics download and, when the organizer has Outlook
+    # connected, a real Outlook calendar invite to attendees.
+    scheduled_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    duration_minutes: Mapped[int] = mapped_column(Integer, default=30)
 
 
 class ImapMailAccount(Base):

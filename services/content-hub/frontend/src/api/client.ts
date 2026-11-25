@@ -908,12 +908,20 @@ export type Meeting = {
   title: string;
   created_by_name: string;
   created_at?: string | null;
+  scheduled_at?: string | null;
+  duration_minutes?: number;
   url: string;
   domain: string;
+  ics_url: string;
 };
 
 export async function fetchMeetings(): Promise<Meeting[]> {
   const payload = await request<{ meetings: Meeting[] }>("/api/meetings");
+  return payload.meetings;
+}
+
+export async function fetchUpcomingMeetings(): Promise<Meeting[]> {
+  const payload = await request<{ meetings: Meeting[] }>("/api/meetings/upcoming");
   return payload.meetings;
 }
 
@@ -923,6 +931,21 @@ export async function createMeeting(title = ""): Promise<Meeting> {
     body: JSON.stringify({ title }),
   });
   return payload.meeting;
+}
+
+export async function scheduleMeeting(payload: {
+  title: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  attendees: string;
+}): Promise<{ meeting: Meeting; attendee_emails: string[]; outlook_invited: boolean }> {
+  return request<{ meeting: Meeting; attendee_emails: string[]; outlook_invited: boolean }>(
+    "/api/meetings/schedule",
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
+  );
 }
 
 export async function fetchOutlookMailMessage(messageId: string): Promise<OutlookMailMessage> {
