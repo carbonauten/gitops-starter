@@ -23,6 +23,7 @@ import { SearchPage } from "./pages/SearchPage";
 import { PublishCalendarPage } from "./pages/PublishCalendarPage";
 import { OutlookMailPage } from "./pages/OutlookMailPage";
 import { SignalPage } from "./pages/SignalPage";
+import { MeetingsPage } from "./pages/MeetingsPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { ProductsPage } from "./pages/ProductsPage";
 import { ProductEditorPage } from "./pages/ProductEditorPage";
@@ -156,6 +157,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <SignalPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/meetings"
+        element={
+          <ProtectedRoute>
+            <MeetingsPage />
           </ProtectedRoute>
         }
       />

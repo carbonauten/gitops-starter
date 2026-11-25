@@ -10,6 +10,7 @@
     "files": "文件",
     "mail": "邮箱（Outlook）",
     "signal": "Signal",
+    "meetings": "会议",
     "certificates": "证书",
     "reputation": "网络声誉",
     "products": "产品",
@@ -584,6 +585,20 @@
     "inboxTitle": "收件箱",
     "refresh": "刷新",
     "noMessages": "暂无消息。"
+  },
+  "meetings": {
+    "eyebrow": "Jitsi Meet",
+    "pageTitle": "会议",
+    "pageSubtitle": "直接在平台内发起视频通话，或加入正在进行的会议——通过免费的公共服务 meet.jit.si。",
+    "title": "视频通话",
+    "start": "发起新会议",
+    "leave": "离开通话",
+    "recentTitle": "进行中/最近的会议",
+    "noMeetings": "最近几小时内还没有会议。",
+    "startedBy": "由 {{name}} 发起",
+    "copyLink": "复制链接",
+    "join": "加入",
+    "scriptFailed": "无法加载 Jitsi，请检查网络连接。"
   },
   "ai": {
     "assistantName": "Ask Carbonauten",

@@ -38,6 +38,10 @@ class SignalSendRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
 
 
+class MeetingCreateRequest(BaseModel):
+    title: str = Field(default="", max_length=300)
+
+
 class ArticleUpdate(BaseModel):
     title: Optional[str] = Field(default=None, max_length=500)
     content: Optional[str] = None
