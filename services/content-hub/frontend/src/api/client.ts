@@ -902,6 +902,29 @@ export async function sendSignalMessage(to: string, message: string): Promise<vo
   });
 }
 
+export type Meeting = {
+  id: string;
+  room_name: string;
+  title: string;
+  created_by_name: string;
+  created_at?: string | null;
+  url: string;
+  domain: string;
+};
+
+export async function fetchMeetings(): Promise<Meeting[]> {
+  const payload = await request<{ meetings: Meeting[] }>("/api/meetings");
+  return payload.meetings;
+}
+
+export async function createMeeting(title = ""): Promise<Meeting> {
+  const payload = await request<{ meeting: Meeting }>("/api/meetings", {
+    method: "POST",
+    body: JSON.stringify({ title }),
+  });
+  return payload.meeting;
+}
+
 export async function fetchOutlookMailMessage(messageId: string): Promise<OutlookMailMessage> {
   const params = new URLSearchParams({ id: messageId });
   const payload = await request<{ message: OutlookMailMessage }>(

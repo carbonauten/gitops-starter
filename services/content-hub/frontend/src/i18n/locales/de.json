@@ -10,6 +10,7 @@
     "files": "Dateien",
     "mail": "Postfach (Outlook)",
     "signal": "Signal",
+    "meetings": "Meetings",
     "certificates": "Zertifikate",
     "reputation": "Web-Reputation",
     "products": "Produkte",
@@ -584,6 +585,20 @@
     "inboxTitle": "Eingang",
     "refresh": "Aktualisieren",
     "noMessages": "Keine Nachrichten."
+  },
+  "meetings": {
+    "eyebrow": "Jitsi Meet",
+    "pageTitle": "Meetings",
+    "pageSubtitle": "Videoanrufe direkt in der Platform starten oder einem laufenden Meeting beitreten — über das kostenlose, öffentliche meet.jit.si.",
+    "title": "Videoanruf",
+    "start": "Neues Meeting starten",
+    "leave": "Anruf verlassen",
+    "recentTitle": "Laufende / letzte Meetings",
+    "noMeetings": "Noch keine Meetings in den letzten Stunden.",
+    "startedBy": "Gestartet von {{name}}",
+    "copyLink": "Link kopieren",
+    "join": "Beitreten",
+    "scriptFailed": "Jitsi konnte nicht geladen werden. Bitte Internetverbindung prüfen."
   },
   "ai": {
     "assistantName": "Ask Carbonauten",
