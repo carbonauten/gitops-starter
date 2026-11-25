@@ -291,6 +291,25 @@ class WordPressSite(Base):
     )
 
 
+class Meeting(Base):
+    """A Jitsi Meet video-call room created from the platform. Jitsi needs no
+    server-side auth for the public meet.jit.si instance, so this table only
+    tracks *who created which room when*, letting colleagues see active/recent
+    calls and join with one click - no credentials stored."""
+
+    __tablename__ = "meetings"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    room_name: Mapped[str] = mapped_column(String(200), unique=True)
+    title: Mapped[str] = mapped_column(String(300), default="")
+    created_by_id: Mapped[str] = mapped_column(String(100), default="")
+    created_by_name: Mapped[str] = mapped_column(String(200), default="")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+    )
+
+
 class ImapMailAccount(Base):
     """IT-Master-configured IMAP mailbox (e.g. a Strato-hosted address) shown
     read-only inside the platform. Unlike Outlook (OAuth2/Graph), providers
