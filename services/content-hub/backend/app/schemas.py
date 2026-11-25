@@ -42,6 +42,13 @@ class MeetingCreateRequest(BaseModel):
     title: str = Field(default="", max_length=300)
 
 
+class MeetingScheduleRequest(BaseModel):
+    title: str = Field(default="", max_length=300)
+    scheduled_at: datetime
+    duration_minutes: int = Field(default=30, ge=5, le=480)
+    attendees: str = Field(default="", max_length=2000)
+
+
 class ArticleUpdate(BaseModel):
     title: Optional[str] = Field(default=None, max_length=500)
     content: Optional[str] = None

@@ -319,6 +319,53 @@ async def fetch_outlook_calendar_events(
     return events
 
 
+async def create_outlook_calendar_event(
+    db: Session,
+    *,
+    user_id: str,
+    subject: str,
+    start: datetime,
+    end: datetime,
+    body_html: str,
+    location: str,
+    attendee_emails: list[str],
+) -> bool:
+    """Creates a real Outlook calendar event with attendees, so Microsoft
+    sends them an actual invite - used by meeting_service's "Meeting planen"
+    flow when the organizer has Outlook connected. Returns False (rather
+    than raising) on any failure, since this is a value-add on top of the
+    always-available .ics download, not something that should block
+    scheduling a meeting."""
+    row = get_user_integration(db, user_id=user_id, provider="outlook")
+    if not row or not row.calendar_enabled:
+        return False
+
+    token = await get_outlook_access_token(db, user_id=user_id)
+    if not token:
+        return False
+
+    payload = {
+        "subject": subject,
+        "body": {"contentType": "HTML", "content": body_html},
+        "start": {"dateTime": start.astimezone(timezone.utc).isoformat(), "timeZone": "UTC"},
+        "end": {"dateTime": end.astimezone(timezone.utc).isoformat(), "timeZone": "UTC"},
+        "location": {"displayName": location},
+        "attendees": [
+            {"emailAddress": {"address": email}, "type": "required"} for email in attendee_emails
+        ],
+    }
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        response = await client.post(
+            "https://graph.microsoft.com/v1.0/me/events",
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+            json=payload,
+        )
+        if response.status_code not in (200, 201):
+            logger.warning("Outlook create event failed: %s", response.text)
+            return False
+    return True
+
+
 def _require_outlook_mail(db: Session, *, user_id: str):
     row = get_user_integration(db, user_id=user_id, provider="outlook")
     if not row or not row.mail_enabled:

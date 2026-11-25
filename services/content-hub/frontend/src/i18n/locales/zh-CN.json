@@ -598,7 +598,21 @@
     "startedBy": "由 {{name}} 发起",
     "copyLink": "复制链接",
     "join": "加入",
-    "scriptFailed": "无法加载 Jitsi，请检查网络连接。"
+    "scriptFailed": "无法加载 Jitsi，请检查网络连接。",
+    "scheduleTitle": "安排会议",
+    "scheduleButton": "安排会议",
+    "scheduleHint": "为以后安排一个时间并生成日历条目（.ics）。如果已连接 Outlook，系统还会自动通过 Outlook 邀请参会者。",
+    "scheduleTitleLabel": "标题",
+    "scheduleDateLabel": "日期",
+    "scheduleTimeLabel": "时间",
+    "scheduleDurationLabel": "时长（分钟）",
+    "scheduleAttendeesLabel": "参会者（邮箱）",
+    "scheduleAttendeesHint": "以逗号或空格分隔。仅在需要自动发送 Outlook 邀请时填写——不填也能正常生成日历条目。",
+    "scheduleSubmit": "安排会议",
+    "scheduled": "会议已安排，请在下方下载日历条目。",
+    "scheduledWithOutlook": "会议已安排，并已通过 Outlook 邀请参会者。",
+    "upcomingTitle": "即将举行的会议",
+    "downloadIcs": "日历条目（.ics）"
   },
   "ai": {
     "assistantName": "Ask Carbonauten",

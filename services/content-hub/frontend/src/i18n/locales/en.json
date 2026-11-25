@@ -496,7 +496,21 @@
     "startedBy": "Started by {{name}}",
     "copyLink": "Copy link",
     "join": "Join",
-    "scriptFailed": "Couldn't load Jitsi. Please check your internet connection."
+    "scriptFailed": "Couldn't load Jitsi. Please check your internet connection.",
+    "scheduleTitle": "Schedule a meeting",
+    "scheduleButton": "Schedule meeting",
+    "scheduleHint": "Set it up for later and generate a calendar entry (.ics). If your Outlook is connected, attendees also get a real Outlook invite automatically.",
+    "scheduleTitleLabel": "Title",
+    "scheduleDateLabel": "Date",
+    "scheduleTimeLabel": "Time",
+    "scheduleDurationLabel": "Duration (minutes)",
+    "scheduleAttendeesLabel": "Attendees (email)",
+    "scheduleAttendeesHint": "Comma- or space-separated. Only needed for the automatic Outlook invite - the calendar entry works without it too.",
+    "scheduleSubmit": "Schedule meeting",
+    "scheduled": "Meeting scheduled. Download the calendar entry below.",
+    "scheduledWithOutlook": "Meeting scheduled and attendees invited via Outlook.",
+    "upcomingTitle": "Upcoming meetings",
+    "downloadIcs": "Calendar entry (.ics)"
   },
   "ai": {
     "assistantName": "Ask Carbonauten",

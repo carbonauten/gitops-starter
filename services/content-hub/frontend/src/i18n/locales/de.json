@@ -598,7 +598,21 @@
     "startedBy": "Gestartet von {{name}}",
     "copyLink": "Link kopieren",
     "join": "Beitreten",
-    "scriptFailed": "Jitsi konnte nicht geladen werden. Bitte Internetverbindung prüfen."
+    "scriptFailed": "Jitsi konnte nicht geladen werden. Bitte Internetverbindung prüfen.",
+    "scheduleTitle": "Meeting planen",
+    "scheduleButton": "Meeting planen",
+    "scheduleHint": "Für später ansetzen und einen Kalendereintrag (.ics) erzeugen. Ist dein Outlook verbunden, werden Teilnehmer zusätzlich automatisch per Outlook eingeladen.",
+    "scheduleTitleLabel": "Titel",
+    "scheduleDateLabel": "Datum",
+    "scheduleTimeLabel": "Uhrzeit",
+    "scheduleDurationLabel": "Dauer (Minuten)",
+    "scheduleAttendeesLabel": "Teilnehmer (E-Mail)",
+    "scheduleAttendeesHint": "Durch Komma oder Leerzeichen getrennt. Nur nötig für die automatische Outlook-Einladung — der Kalendereintrag funktioniert auch ohne.",
+    "scheduleSubmit": "Meeting planen",
+    "scheduled": "Meeting geplant. Kalendereintrag unten herunterladen.",
+    "scheduledWithOutlook": "Meeting geplant und Teilnehmer per Outlook eingeladen.",
+    "upcomingTitle": "Geplante Meetings",
+    "downloadIcs": "Kalendereintrag (.ics)"
   },
   "ai": {
     "assistantName": "Ask Carbonauten",
