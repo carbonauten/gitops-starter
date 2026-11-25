@@ -65,6 +65,11 @@ class Settings(BaseSettings):
     # Self-hosted signal-cli-rest-api sidecar (see services/signal-cli-rest-api).
     signal_cli_rest_api_url: str = ""
 
+    # Self-hosted Collabora Online (see services/collabora-code) - gives
+    # platform-stored Office documents real live editing via the WOPI
+    # protocol, instead of Microsoft's read-only viewer.
+    collabora_url: str = ""
+
     notion_api_key: str = ""
     notion_database_id: str = ""
     notion_client_id: str = ""

@@ -199,6 +199,7 @@ def create_platform_office_session(
     *,
     file_id: str,
     user_id: str = "",
+    user_name: str = "",
     settings: Settings | None = None,
 ) -> dict[str, Any]:
     settings = settings or get_settings()
@@ -207,6 +208,22 @@ def create_platform_office_session(
         raise HTTPException(status_code=404, detail="not_found")
     if not is_office_filename(file_asset.original_name):
         raise HTTPException(status_code=400, detail="not_office_document")
+
+    from .wopi_service import collabora_configured, collabora_edit_url
+
+    if collabora_configured(settings):
+        edit_url = collabora_edit_url(file_asset, user_id=user_id, user_name=user_name, settings=settings)
+        if edit_url:
+            return {
+                "source": "platform",
+                "item_id": file_id,
+                "name": file_asset.original_name,
+                "embed_url": edit_url,
+                "edit_url": edit_url,
+                "can_edit": True,
+                "mock": False,
+                "expires_at": None,
+            }
 
     token = mint_preview_token(file_id, user_id=user_id, settings=settings)
     preview_url = f"{_public_origin(settings)}/api/files/public-preview?token={quote(token, safe='')}"
@@ -235,7 +252,13 @@ async def create_office_session(
     settings = settings or get_settings()
     user_id = user.get("db_id") or ""
     if source == "platform":
-        return create_platform_office_session(db, file_id=item_id, user_id=user_id, settings=settings)
+        return create_platform_office_session(
+            db,
+            file_id=item_id,
+            user_id=user_id,
+            user_name=str(user.get("name") or ""),
+            settings=settings,
+        )
     if source == "sharepoint":
         return await create_sharepoint_office_session(item_id=item_id, settings=settings)
     return await create_onedrive_office_session(db, user_id=user_id, item_id=item_id, settings=settings)
