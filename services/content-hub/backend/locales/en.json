@@ -76,6 +76,8 @@
   "errors.signal_link_failed": "Signal linking failed. Please try again.",
   "errors.signal_receive_failed": "Could not load Signal messages right now.",
   "errors.signal_send_failed": "Could not send the Signal message.",
+  "errors.mailbox_org_not_connected": "mailbox.org is not connected. Please connect it first.",
+  "errors.mailbox_org_login_failed": "mailbox.org login failed. Please check the email and password.",
   "errors.mailcow_domain_required": "Please specify a domain.",
   "errors.mailcow_invalid_local_part": "Invalid email address format.",
   "errors.mailcow_already_exists": "This mailbox already exists.",

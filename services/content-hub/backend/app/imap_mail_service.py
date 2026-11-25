@@ -24,9 +24,8 @@ from email.utils import getaddresses, parseaddr, parsedate_to_datetime
 from typing import Any
 
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
 
-from .imap_config_service import ImapCredentials, get_imap_credentials
+from .imap_config_service import ImapCredentials
 
 logger = logging.getLogger(__name__)
 
@@ -210,8 +209,7 @@ def _parse_list_response(raw: bytes) -> dict[str, Any] | None:
     }
 
 
-def list_folders(db: Session, *, account_id: str) -> list[dict[str, Any]]:
-    creds = get_imap_credentials(db, account_id)
+def list_folders(*, creds: ImapCredentials) -> list[dict[str, Any]]:
     conn = _connect(creds)
     try:
         status, data = conn.list()
@@ -237,9 +235,8 @@ def _search_criteria(search: str) -> tuple[str, ...]:
 
 
 def list_messages(
-    db: Session, *, account_id: str, limit: int = 30, search: str = "", folder: str | None = None
+    *, creds: ImapCredentials, limit: int = 30, search: str = "", folder: str | None = None
 ) -> list[dict[str, Any]]:
-    creds = get_imap_credentials(db, account_id)
     conn = _connect(creds)
     try:
         _select_folder(conn, folder or creds.folder)
@@ -307,8 +304,7 @@ def _list_attachments(msg: Any) -> list[dict[str, Any]]:
     return attachments
 
 
-def get_message(db: Session, *, account_id: str, message_id: str, folder: str | None = None) -> dict[str, Any]:
-    creds = get_imap_credentials(db, account_id)
+def get_message(*, creds: ImapCredentials, message_id: str, folder: str | None = None) -> dict[str, Any]:
     conn = _connect(creds)
     try:
         _select_folder(conn, folder or creds.folder)
@@ -352,13 +348,12 @@ def get_message(db: Session, *, account_id: str, message_id: str, folder: str | 
 
 
 def get_attachment(
-    db: Session, *, account_id: str, message_id: str, attachment_index: int, folder: str | None = None
+    *, creds: ImapCredentials, message_id: str, attachment_index: int, folder: str | None = None
 ) -> tuple[bytes, str, str]:
     """Re-fetches the full message and re-derives the same attachment list
     as get_message() - iter_attachments() order is deterministic for a
     given parse, so the index from a prior get_message() call still points
     at the right part."""
-    creds = get_imap_credentials(db, account_id)
     conn = _connect(creds)
     try:
         _select_folder(conn, folder or creds.folder)

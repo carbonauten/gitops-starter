@@ -855,6 +855,77 @@ export async function fetchOutlookMail(options?: {
   return payload.messages;
 }
 
+export type MailboxOrgStatus = {
+  connected: boolean;
+  account: string;
+  connected_at?: string | null;
+};
+
+export async function fetchMailboxOrgStatus(): Promise<MailboxOrgStatus> {
+  return request<MailboxOrgStatus>("/api/integrations/mailbox-org/status");
+}
+
+export async function connectMailboxOrg(email: string, password: string): Promise<MailboxOrgStatus> {
+  return request<MailboxOrgStatus>("/api/integrations/mailbox-org/connect", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+}
+
+export async function disconnectMailboxOrg(): Promise<void> {
+  await request<void>("/api/integrations/mailbox-org", { method: "DELETE" });
+}
+
+export type MailboxOrgMessageSummary = {
+  id: string;
+  subject: string;
+  from: OutlookMailPerson;
+  received_at?: string | null;
+  preview: string;
+  is_read: boolean;
+  has_attachments: boolean;
+};
+
+export type MailboxOrgAttachment = {
+  index: number;
+  filename: string;
+  content_type: string;
+  size: number;
+};
+
+export type MailboxOrgMessage = MailboxOrgMessageSummary & {
+  to: OutlookMailPerson[];
+  cc: OutlookMailPerson[];
+  body: string;
+  body_type: "html" | "text";
+  attachments: MailboxOrgAttachment[];
+};
+
+export async function fetchMailboxOrgMail(options?: {
+  q?: string;
+  top?: number;
+}): Promise<MailboxOrgMessageSummary[]> {
+  const params = new URLSearchParams();
+  if (options?.q?.trim()) params.set("q", options.q.trim());
+  if (options?.top) params.set("top", String(options.top));
+  const query = params.toString();
+  const payload = await request<{ messages: MailboxOrgMessageSummary[] }>(
+    `/api/integrations/mailbox-org/messages${query ? `?${query}` : ""}`,
+  );
+  return payload.messages;
+}
+
+export async function fetchMailboxOrgMailMessage(messageId: string): Promise<MailboxOrgMessage> {
+  const payload = await request<{ message: MailboxOrgMessage }>(
+    `/api/integrations/mailbox-org/messages/${encodeURIComponent(messageId)}`,
+  );
+  return payload.message;
+}
+
+export function mailboxOrgAttachmentUrl(messageId: string, attachmentIndex: number): string {
+  return `/api/integrations/mailbox-org/messages/${encodeURIComponent(messageId)}/attachments/${attachmentIndex}`;
+}
+
 export type SignalStatus = {
   connected: boolean;
   account: string;
@@ -933,19 +1004,23 @@ export async function createMeeting(title = ""): Promise<Meeting> {
   return payload.meeting;
 }
 
+export type ScheduleMeetingResult = {
+  meeting: Meeting;
+  attendee_emails: string[];
+  outlook_invited: boolean;
+  mailbox_org_invited: boolean;
+};
+
 export async function scheduleMeeting(payload: {
   title: string;
   scheduled_at: string;
   duration_minutes: number;
   attendees: string;
-}): Promise<{ meeting: Meeting; attendee_emails: string[]; outlook_invited: boolean }> {
-  return request<{ meeting: Meeting; attendee_emails: string[]; outlook_invited: boolean }>(
-    "/api/meetings/schedule",
-    {
-      method: "POST",
-      body: JSON.stringify(payload),
-    },
-  );
+}): Promise<ScheduleMeetingResult> {
+  return request<ScheduleMeetingResult>("/api/meetings/schedule", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
 
 export async function fetchOutlookMailMessage(messageId: string): Promise<OutlookMailMessage> {

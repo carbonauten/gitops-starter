@@ -18,6 +18,7 @@ from ..meeting_service import (
     parse_attendee_emails,
     schedule_meeting,
 )
+from ..mailbox_org_service import send_meeting_invite as send_mailbox_org_invite
 from ..outlook_service import create_outlook_calendar_event
 from ..schemas import MeetingCreateRequest, MeetingScheduleRequest
 
@@ -65,16 +66,28 @@ async def meetings_schedule(
     attendee_emails = parse_attendee_emails(payload.attendees)
 
     outlook_invited = False
+    mailbox_org_invited = False
     if attendee_emails:
         row = get_meeting(db, meeting_id=meeting["id"])
+        end_at = payload.scheduled_at + timedelta(minutes=payload.duration_minutes)
         outlook_invited = await create_outlook_calendar_event(
             db,
             user_id=str(user.get("db_id") or ""),
             subject=meeting["title"],
             start=payload.scheduled_at,
-            end=payload.scheduled_at + timedelta(minutes=payload.duration_minutes),
+            end=end_at,
             body_html=f'<p>Jitsi-Meeting beitreten: <a href="{meeting_url(row.room_name)}">{meeting_url(row.room_name)}</a></p>',
             location=meeting_url(row.room_name),
+            attendee_emails=attendee_emails,
+        )
+        mailbox_org_invited = send_mailbox_org_invite(
+            db,
+            user_id=str(user.get("db_id") or ""),
+            organizer_name=str(user.get("name") or "User"),
+            title=meeting["title"],
+            start=payload.scheduled_at,
+            end=end_at,
+            meeting_url=meeting_url(row.room_name),
             attendee_emails=attendee_emails,
         )
 
@@ -82,6 +95,7 @@ async def meetings_schedule(
         "meeting": meeting,
         "attendee_emails": attendee_emails,
         "outlook_invited": outlook_invited,
+        "mailbox_org_invited": mailbox_org_invited,
     }
 
 
