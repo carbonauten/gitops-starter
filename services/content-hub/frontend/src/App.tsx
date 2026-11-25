@@ -23,6 +23,7 @@ import { SearchPage } from "./pages/SearchPage";
 import { PublishCalendarPage } from "./pages/PublishCalendarPage";
 import { OutlookMailPage } from "./pages/OutlookMailPage";
 import { SignalPage } from "./pages/SignalPage";
+import { MailboxOrgPage } from "./pages/MailboxOrgPage";
 import { MeetingsPage } from "./pages/MeetingsPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { ProductsPage } from "./pages/ProductsPage";
@@ -157,6 +158,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <SignalPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/mailbox-org"
+        element={
+          <ProtectedRoute>
+            <MailboxOrgPage />
           </ProtectedRoute>
         }
       />

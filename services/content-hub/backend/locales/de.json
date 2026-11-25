@@ -76,6 +76,8 @@
   "errors.signal_link_failed": "Signal-Verknüpfung ist fehlgeschlagen. Bitte erneut versuchen.",
   "errors.signal_receive_failed": "Signal-Nachrichten konnten gerade nicht geladen werden.",
   "errors.signal_send_failed": "Signal-Nachricht konnte nicht gesendet werden.",
+  "errors.mailbox_org_not_connected": "mailbox.org ist nicht verbunden. Bitte zuerst verbinden.",
+  "errors.mailbox_org_login_failed": "Anmeldung bei mailbox.org fehlgeschlagen. Bitte E-Mail und Passwort prüfen.",
   "errors.mailcow_domain_required": "Bitte eine Domain angeben.",
   "errors.mailcow_invalid_local_part": "Ungültiges E-Mail-Adressformat.",
   "errors.mailcow_already_exists": "Dieses Postfach existiert bereits.",

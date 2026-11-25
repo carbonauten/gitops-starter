@@ -162,11 +162,15 @@ export function MeetingsPage() {
         duration_minutes: scheduleDuration,
         attendees: scheduleAttendees,
       });
-      setNotice(
-        result.outlook_invited
-          ? t("meetings.scheduledWithOutlook")
-          : t("meetings.scheduled"),
-      );
+      if (result.outlook_invited && result.mailbox_org_invited) {
+        setNotice(`${t("meetings.scheduledWithOutlook")} ${t("meetings.scheduledWithMailboxOrg")}`);
+      } else if (result.outlook_invited) {
+        setNotice(t("meetings.scheduledWithOutlook"));
+      } else if (result.mailbox_org_invited) {
+        setNotice(t("meetings.scheduledWithMailboxOrg"));
+      } else {
+        setNotice(t("meetings.scheduled"));
+      }
       setScheduleTitle("");
       setScheduleAttendees("");
       setShowSchedule(false);

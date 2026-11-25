@@ -12,6 +12,7 @@ from ..imap_config_service import (
     create_imap_account,
     delete_imap_account,
     get_imap_account_row,
+    get_imap_credentials,
     list_imap_accounts,
     update_imap_account,
 )
@@ -149,7 +150,7 @@ def get_folders_route(
     db: Session = Depends(get_db),
     _user: dict = Depends(require_it_master),
 ) -> dict:
-    return {"folders": list_folders(db, account_id=account_id)}
+    return {"folders": list_folders(creds=get_imap_credentials(db, account_id))}
 
 
 @router.get("/accounts/{account_id}/messages")
@@ -161,7 +162,8 @@ def get_messages_route(
     db: Session = Depends(get_db),
     _user: dict = Depends(require_it_master),
 ) -> dict:
-    return {"messages": list_messages(db, account_id=account_id, limit=top, search=q, folder=folder or None)}
+    creds = get_imap_credentials(db, account_id)
+    return {"messages": list_messages(creds=creds, limit=top, search=q, folder=folder or None)}
 
 
 @router.get("/accounts/{account_id}/messages/{message_id}")
@@ -172,7 +174,8 @@ def get_message_route(
     db: Session = Depends(get_db),
     _user: dict = Depends(require_it_master),
 ) -> dict:
-    return {"message": get_message(db, account_id=account_id, message_id=message_id, folder=folder or None)}
+    creds = get_imap_credentials(db, account_id)
+    return {"message": get_message(creds=creds, message_id=message_id, folder=folder or None)}
 
 
 @router.get("/accounts/{account_id}/messages/{message_id}/attachments/{attachment_index}")
@@ -184,9 +187,9 @@ def get_attachment_route(
     db: Session = Depends(get_db),
     _user: dict = Depends(require_it_master),
 ) -> Response:
+    creds = get_imap_credentials(db, account_id)
     content, filename, content_type = get_attachment(
-        db,
-        account_id=account_id,
+        creds=creds,
         message_id=message_id,
         attachment_index=attachment_index,
         folder=folder or None,
@@ -209,7 +212,9 @@ def summarize_message_route(
 ) -> dict:
     if not ai_configured():
         raise HTTPException(status_code=503, detail="ai_not_configured")
-    message = get_message(db, account_id=account_id, message_id=message_id, folder=payload.folder or None)
+    message = get_message(
+        creds=get_imap_credentials(db, account_id), message_id=message_id, folder=payload.folder or None
+    )
     summary = summarize_article(
         title=str(message.get("subject") or ""),
         content=str(message.get("body") or ""),
@@ -230,7 +235,9 @@ def draft_reply_route(
 ) -> dict:
     if not ai_configured():
         raise HTTPException(status_code=503, detail="ai_not_configured")
-    message = get_message(db, account_id=account_id, message_id=message_id, folder=payload.folder or None)
+    message = get_message(
+        creds=get_imap_credentials(db, account_id), message_id=message_id, folder=payload.folder or None
+    )
     reply = draft_email_reply(
         subject=str(message.get("subject") or ""),
         body=str(message.get("body") or ""),
@@ -253,7 +260,9 @@ def translate_message_route(
 ) -> dict:
     if not ai_configured():
         raise HTTPException(status_code=503, detail="ai_not_configured")
-    message = get_message(db, account_id=account_id, message_id=message_id, folder=payload.folder or None)
+    message = get_message(
+        creds=get_imap_credentials(db, account_id), message_id=message_id, folder=payload.folder or None
+    )
     translated = translate_email_body(
         body=str(message.get("body") or ""),
         body_type=str(message.get("body_type") or "text"),

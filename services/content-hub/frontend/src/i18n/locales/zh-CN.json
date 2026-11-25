@@ -10,6 +10,7 @@
     "files": "文件",
     "mail": "邮箱（Outlook）",
     "signal": "Signal",
+    "mailboxOrg": "mailbox.org",
     "meetings": "会议",
     "certificates": "证书",
     "reputation": "网络声誉",
@@ -612,7 +613,23 @@
     "scheduled": "会议已安排，请在下方下载日历条目。",
     "scheduledWithOutlook": "会议已安排，并已通过 Outlook 邀请参会者。",
     "upcomingTitle": "即将举行的会议",
-    "downloadIcs": "日历条目（.ics）"
+    "downloadIcs": "日历条目（.ics）",
+    "scheduledWithMailboxOrg": "会议已安排，并已通过 mailbox.org 邀请参会者。"
+  },
+  "mailboxOrg": {
+    "eyebrow": "mailbox.org",
+    "pageTitle": "mailbox.org",
+    "pageSubtitle": "连接你的个人 mailbox.org 账号，读取邮件并通过自己的账号发送会议邀请。",
+    "title": "连接 mailbox.org",
+    "hint": "mailbox.org 没有像 Microsoft 那样的一键登录——你的账号信息会被直接验证（IMAP）并加密保存。如果开启了双重验证，建议使用应用专用密码而非主密码。",
+    "emailLabel": "邮箱地址",
+    "passwordLabel": "密码",
+    "passwordHint": "加密保存，仅供你自己使用。",
+    "connect": "连接",
+    "connected": "mailbox.org 已成功连接。",
+    "disconnect": "断开连接",
+    "disconnected": "mailbox.org 连接已断开。",
+    "download": "下载"
   },
   "ai": {
     "assistantName": "Ask Carbonauten",

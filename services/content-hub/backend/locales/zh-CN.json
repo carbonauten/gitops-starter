@@ -76,6 +76,8 @@
   "errors.signal_link_failed": "Signal 关联失败，请重试。",
   "errors.signal_receive_failed": "暂时无法加载 Signal 消息。",
   "errors.signal_send_failed": "无法发送 Signal 消息。",
+  "errors.mailbox_org_not_connected": "mailbox.org 未连接，请先连接。",
+  "errors.mailbox_org_login_failed": "mailbox.org 登录失败，请检查邮箱和密码。",
   "errors.mailcow_domain_required": "请指定域名。",
   "errors.mailcow_invalid_local_part": "电子邮件地址格式无效。",
   "errors.mailcow_already_exists": "该邮箱已存在。",

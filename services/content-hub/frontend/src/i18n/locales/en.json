@@ -10,6 +10,7 @@
     "files": "Files",
     "mail": "Mailbox (Outlook)",
     "signal": "Signal",
+    "mailboxOrg": "mailbox.org",
     "meetings": "Meetings",
     "certificates": "Certificates",
     "reputation": "Web reputation",
@@ -510,7 +511,23 @@
     "scheduled": "Meeting scheduled. Download the calendar entry below.",
     "scheduledWithOutlook": "Meeting scheduled and attendees invited via Outlook.",
     "upcomingTitle": "Upcoming meetings",
-    "downloadIcs": "Calendar entry (.ics)"
+    "downloadIcs": "Calendar entry (.ics)",
+    "scheduledWithMailboxOrg": "Meeting scheduled and attendees invited via mailbox.org."
+  },
+  "mailboxOrg": {
+    "eyebrow": "mailbox.org",
+    "pageTitle": "mailbox.org",
+    "pageSubtitle": "Connect your personal mailbox.org account to read mail and send meeting invites from your own account.",
+    "title": "Connect mailbox.org",
+    "hint": "mailbox.org has no one-click login like Microsoft - instead your credentials are verified directly (IMAP) and stored encrypted. If you use 2FA, use an app-specific password instead of your main password.",
+    "emailLabel": "Email address",
+    "passwordLabel": "Password",
+    "passwordHint": "Stored encrypted, usable only by you.",
+    "connect": "Connect",
+    "connected": "mailbox.org connected successfully.",
+    "disconnect": "Disconnect",
+    "disconnected": "mailbox.org connection removed.",
+    "download": "Download"
   },
   "ai": {
     "assistantName": "Ask Carbonauten",
