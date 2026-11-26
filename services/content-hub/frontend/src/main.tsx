@@ -8,6 +8,7 @@ import { AuthProvider } from "./hooks/useAuth";
 import { ShopApp } from "./pages/ShopApp";
 import "./i18n";
 import "./styles.css";
+import "./styles/marketing.css";
 
 const DEFAULT_SHOP_HOSTS = ["fuckco2.shop", "www.fuckco2.shop"];
 

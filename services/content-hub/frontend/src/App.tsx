@@ -37,6 +37,8 @@ import { ShopReturnsPage } from "./pages/ShopReturnsPage";
 import { ReputationPage } from "./pages/ReputationPage";
 import { WordPressPage } from "./pages/WordPressPage";
 import { WordPressSiteDetailPage } from "./pages/WordPressSiteDetailPage";
+import { MarketingHomePage } from "./pages/MarketingHomePage";
+import { LegalPage } from "./pages/LegalPage";
 import { usePermissions } from "./hooks/usePermissions";
 
 function ShopManageRoute({ children }: { children: React.ReactNode }) {
@@ -92,19 +94,39 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <Layout>{children}</Layout>;
 }
 
+// Public elphen marketing homepage for anonymous visitors; signed-in users still
+// land on the dashboard at the same "/" path, same as before this route existed.
+function RootRoute() {
+  const { t } = useTranslation();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="center-screen" style={{ fontSize: "1.1rem", color: "#334155" }}>
+        {t("common.loading")}
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <MarketingHomePage />;
+  }
+
+  return (
+    <Layout>
+      <DashboardPage />
+    </Layout>
+  );
+}
+
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/invite/:token" element={<AcceptInvitePage />} />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/impressum" element={<LegalPage variant="impressum" />} />
+      <Route path="/datenschutz" element={<LegalPage variant="datenschutz" />} />
+      <Route path="/" element={<RootRoute />} />
       <Route
         path="/search"
         element={
