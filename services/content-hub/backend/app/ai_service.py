@@ -216,7 +216,7 @@ def generate_search_answer(
     context = "\n\n".join(context_blocks)
     lang_name = LANG_NAMES.get(language, language)
     system = (
-        "You are Ask Carbonauten, the internal knowledge assistant for Carbonauten. "
+        "You are Ask elphen, the internal knowledge assistant for elphen. "
         "Answer using ONLY the provided company sources (articles, files, certificates). "
         "Never invent facts outside the sources. If the answer is not in the sources, say so clearly. "
         f"Respond in {lang_name}. Be concise (max 6 sentences). "
@@ -244,7 +244,7 @@ def translate_article(
     if source_language:
         source_hint = f" The source language is {LANG_NAMES.get(source_language, source_language)}."
     system = (
-        "You translate internal company content for Carbonauten. "
+        "You translate internal company content for elphen. "
         "Preserve HTML structure and tags exactly. Translate visible text only. "
         "Return valid JSON with keys title and content only."
     )
@@ -285,7 +285,7 @@ def summarize_article(
     plain = re.sub(r"<[^>]+>", " ", content or "")
     plain = " ".join(plain.split())
     system = (
-        "You write short internal summaries for Carbonauten employees. "
+        "You write short internal summaries for elphen employees. "
         f"Respond in {lang_name}. Use 3-5 bullet points. No preamble."
     )
     user = f"Title: {title}\n\nContent:\n{plain[:6000]}"
@@ -313,7 +313,7 @@ def draft_email_reply(
     plain = re.sub(r"<[^>]+>", " ", body or "")
     plain = " ".join(plain.split())
     system = (
-        "You draft professional email replies for a Carbonauten employee. "
+        "You draft professional email replies for an elphen employee. "
         f"Write in plain text (no HTML, no markdown), in {lang_name}. "
         "Be concise and polite. Do not invent facts, commitments, prices, dates, "
         "or promises that are not present in the original email or the instructions. "
@@ -383,7 +383,7 @@ def rewrite_article(
     if language:
         lang_hint = f" Keep the output language as {LANG_NAMES.get(language, language)}."
     system = (
-        "You rewrite internal Carbonauten company content. "
+        "You rewrite internal elphen company content. "
         "Preserve HTML structure and tags. Improve clarity and tone only — "
         "do not invent facts, numbers, names, or claims. "
         "Return valid JSON with keys title and content only."
@@ -426,7 +426,7 @@ def draft_article_from_notes(
     if not cleaned:
         return None
     system = (
-        "You draft internal Carbonauten articles from editor notes. "
+        "You draft internal elphen articles from editor notes. "
         "Write factual, neutral content suitable for employees. "
         "Do not invent metrics, customers, or approvals that are not in the notes. "
         "Return valid JSON with keys title and content. "

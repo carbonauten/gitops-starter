@@ -138,7 +138,7 @@ def _build_invite_ics(
     lines = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
-        "PRODID:-//Unified Carbonauten Platform//Meetings//DE",
+        "PRODID:-//elphen//Meetings//DE",
         "CALSCALE:GREGORIAN",
         f"METHOD:{method}",
         "BEGIN:VEVENT",
@@ -216,7 +216,7 @@ def send_meeting_invite(
         return False
     username = row.account_label
 
-    uid = f"{uuid.uuid4()}@carbonauten"
+    uid = f"{uuid.uuid4()}@elphen"
     description = f"Meeting beitreten: {meeting_url}"
 
     calendar_url = caldav_client.discover_calendar_url(CALDAV_BASE, username=username, password=password)

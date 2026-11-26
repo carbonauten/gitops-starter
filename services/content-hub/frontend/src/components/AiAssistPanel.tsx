@@ -38,7 +38,7 @@ export function AiAssistPanel({ title, content, disabled, onApplyContent }: AiAs
       try {
         setStatus(await fetchAiStatus());
       } catch {
-        setStatus({ available: false, features: [], assistant_name: "Ask Carbonauten" });
+        setStatus({ available: false, features: [], assistant_name: "Ask elphen" });
       }
     })();
   }, []);

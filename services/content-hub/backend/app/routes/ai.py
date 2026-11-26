@@ -69,7 +69,7 @@ def ai_status(_user: dict = Depends(get_current_user)) -> dict:
         "available": ai_configured(),
         "embeddings_available": get_settings().embeddings_configured,
         "features": features,
-        "assistant_name": "Ask Carbonauten",
+        "assistant_name": "Ask elphen",
     }
 
 
@@ -89,7 +89,7 @@ def translate_content(
     )
     if not result:
         raise HTTPException(status_code=502, detail="ai_translation_failed")
-    return {"translation": result, "assistant_name": "Ask Carbonauten"}
+    return {"translation": result, "assistant_name": "Ask elphen"}
 
 
 @router.post("/summarize")
@@ -107,7 +107,7 @@ def summarize_content(
     )
     if not summary:
         raise HTTPException(status_code=502, detail="ai_summary_failed")
-    return {"summary": summary, "assistant_name": "Ask Carbonauten"}
+    return {"summary": summary, "assistant_name": "Ask elphen"}
 
 
 @router.post("/rewrite")
@@ -126,7 +126,7 @@ def rewrite_content(
     )
     if not result:
         raise HTTPException(status_code=502, detail="ai_rewrite_failed")
-    return {"rewrite": result, "assistant_name": "Ask Carbonauten"}
+    return {"rewrite": result, "assistant_name": "Ask elphen"}
 
 
 @router.post("/draft-from-notes")
@@ -144,4 +144,4 @@ def draft_from_notes(
     )
     if not result:
         raise HTTPException(status_code=502, detail="ai_draft_failed")
-    return {"draft": result, "assistant_name": "Ask Carbonauten"}
+    return {"draft": result, "assistant_name": "Ask elphen"}

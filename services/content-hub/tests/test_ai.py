@@ -58,7 +58,7 @@ def test_ai_status_without_keys(auth_client):
     assert response.status_code == 200
     payload = response.json()
     assert payload["available"] is False
-    assert payload["assistant_name"] == "Ask Carbonauten"
+    assert payload["assistant_name"] == "Ask elphen"
     assert "translate" in payload["features"]
     assert "rewrite" in payload["features"]
     assert "draft_from_notes" in payload["features"]
@@ -211,4 +211,4 @@ def test_search_ask_includes_assistant_name(auth_client):
         json={"question": "biochar kiln status", "language": "en"},
     )
     assert response.status_code == 200
-    assert response.json()["assistant_name"] == "Ask Carbonauten"
+    assert response.json()["assistant_name"] == "Ask elphen"

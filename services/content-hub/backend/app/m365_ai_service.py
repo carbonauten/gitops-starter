@@ -1,4 +1,4 @@
-"""Microsoft 365 admin intents for Ask Carbonauten (IT master only).
+"""Microsoft 365 admin intents for Ask elphen (IT master only).
 
 Prefers LLM tool/function calling when AI is configured; falls back to regex intents.
 """
@@ -531,7 +531,7 @@ def _parse_tool_arguments(raw: str) -> dict[str, Any]:
 async def _handle_with_function_calling(question: str, *, language: str) -> dict[str, Any] | None:
     lang_name = LANG_NAMES.get(language, language)
     system = (
-        "You are Ask Carbonauten for carbonauten GmbH IT masters. "
+        "You are Ask elphen for carbonauten GmbH IT masters. "
         "Use the provided Microsoft 365 directory tools to fulfill admin requests. "
         "Prefer calling a tool over guessing. Never invent users or licenses. "
         f"After tools run, the system will format the final reply in {lang_name}."

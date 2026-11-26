@@ -48,7 +48,7 @@ def search(
         "results": results,
         "counts": counts,
         "ai_available": ai_configured(),
-        "assistant_name": "Ask Carbonauten",
+        "assistant_name": "Ask elphen",
     }
 
 
@@ -95,7 +95,7 @@ async def ask_search(
                 "Welche M365 Lizenzen sind frei?",
             ],
             "ai_available": ai_configured(),
-            "assistant_name": "Ask Carbonauten",
+            "assistant_name": "Ask elphen",
             "m365_action": directory.get("action"),
             "m365_mode": directory.get("mode"),
         }
@@ -123,7 +123,7 @@ async def ask_search(
 
     # Semantic search catches paraphrases keyword matching misses (different wording,
     # a question in a different language than the source article) — merge it in before
-    # building the RAG context so Ask Carbonauten's answer draws on those sources too.
+    # building the RAG context so Ask elphen's answer draws on those sources too.
     if get_settings().embeddings_configured:
         semantic_results = semantic_search_content(db, payload.question, result_type=payload.type, limit=12)
         if semantic_results:
@@ -170,7 +170,7 @@ async def ask_search(
         "counts": counts,
         "suggested_queries": suggestions,
         "ai_available": ai_configured(),
-        "assistant_name": "Ask Carbonauten",
+        "assistant_name": "Ask elphen",
     }
 
 
@@ -183,7 +183,7 @@ def search_suggestions(
         "suggestions": build_suggestions(db),
         "ai_available": ai_configured(),
         "embeddings_available": get_settings().embeddings_configured,
-        "assistant_name": "Ask Carbonauten",
+        "assistant_name": "Ask elphen",
     }
 
 

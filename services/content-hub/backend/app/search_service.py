@@ -333,7 +333,7 @@ def build_keyword_answer(question: str, results: list[SearchResult]) -> str:
 
 
 def enrich_context_for_ask(db: Session, results: list[SearchResult], limit: int = 6) -> list[str]:
-    """Load fuller source text for Ask Carbonauten RAG answers."""
+    """Load fuller source text for Ask elphen RAG answers."""
     blocks: list[str] = []
     for index, item in enumerate(results[:limit], start=1):
         if item.type == "article":

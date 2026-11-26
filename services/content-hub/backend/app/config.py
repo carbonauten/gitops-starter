@@ -27,7 +27,7 @@ def ensure_postgres_ssl(url: str) -> str:
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    app_name: str = "Unified Carbonauten Platform"
+    app_name: str = "elphen"
     port: int = 8080
     session_secret: str = "dev-only-change-in-production"
     session_max_age: int = 60 * 60 * 24 * 7
@@ -85,7 +85,7 @@ class Settings(BaseSettings):
 
     shop_hosts: str = "fuckco2.shop,www.fuckco2.shop"
     shop_brand_name: str = "FuckCo2"
-    shop_company_name: str = "carbonauten GmbH"
+    shop_company_name: str = "Elphen AG"
     shop_tagline: str = "FuckCo2 goes international"
     shop_contact_email: str = ""
     shop_currency: str = "EUR"
@@ -153,7 +153,7 @@ class Settings(BaseSettings):
 
     reputation_crawl_enabled: bool = True
     reputation_crawl_interval_hours: int = 6
-    reputation_brand_terms: str = "carbonauten GmbH,carbonauten,FuckCo2,fuckco2,碳基科技"
+    reputation_brand_terms: str = "carbonauten GmbH,carbonauten,FuckCo2,fuckco2,碳基科技,Elphen AG,elphen"
     reputation_people: str = "Torsten Becker"
     # Skip dated hits older than this by default; 0 (or less) disables the cutoff.
     # Only sources with a real publish date (Google News RSS, incl. the WordPress
