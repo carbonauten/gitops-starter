@@ -1,9 +1,9 @@
 {
   "name": "FuckCo2 Shop",
   "short_name": "FuckCo2",
-  "description": "Shop der carbonauten GmbH",
-  "theme_color": "#0b1210",
-  "background_color": "#0b1210",
+  "description": "Shop der Elphen AG",
+  "theme_color": "#192d1e",
+  "background_color": "#192d1e",
   "display": "standalone",
   "orientation": "portrait-primary",
   "start_url": "/",
