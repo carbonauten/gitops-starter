@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 # + jicofo + jvb + web) - not done here, see services/README for the
 # tradeoff if private hosting becomes a requirement.
 JITSI_DOMAIN = "meet.jit.si"
-ROOM_PREFIX = "carbonauten-"
+ROOM_PREFIX = "elphen-"
 RECENT_WINDOW_HOURS = 12
 LIVE_GRACE_MINUTES = 15  # a scheduled call still shows as "live" a bit past its nominal end
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -174,11 +174,11 @@ def build_ics(meeting: Meeting, *, organizer_email: str, organizer_name: str) ->
     lines = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
-        "PRODID:-//Unified Carbonauten Platform//Meetings//DE",
+        "PRODID:-//elphen//Meetings//DE",
         "CALSCALE:GREGORIAN",
         "METHOD:PUBLISH",
         "BEGIN:VEVENT",
-        f"UID:{meeting.id}@carbonauten",
+        f"UID:{meeting.id}@elphen",
         f"DTSTAMP:{_ics_datetime(datetime.now(timezone.utc))}",
         f"DTSTART:{_ics_datetime(start)}",
         f"DTEND:{_ics_datetime(end)}",

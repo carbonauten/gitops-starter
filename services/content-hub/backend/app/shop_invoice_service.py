@@ -194,7 +194,7 @@ def build_invoice_pdf(
     story.append(Spacer(1, 6 * mm))
     story.append(
         Paragraph(
-            "Preise inkl. MwSt. Dieses Dokument dient als Rechnung / Zahlungsbeleg für den FuckCo2-Shop der carbonauten GmbH.",
+            "Preise inkl. MwSt. Dieses Dokument dient als Rechnung / Zahlungsbeleg für den FuckCo2-Shop der Elphen AG.",
             small_style,
         )
     )

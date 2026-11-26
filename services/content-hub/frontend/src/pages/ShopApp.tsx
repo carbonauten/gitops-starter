@@ -42,7 +42,7 @@ import { ShopCartProvider, useShopCart } from "../hooks/useShopCart";
 const SHOP_SESSION_KEY = "fuckco2-shop-session-v1";
 
 function shopCompany(config: ShopConfig | null): string {
-  return config?.company_name?.trim() || "carbonauten GmbH";
+  return config?.company_name?.trim() || "Elphen AG";
 }
 
 function shopBasePath(): string {

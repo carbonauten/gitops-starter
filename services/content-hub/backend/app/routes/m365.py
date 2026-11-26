@@ -55,7 +55,7 @@ class DirectoryAskRequest(BaseModel):
 @router.get("/status")
 async def m365_status(_user: dict = Depends(require_it_master)) -> dict:
     payload = directory_status()
-    payload["assistant_name"] = "Ask Carbonauten"
+    payload["assistant_name"] = "Ask elphen"
     return payload
 
 
@@ -221,6 +221,6 @@ async def m365_ask(
         "user": result.get("user"),
         "temporary_password": result.get("temporary_password") or "",
         "recognized": looks_like_m365_admin_question(payload.question),
-        "assistant_name": "Ask Carbonauten",
+        "assistant_name": "Ask elphen",
         "mode": result.get("mode") or "regex",
     }

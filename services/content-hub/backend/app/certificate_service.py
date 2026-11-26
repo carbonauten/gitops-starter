@@ -133,7 +133,7 @@ def build_reminder_message(certificate: Certificate, window: int) -> tuple[str, 
     if certificate.parent_id:
         body += f"Parent-ID: {certificate.parent_id}\n"
     body += (
-        "\nBitte Erneuerung starten oder Status in der Unified Carbonauten Platform aktualisieren.\n"
+        "\nBitte Erneuerung starten oder Status in elphen aktualisieren.\n"
         f"\n— {get_settings().app_name}\n"
     )
     return subject, body

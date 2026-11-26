@@ -385,7 +385,7 @@ async def signal_link_start(
     db: Session = Depends(get_db),
     user: dict = Depends(get_current_user),
 ) -> dict:
-    result = await start_signal_link(device_name="Unified Carbonauten Platform")
+    result = await start_signal_link(device_name="elphen")
     session = get_session(request) or {}
     session["signal_link_accounts_before"] = result["accounts_before"]
     # Store the snapshot server-side via the session cookie so link/complete

@@ -81,7 +81,7 @@ async def start_signal_link(*, device_name: str) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=20.0) as client:
         response = await client.get(
             f"{base}/v1/qrcodelink",
-            params={"device_name": device_name or "Unified Carbonauten Platform"},
+            params={"device_name": device_name or "elphen"},
         )
         if response.status_code != 200:
             logger.warning("Signal qrcodelink failed: %s", response.text)
