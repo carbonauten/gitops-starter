@@ -8,16 +8,21 @@ import {
   fetchOfficeSession,
   fileDownloadUrl,
   outlookConnectUrl,
+  signFile,
   uploadFiles,
+  type DocumentSignResponse,
   type FileBrowseItem,
   type FileBrowseResult,
   type FileSource,
   type OfficeSession,
 } from "../api/client";
+import { DocumentSignPanel } from "../components/DocumentSignPanel";
 import { EmptyState } from "../components/EmptyState";
 import { LoadingState } from "../components/LoadingState";
 import { OfficeOnlinePanel } from "../components/OfficeOnlinePanel";
 import { usePermissions } from "../hooks/usePermissions";
+
+const PDF_EXT = /\.pdf$/i;
 
 const OFFICE_EXT = /\.(docx?|xlsx?|pptx?|odt|ods|odp)$/i;
 const OFFICE_MIME = /officedocument|msword|ms-excel|ms-powerpoint|opendocument/i;
@@ -40,6 +45,12 @@ function isOfficeFile(file: FileBrowseItem): boolean {
   const name = fileTitle(file);
   if (OFFICE_EXT.test(name)) return true;
   return OFFICE_MIME.test(file.content_type || "");
+}
+
+function isPdfFile(file: FileBrowseItem): boolean {
+  const name = fileTitle(file);
+  if (PDF_EXT.test(name)) return true;
+  return (file.content_type || "").toLowerCase() === "application/pdf";
 }
 
 function fileTypeIcon(file: FileBrowseItem): string {
@@ -71,6 +82,11 @@ export function FilesPage() {
   const [officeOpen, setOfficeOpen] = useState(false);
   const [officeLoading, setOfficeLoading] = useState(false);
   const [officeError, setOfficeError] = useState("");
+  const [signFileId, setSignFileId] = useState<string | null>(null);
+  const [signResult, setSignResult] = useState<DocumentSignResponse | null>(null);
+  const [signOpen, setSignOpen] = useState(false);
+  const [signLoading, setSignLoading] = useState(false);
+  const [signError, setSignError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -165,6 +181,35 @@ export function FilesPage() {
     setOfficeSession(null);
     setOfficeError("");
     setOfficeLoading(false);
+  }
+
+  async function openSign(file: FileBrowseItem) {
+    setSignFileId(file.id);
+    setSignOpen(true);
+    setSignLoading(true);
+    setSignError("");
+    setSignResult(null);
+    try {
+      const result = await signFile(file.id);
+      setSignResult(result);
+    } catch (err) {
+      setSignError(err instanceof Error ? err.message : t("common.error"));
+    } finally {
+      setSignLoading(false);
+    }
+  }
+
+  function closeSign() {
+    setSignOpen(false);
+    setSignFileId(null);
+    setSignResult(null);
+    setSignError("");
+    setSignLoading(false);
+  }
+
+  function handleSignCompleted() {
+    setNotice(t("files.signCompletedHint"));
+    void reload();
   }
 
   function selectSource(next: FileSource["id"]) {
@@ -367,6 +412,15 @@ export function FilesPage() {
                           {t("files.openOffice")}
                         </button>
                       ) : null}
+                      {source === "platform" && isPdfFile(file) ? (
+                        <button
+                          type="button"
+                          className="ghost-button"
+                          onClick={() => void openSign(file)}
+                        >
+                          {t("files.sign")}
+                        </button>
+                      ) : null}
                       {isHttpUrl(file.web_url) ? (
                         <a
                           href={file.web_url}
@@ -406,6 +460,17 @@ export function FilesPage() {
           loading={officeLoading}
           error={officeError}
           onClose={closeOffice}
+        />
+      ) : null}
+
+      {signOpen ? (
+        <DocumentSignPanel
+          fileId={signFileId}
+          result={signResult}
+          loading={signLoading}
+          error={signError}
+          onClose={closeSign}
+          onCompleted={handleSignCompleted}
         />
       ) : null}
     </section>

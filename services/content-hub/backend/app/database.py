@@ -61,6 +61,23 @@ class FileAsset(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
+class DocumentSignature(Base):
+    __tablename__ = "document_signatures"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
+    file_asset_id: Mapped[str] = mapped_column(String(36), index=True)
+    # Set once Documenso's DOCUMENT_COMPLETED webhook has fired and the signed
+    # PDF has been stored as a new FileAsset (the original stays untouched).
+    signed_file_asset_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+    documenso_envelope_id: Mapped[str] = mapped_column(String(200), index=True)
+    status: Mapped[str] = mapped_column(String(20), default="pending")  # pending|completed|rejected|cancelled
+    signer_email: Mapped[str] = mapped_column(String(200), default="")
+    signer_name: Mapped[str] = mapped_column(String(200), default="")
+    signing_token: Mapped[str] = mapped_column(String(500), default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
 class FileFolder(Base):
     __tablename__ = "file_folders"
 

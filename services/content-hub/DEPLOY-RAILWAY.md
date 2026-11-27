@@ -455,6 +455,33 @@ Der Shop läuft auf derselben Railway-App wie `app.carbonauten.com`.
 
 ---
 
+## 13. Digitale Signaturen (Documenso)
+
+Im Dateimanager ("Dateien") können PDFs direkt in der Plattform digital
+signiert werden - über ein self-hostetes
+[Documenso](https://documenso.com) (Open Source, AGPL), analog zu Collabora
+für Live-Editing. Eigener Railway-Service, root directory
+`services/documenso` - siehe [services/documenso/README.md](../documenso/README.md)
+für das vollständige Setup (eigenes Postgres-Plugin, selbstsigniertes
+`.p12`-Zertifikat, SMTP).
+
+**content-hub** → **Variables**, sobald `services/documenso` deployt ist:
+
+| Variable | Wert | Pflicht |
+|----------|------|---------|
+| `DOCUMENSO_BASE_URL` | öffentliche URL des Documenso-Services | ✅ |
+| `DOCUMENSO_API_KEY` | API-Token aus Documenso → Team Settings → API Tokens | ✅ |
+| `DOCUMENSO_WEBHOOK_SECRET` | beliebiger langer Zufallsstring, identisch in Documenso als Webhook-Secret für `https://<content-hub-domain>/api/documenso/webhook` konfiguriert | ✅ |
+
+> **Noch nicht gegen eine echte Instanz verifiziert:** ob eingebettetes
+> Signieren (iFrame) bei Self-Hosting kostenlos verfügbar ist oder einen
+> bezahlten Documenso-"Teams"-Plan braucht, und der exakte Endpoint zum
+> Herunterladen der fertig signierten PDF. Beides ist im Code
+> (`documenso_service.py`, `DocumentSignPanel.tsx`) als TODO markiert - siehe
+> PR-Beschreibung.
+
+---
+
 ## Troubleshooting
 
 | Problem | Lösung |

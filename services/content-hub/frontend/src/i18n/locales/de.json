@@ -173,7 +173,19 @@
     "officeEdit": "In Office Online bearbeiten",
     "officeEmbedBlocked": "Die eingebettete Vorschau ist nicht verfügbar. Öffne das Dokument in Office Online.",
     "officeMockHint": "Demo-Modus: Verbinde OneDrive für echte Dokumente.",
-    "officePlatformHint": "Plattform-Dateien können hier nur angesehen werden. Zum Bearbeiten in OneDrive speichern oder Microsoft 365 nutzen."
+    "officePlatformHint": "Plattform-Dateien können hier nur angesehen werden. Zum Bearbeiten in OneDrive speichern oder Microsoft 365 nutzen.",
+    "sign": "Signieren",
+    "signTitle": "Digitale Signatur",
+    "signLoading": "Signaturvorgang wird vorbereitet…",
+    "signPending": "Warte auf Signatur",
+    "signCompleted": "Signiert",
+    "signRejected": "Signatur abgelehnt",
+    "signCancelled": "Signatur abgebrochen",
+    "signCompletedHint": "Das Dokument wurde signiert und als neue Datei gespeichert.",
+    "signRejectedHint": "Die Signatur wurde abgelehnt.",
+    "signCancelledHint": "Der Signaturvorgang wurde abgebrochen.",
+    "signEmbedBlocked": "Die eingebettete Signatur ist nicht verfügbar. Öffne den Signaturvorgang in einem neuen Tab.",
+    "signOpenExternal": "In neuem Tab öffnen"
   },
   "publish": {
     "title": "Veröffentlichen",

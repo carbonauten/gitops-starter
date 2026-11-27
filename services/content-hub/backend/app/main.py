@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from .config import get_settings
 from .database import ensure_upload_dir, init_database
 from .i18n import parse_accept_language, translate
-from .routes import ai, analytics, articles, audit, auth, certificates, dashboard, departments, discount_codes, files, health, imap_mail, integrations, m365, mail_server, mailbox_org, meetings, monitor, orders, products, publish, reputation, search, shop, shop_auth, shop_customers, shop_returns, strato_automation, sync, user, versions, wopi, workflow, wordpress, wordpress_sites
+from .routes import ai, analytics, articles, audit, auth, certificates, dashboard, departments, discount_codes, documenso, files, health, imap_mail, integrations, m365, mail_server, mailbox_org, meetings, monitor, orders, products, publish, reputation, search, shop, shop_auth, shop_customers, shop_returns, strato_automation, sync, user, versions, wopi, workflow, wordpress, wordpress_sites
 from .static_assets import media_type_for, resolve_asset_path, resolve_root_file
 
 logger = logging.getLogger(__name__)
@@ -155,6 +155,7 @@ def create_app() -> FastAPI:
     app.include_router(departments.router)
     app.include_router(articles.router)
     app.include_router(files.router)
+    app.include_router(documenso.router)
     app.include_router(certificates.router)
     app.include_router(products.router)
     app.include_router(discount_codes.router)

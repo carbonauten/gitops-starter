@@ -70,6 +70,13 @@ class Settings(BaseSettings):
     # protocol, instead of Microsoft's read-only viewer.
     collabora_url: str = ""
 
+    # Self-hosted Documenso e-signature (see services/documenso) - lets
+    # files in the platform file manager be signed in-app; the signed PDF
+    # is saved back automatically via a webhook. See documenso_service.py.
+    documenso_base_url: str = ""
+    documenso_api_key: str = ""
+    documenso_webhook_secret: str = ""
+
     notion_api_key: str = ""
     notion_database_id: str = ""
     notion_client_id: str = ""

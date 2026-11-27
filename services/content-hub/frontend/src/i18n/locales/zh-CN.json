@@ -173,7 +173,19 @@
     "officeEdit": "在 Office Online 中编辑",
     "officeEmbedBlocked": "无法嵌入预览。请在 Office Online 中打开文档。",
     "officeMockHint": "演示模式：连接 OneDrive 以使用真实文档。",
-    "officePlatformHint": "平台文件此处仅可预览。如需编辑，请保存到 OneDrive 或使用 Microsoft 365。"
+    "officePlatformHint": "平台文件此处仅可预览。如需编辑，请保存到 OneDrive 或使用 Microsoft 365。",
+    "sign": "签署",
+    "signTitle": "电子签名",
+    "signLoading": "正在准备签署流程…",
+    "signPending": "等待签署",
+    "signCompleted": "已签署",
+    "signRejected": "签署已拒绝",
+    "signCancelled": "签署已取消",
+    "signCompletedHint": "文档已签署，并已保存为新文件。",
+    "signRejectedHint": "签署请求已被拒绝。",
+    "signCancelledHint": "签署流程已取消。",
+    "signEmbedBlocked": "无法嵌入签署界面。请在新标签页中打开签署流程。",
+    "signOpenExternal": "在新标签页中打开"
   },
   "publish": {
     "title": "发布",
