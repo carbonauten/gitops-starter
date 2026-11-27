@@ -173,7 +173,19 @@
     "officeEdit": "Edit in Office Online",
     "officeEmbedBlocked": "Embedded preview is unavailable. Open the document in Office Online.",
     "officeMockHint": "Demo mode: connect OneDrive for real documents.",
-    "officePlatformHint": "Platform files can only be previewed here. To edit, save to OneDrive or use Microsoft 365."
+    "officePlatformHint": "Platform files can only be previewed here. To edit, save to OneDrive or use Microsoft 365.",
+    "sign": "Sign",
+    "signTitle": "Digital signature",
+    "signLoading": "Preparing the signing session…",
+    "signPending": "Waiting for signature",
+    "signCompleted": "Signed",
+    "signRejected": "Signature rejected",
+    "signCancelled": "Signing cancelled",
+    "signCompletedHint": "The document was signed and saved as a new file.",
+    "signRejectedHint": "The signature request was rejected.",
+    "signCancelledHint": "The signing session was cancelled.",
+    "signEmbedBlocked": "Embedded signing is unavailable. Open the signing session in a new tab.",
+    "signOpenExternal": "Open in new tab"
   },
   "publish": {
     "title": "Publish",

@@ -1218,6 +1218,34 @@ export async function fetchOfficeSession(
   return payload.session;
 }
 
+export type DocumentSignature = {
+  id: string;
+  file_asset_id: string;
+  signed_file_asset_id?: string | null;
+  status: "pending" | "completed" | "rejected" | "cancelled";
+  signer_email: string;
+  signer_name: string;
+  created_at: string | null;
+  completed_at?: string | null;
+};
+
+export type DocumentSignResponse = {
+  signature: DocumentSignature;
+  signing_url: string | null;
+  external_signing_url: string | null;
+};
+
+export async function signFile(fileId: string): Promise<DocumentSignResponse> {
+  return request<DocumentSignResponse>(`/api/files/${fileId}/sign`, { method: "POST" });
+}
+
+export async function fetchFileSignStatus(fileId: string): Promise<DocumentSignature | null> {
+  const payload = await request<{ signature: DocumentSignature | null }>(
+    `/api/files/${fileId}/sign/status`,
+  );
+  return payload.signature;
+}
+
 export async function searchContent(q: string, type?: SearchResultType): Promise<SearchResponse> {
   const params = new URLSearchParams({ q });
   if (type) params.set("type", type);
